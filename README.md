@@ -19,6 +19,7 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - **Global bookmark index** — bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
 - **Auto-cleanup of orphaned annotations** — when anchor text is deleted, its annotations are removed on next load
 - **Catppuccin dark/light themes** — Mocha (dark) and Latte (light), toggled in the status bar
+- **Resizable TOC sidebar** — drag the right edge to adjust width (persisted across sessions)
 - **Adjustable font size** — persisted in `localStorage`
 - **Smart text anchoring** — selections can span bold, italic, and code nodes
 - **CLI annotation** — write annotations directly from the command line without a browser

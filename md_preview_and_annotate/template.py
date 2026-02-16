@@ -14,6 +14,7 @@ def _read_static(filename):
 def get_html(title="mdpreview", default_author="Tom"):
     css = _read_static("styles.css")
     js = _read_static("app.js")
+    palette_js = _read_static("palette.js")
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -106,6 +107,9 @@ def get_html(title="mdpreview", default_author="Tom"):
 
   <script>
 {js}
+  </script>
+  <script>
+{palette_js}
   </script>
 </body>
 </html>"""

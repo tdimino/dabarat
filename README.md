@@ -26,6 +26,8 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - **Smart text anchoring** — selections can span bold, italic, and code nodes
 - **CLI annotation** — write annotations directly from the command line without a browser
 - **Chrome `--app` mode** — opens in a frameless window (falls back to default browser)
+- **Command palette** — `Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
+- **Finder integration (macOS)** — `.app` bundle registers as `.md` handler for Open With
 
 ## Quick Start
 
@@ -152,6 +154,47 @@ Annotations are stored in sidecar JSON files (`file.md.annotations.json`) alongs
 
 Resolved annotations are archived to `file.md.annotations.resolved.json`.
 
+## Command Palette
+
+Press `Cmd+K` (Mac) or `Ctrl+K` to open the command palette. Available commands:
+
+- **Open File** — native file picker for `.md`, `.markdown`, `.txt` files
+- **Switch to [tab]** — quick-switch between open tabs
+- **Close Current Tab** — close the active tab
+- **Toggle Theme** — switch between Mocha and Latte
+- **Toggle Sidebar** — show/hide the TOC
+- **Increase/Decrease Font** — adjust font size
+- **Toggle Annotations** — open/close the notes panel
+- **Recent Files** — reopen the last 5 files you viewed
+
+A floating `⌘K` hint badge appears in the bottom-right corner until you've used the palette 3 times.
+
+Third-party integrations can register custom commands:
+```javascript
+CommandPalette.register('My Tools', [
+  { id: 'my-cmd', label: 'Do Something', icon: 'ph-star', action: () => doSomething() },
+]);
+```
+
+## Finder Integration (macOS)
+
+Register as a `.md` file handler so you can right-click → Open With → Markdown Preview.
+
+```bash
+cd macos && bash build.sh
+```
+
+This installs `Markdown Preview.app` to `~/Applications/` and registers with Launch Services.
+
+```bash
+# Open a file from Terminal
+open -a "Markdown Preview" document.md
+
+# Set as default .md handler (requires duti)
+brew install duti
+duti -s com.minoanmystery.md-preview .md all
+```
+
 ## Architecture
 
 ```
@@ -164,7 +207,8 @@ md_preview_and_annotate/
 ├── bookmarks.py         # Global ~/.claude/bookmarks/ persistence
 └── static/
     ├── app.js           # Client-side rendering, carousel, gutter (~1000 lines)
-    └── styles.css       # Catppuccin Mocha + Latte (~1200 lines)
+    ├── palette.js       # Command palette (Cmd+K) — modular, self-contained
+    └── styles.css       # Catppuccin Mocha + Latte (~1300 lines)
 ```
 
 **Data flow:** `__main__.py` → `server.py` → `template.py` assembles the HTML shell → `static/app.js` renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks additionally persist via `bookmarks.py` → `~/.claude/bookmarks/`.

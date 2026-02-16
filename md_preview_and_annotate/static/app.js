@@ -396,6 +396,10 @@ function showAddFileInput() {
             /* Fetch content immediately */
             fetchTabContent(data.id);
           }
+          /* Track in recent files for command palette */
+          if (typeof CommandPalette !== 'undefined' && data.filepath) {
+            CommandPalette.saveRecent(data.filepath, data.filename);
+          }
           renderTabBar();
         } catch(err) {
           console.error('Failed to add file:', err);

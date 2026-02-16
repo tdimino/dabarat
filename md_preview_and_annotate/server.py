@@ -3,9 +3,10 @@
 import datetime
 import http.server
 import json
+import mimetypes
 import os
 import uuid
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 
 from . import annotations
 from . import bookmarks
@@ -109,16 +110,49 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
+        elif parsed.path != "/" and parsed.path != "":
+            # Try to serve static files relative to open tab directories
+            rel_path = unquote(parsed.path.lstrip("/"))
+            served = False
+            for tab in self._tabs.values():
+                tab_dir = os.path.dirname(tab["filepath"])
+                candidate = os.path.normpath(os.path.join(tab_dir, rel_path))
+                # Prevent directory traversal
+                if not candidate.startswith(tab_dir):
+                    continue
+                if os.path.isfile(candidate):
+                    ctype, _ = mimetypes.guess_type(candidate)
+                    if not ctype:
+                        ctype = "application/octet-stream"
+                    try:
+                        with open(candidate, "rb") as f:
+                            data = f.read()
+                        self.send_response(200)
+                        self.send_header("Content-Type", ctype)
+                        self.send_header("Content-Length", str(len(data)))
+                        self.send_header("Cache-Control", "public, max-age=60")
+                        self.end_headers()
+                        self.wfile.write(data)
+                        served = True
+                    except Exception:
+                        pass
+                    break
+            if not served:
+                # Fall through to HTML shell
+                self._serve_html_shell()
+
         else:
-            # Serve HTML shell
-            first_tab = next(iter(self._tabs), "")
-            first_file = self._tabs[first_tab]["filepath"] if first_tab else ""
-            title = os.path.basename(first_file) if first_file else "mdpreview"
-            html = get_html(title=title, default_author=self.default_author)
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html")
-            self.end_headers()
-            self.wfile.write(html.encode())
+            self._serve_html_shell()
+
+    def _serve_html_shell(self):
+        first_tab = next(iter(self._tabs), "")
+        first_file = self._tabs[first_tab]["filepath"] if first_tab else ""
+        title = os.path.basename(first_file) if first_file else "mdpreview"
+        html = get_html(title=title, default_author=self.default_author)
+        self.send_response(200)
+        self.send_header("Content-Type", "text/html")
+        self.end_headers()
+        self.wfile.write(html.encode())
 
     def do_POST(self):
         parsed = urlparse(self.path)

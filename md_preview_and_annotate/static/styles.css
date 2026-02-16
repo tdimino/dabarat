@@ -1311,7 +1311,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 
 
 /* Hint badge */
 .palette-hint {
-  position: fixed; bottom: 18px; right: 18px;
+  position: fixed; bottom: 42px; right: 18px;
   display: flex; align-items: center; gap: 3px;
   padding: 7px 10px;
   background: var(--ctp-surface0);

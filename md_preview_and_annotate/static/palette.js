@@ -43,7 +43,22 @@ const CommandPalette = {
     this._registerDefaults();
     this._buildDOM();
     this._bindKeys();
-    this._showHint();
+    this._initHint();
+    this._deferSeedRecents();
+  },
+
+  /* Seed recents from open tabs once they're loaded (app.js init is async) */
+  _deferSeedRecents() {
+    const attempt = () => {
+      if (typeof tabs !== 'undefined' && Object.keys(tabs).length > 0) {
+        Object.values(tabs).forEach(t => {
+          if (t.filepath && t.filename) this.saveRecent(t.filepath, t.filename);
+        });
+      } else {
+        setTimeout(attempt, 500);
+      }
+    };
+    setTimeout(attempt, 300);
   },
 
   _registerDefaults() {
@@ -51,8 +66,8 @@ const CommandPalette = {
       { id: 'open-file', label: 'Open File\u2026', icon: 'ph-folder-open', action: () => this._openFilePicker() },
     ]);
     this.register('View', [
-      { id: 'toggle-theme', label: 'Toggle Theme', icon: 'ph-moon', action: toggleTheme },
-      { id: 'toggle-toc', label: 'Toggle Sidebar', icon: 'ph-sidebar', action: toggleToc },
+      { id: 'toggle-theme', label: 'Toggle Theme', icon: 'ph-moon', action: () => toggleTheme() },
+      { id: 'toggle-toc', label: 'Toggle Sidebar', icon: 'ph-sidebar', action: () => toggleToc() },
       { id: 'font-up', label: 'Increase Font', icon: 'ph-text-aa', action: () => adjustFont(1) },
       { id: 'font-down', label: 'Decrease Font', icon: 'ph-text-aa', action: () => adjustFont(-1) },
       { id: 'toggle-ann', label: 'Toggle Annotations', icon: 'ph-chat-circle-dots', action: () => {
@@ -66,7 +81,10 @@ const CommandPalette = {
   _buildDOM() {
     const backdrop = document.createElement('div');
     backdrop.className = 'palette-backdrop';
-    backdrop.onclick = () => this.close();
+    backdrop.addEventListener('click', (e) => {
+      /* Only close if clicking the backdrop itself, not children */
+      if (e.target === backdrop) this.close();
+    });
 
     const container = document.createElement('div');
     container.className = 'palette-container';
@@ -100,7 +118,6 @@ const CommandPalette = {
     this._filter('');
     this.els.backdrop.classList.add('visible');
     this.els.input.focus();
-    this._bumpHint();
   },
 
   close() {
@@ -113,16 +130,18 @@ const CommandPalette = {
     const cmds = [...this._registered];
 
     /* Dynamic: tab switching */
-    Object.keys(tabs).forEach(id => {
-      const t = tabs[id];
-      if (id !== activeTabId) {
-        cmds.push({ id: 'tab:' + id, label: t.filename, category: 'Tabs', icon: 'ph-file-text', action: () => switchTab(id) });
-      }
-    });
+    if (typeof tabs !== 'undefined') {
+      Object.keys(tabs).forEach(id => {
+        const t = tabs[id];
+        if (id !== activeTabId) {
+          cmds.push({ id: 'tab:' + id, label: t.filename, category: 'Tabs', icon: 'ph-file-text', action: () => switchTab(id) });
+        }
+      });
 
-    /* Dynamic: close tab (only if >1 tab) */
-    if (Object.keys(tabs).length > 1) {
-      cmds.push({ id: 'close-tab', label: 'Close Current Tab', category: 'Tabs', icon: 'ph-x', action: () => closeTab(activeTabId) });
+      /* Dynamic: close tab (only if >1 tab) */
+      if (Object.keys(tabs).length > 1) {
+        cmds.push({ id: 'close-tab', label: 'Close Current Tab', category: 'Tabs', icon: 'ph-x', action: () => closeTab(activeTabId) });
+      }
     }
 
     /* Recent files */
@@ -196,12 +215,16 @@ const CommandPalette = {
           item.appendChild(sub);
         }
 
-        item.onclick = () => { this.selectedIndex = flatIdx; this._execute(); };
-        item.onmouseenter = () => {
+        item.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.selectedIndex = parseInt(item.dataset.idx);
+          this._execute();
+        });
+        item.addEventListener('mouseenter', () => {
           this.selectedIndex = parseInt(item.dataset.idx);
           list.querySelectorAll('.palette-item.selected').forEach(el => el.classList.remove('selected'));
           item.classList.add('selected');
-        };
+        });
 
         list.appendChild(item);
         flatIdx++;
@@ -296,12 +319,13 @@ const CommandPalette = {
   },
 
   /* ── Hint Badge ────────────────────────────────────── */
-  HINT_KEY: 'mdpreview-palette-hints',
+  HINT_SHOW_MS: 5 * 60 * 1000,   /* visible for 5 minutes */
+  HINT_IDLE_MS: 2 * 60 * 1000,   /* reappear after 2 min idle */
+  _hintTimer: null,
+  _idleTimer: null,
+  _lastActivity: 0,
 
-  _showHint() {
-    const uses = parseInt(localStorage.getItem(this.HINT_KEY) || '0');
-    if (uses >= 3) return;
-
+  _initHint() {
     const hint = document.createElement('div');
     hint.className = 'palette-hint';
     const isMac = navigator.platform.indexOf('Mac') !== -1;
@@ -310,17 +334,35 @@ const CommandPalette = {
     document.body.appendChild(hint);
     this.els.hint = hint;
 
+    /* Show immediately */
     requestAnimationFrame(() => hint.classList.add('visible'));
+    this._lastActivity = Date.now();
+
+    /* Hide after 5 minutes */
+    this._hintTimer = setTimeout(() => this._hideHint(), this.HINT_SHOW_MS);
+
+    /* Track activity to detect idle */
+    const onActivity = () => {
+      this._lastActivity = Date.now();
+    };
+    document.addEventListener('mousemove', onActivity, { passive: true });
+    document.addEventListener('keydown', onActivity, { passive: true });
+    document.addEventListener('click', onActivity, { passive: true });
+
+    /* Check for idle every 30s — reshow hint if idle for 2 min */
+    this._idleTimer = setInterval(() => {
+      const idle = Date.now() - this._lastActivity;
+      if (idle >= this.HINT_IDLE_MS && !this.els.hint.classList.contains('visible')) {
+        this.els.hint.classList.add('visible');
+        /* Hide again after 5 min */
+        clearTimeout(this._hintTimer);
+        this._hintTimer = setTimeout(() => this._hideHint(), this.HINT_SHOW_MS);
+      }
+    }, 30000);
   },
 
-  _bumpHint() {
-    try {
-      const uses = parseInt(localStorage.getItem(this.HINT_KEY) || '0');
-      localStorage.setItem(this.HINT_KEY, String(uses + 1));
-      if (uses + 1 >= 3 && this.els.hint) {
-        this.els.hint.classList.remove('visible');
-      }
-    } catch (e) { /* localStorage full or disabled */ }
+  _hideHint() {
+    if (this.els.hint) this.els.hint.classList.remove('visible');
   },
 };
 

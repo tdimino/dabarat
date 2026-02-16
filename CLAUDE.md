@@ -8,12 +8,13 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - Catppuccin Mocha (dark) + Latte (light) themes
 
 ## Structure
-- `md_preview_and_annotate/server.py` — HTTP server + 9 REST API endpoints
+- `md_preview_and_annotate/server.py` — HTTP server + 13 REST API endpoints
 - `md_preview_and_annotate/template.py` — HTML shell assembly (inlines JS + CSS)
 - `md_preview_and_annotate/annotations.py` — Sidecar JSON I/O + orphan cleanup
 - `md_preview_and_annotate/bookmarks.py` — Global `~/.claude/bookmarks/` persistence
 - `md_preview_and_annotate/__main__.py` — CLI entry point (serve, add, annotate)
-- `md_preview_and_annotate/static/app.js` — Client rendering, carousel, gutter
+- `md_preview_and_annotate/static/app.js` — Client rendering, carousel, gutter, tag state (`tagsCache`, `fetchTags`, `renderTagPills`)
+- `md_preview_and_annotate/static/palette.js` — Command palette module (file metadata header, tag mode via `#` prefix, `TAG_COLORS`)
 - `md_preview_and_annotate/static/styles.css` — Catppuccin themes + typography
 
 ## Commands
@@ -28,16 +29,21 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - Bookmarks persist globally to `~/.claude/bookmarks/INDEX.md` + per-snippet files
 - Default port: 3031, default author: "Tom"
 - Orphan cleanup runs on every GET `/api/annotations` — stale anchors removed automatically
+- Tags stored in sidecar JSON `"tags"` array. Predefined: draft, reviewed, final, important, archived, research, personal. Custom tags supported via command palette `#` prefix
 
 ## API Endpoints
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/` | Redirect to first file |
-| GET | `/view/<file>` | Serve rendered HTML |
-| GET | `/api/content/<file>` | Raw markdown + metadata |
-| GET | `/api/annotations/<file>` | Load annotations (runs orphan cleanup) |
-| POST | `/api/annotations/<file>` | Save annotations array |
-| POST | `/api/annotate` | Add single annotation |
-| POST | `/api/resolve` | Resolve annotation → archive |
-| POST | `/api/bookmark` | Persist bookmark globally |
-| GET | `/static/<path>` | Serve JS/CSS assets |
+| GET | `/` | Serve HTML shell |
+| GET | `/api/content?tab={id}` | Raw markdown + mtime |
+| GET | `/api/tabs` | List all open tabs |
+| GET | `/api/annotations?tab={id}` | Load annotations (runs orphan cleanup) |
+| GET | `/api/tags?tab={id}` | Read tags for a tab |
+| GET | `/{path}` | Serve static files relative to tab directories |
+| POST | `/api/add` | Open a file as a new tab |
+| POST | `/api/close` | Close a tab |
+| POST | `/api/annotate` | Add annotation (bookmarks also persist to ~/.claude/) |
+| POST | `/api/resolve` | Resolve/unresolve annotation → archive |
+| POST | `/api/reply` | Add threaded reply to annotation |
+| POST | `/api/delete-annotation` | Delete annotation |
+| POST | `/api/tags` | Add/remove tag (`{tab, action, tag}`) |

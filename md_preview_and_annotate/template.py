@@ -102,6 +102,7 @@ def get_html(title="mdpreview", default_author="Tom"):
   <div id="status">
     <span class="filepath" id="status-filepath"></span>
     <span id="word-count"></span>
+    <span id="status-tags"></span>
     <span class="updated"><span class="dot"></span><span id="last-updated">connecting...</span></span>
   </div>
 

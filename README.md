@@ -27,6 +27,7 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - **CLI annotation** — write annotations directly from the command line without a browser
 - **Chrome `--app` mode** — opens in a frameless window (falls back to default browser)
 - **Command palette** — `Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
+- **File tagging** — tag files with predefined (`draft`, `reviewed`, `final`, `important`, `archived`, `research`, `personal`) or custom tags; tags persist in sidecar JSON alongside annotations and display as colored pills in the palette header, status bar, and tab bar
 - **Finder integration (macOS)** — `.app` bundle registers as `.md` handler for Open With
 
 ## Quick Start
@@ -137,6 +138,7 @@ Annotations are stored in sidecar JSON files (`file.md.annotations.json`) alongs
 ```json
 {
   "version": 1,
+  "tags": ["draft", "research"],
   "annotations": [
     {
       "id": "a1b2c3",
@@ -158,14 +160,21 @@ Resolved annotations are archived to `file.md.annotations.resolved.json`.
 
 Press `Cmd+K` (Mac) or `Ctrl+K` to open the command palette. Available commands:
 
-- **Open File** — native file picker for `.md`, `.markdown`, `.txt` files
+- **File** — open a `.md`, `.markdown`, or `.txt` file via native picker
+- **Recent Files** — reopen the last 5 files you viewed
 - **Switch to [tab]** — quick-switch between open tabs
 - **Close Current Tab** — close the active tab
+- **Add Tag...** — enter tag mode to add or create tags
 - **Toggle Theme** — switch between Mocha and Latte
 - **Toggle Sidebar** — show/hide the TOC
 - **Increase/Decrease Font** — adjust font size
 - **Toggle Annotations** — open/close the notes panel
-- **Recent Files** — reopen the last 5 files you viewed
+
+The palette header displays file metadata for the active tab: filename, path, word count, estimated read time, annotation count, and any tags as colored pills.
+
+### Tag Mode
+
+Type `#` in the palette search field (or select "Add Tag...") to enter tag mode. Seven predefined tags are offered with color-coded suggestions: `draft`, `reviewed`, `final`, `important`, `archived`, `research`, `personal`. Type any other name and press Enter to create a custom tag. Tags appear as colored pills in the palette header, in the status bar, and as dots on the tab bar.
 
 A floating `⌘K` hint badge appears in the bottom-right corner until you've used the palette 3 times.
 
@@ -201,14 +210,14 @@ duti -s com.minoanmystery.md-preview .md all
 md_preview_and_annotate/
 ├── __init__.py          # Package metadata
 ├── __main__.py          # CLI entry point (serve, add, annotate)
-├── server.py            # HTTP server + REST API (9 endpoints)
+├── server.py            # HTTP server + REST API (13 endpoints)
 ├── template.py          # HTML shell assembly (inlines JS + CSS)
-├── annotations.py       # Sidecar JSON I/O + orphan cleanup
+├── annotations.py       # Sidecar JSON I/O + orphan cleanup + tag persistence
 ├── bookmarks.py         # Global ~/.claude/bookmarks/ persistence
 └── static/
-    ├── app.js           # Client-side rendering, carousel, gutter (~1000 lines)
-    ├── palette.js       # Command palette (Cmd+K) — modular, self-contained
-    └── styles.css       # Catppuccin Mocha + Latte (~1300 lines)
+    ├── app.js           # Client-side rendering, carousel, gutter (~1190 lines)
+    ├── palette.js       # Command palette + tag mode (Cmd+K) (~650 lines)
+    └── styles.css       # Catppuccin Mocha + Latte (~1465 lines)
 ```
 
 **Data flow:** `__main__.py` → `server.py` → `template.py` assembles the HTML shell → `static/app.js` renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks additionally persist via `bookmarks.py` → `~/.claude/bookmarks/`.

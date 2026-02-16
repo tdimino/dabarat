@@ -54,6 +54,35 @@ def write_resolved(filepath, data):
         json.dump(data, f, indent=2)
 
 
+def read_tags(filepath):
+    """Read tags for a file. Returns list of tag strings."""
+    data, _ = read(filepath)
+    return data.get("tags", [])
+
+
+def add_tag(filepath, tag):
+    """Add a tag to a file. Returns updated tag list."""
+    data, _ = read(filepath)
+    tags = data.get("tags", [])
+    tag = tag.strip().lower()
+    if tag and tag not in tags:
+        tags.append(tag)
+        data["tags"] = tags
+        write(filepath, data)
+    return tags
+
+
+def remove_tag(filepath, tag):
+    """Remove a tag from a file. Returns updated tag list."""
+    data, _ = read(filepath)
+    tags = data.get("tags", [])
+    tag = tag.strip().lower()
+    tags = [t for t in tags if t != tag]
+    data["tags"] = tags
+    write(filepath, data)
+    return tags
+
+
 def cleanup_orphans(filepath, content):
     """Remove annotations whose anchor text no longer exists in the document.
 

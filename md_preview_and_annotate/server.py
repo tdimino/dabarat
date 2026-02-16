@@ -110,6 +110,15 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
+        elif parsed.path == "/api/tags":
+            tab_id = params.get("tab", [None])[0]
+            if tab_id and tab_id in self._tabs:
+                filepath = self._tabs[tab_id]["filepath"]
+                tags = annotations.read_tags(filepath)
+                self._json_response({"tags": tags})
+            else:
+                self._json_response({"error": "tab not found"}, 404)
+
         elif parsed.path != "/" and parsed.path != "":
             # Try to serve static files relative to open tab directories
             rel_path = unquote(parsed.path.lstrip("/"))
@@ -308,6 +317,23 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             data["annotations"] = [a for a in data["annotations"] if a["id"] != ann_id]
             annotations.write(filepath, data)
             self._json_response({"ok": True})
+
+        elif parsed.path == "/api/tags":
+            tab_id = body.get("tab", "")
+            tag = body.get("tag", "").strip()
+            action = body.get("action", "add")
+            if tab_id not in self._tabs:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            if not tag:
+                self._json_response({"error": "tag required"}, 400)
+                return
+            filepath = self._tabs[tab_id]["filepath"]
+            if action == "remove":
+                tags = annotations.remove_tag(filepath, tag)
+            else:
+                tags = annotations.add_tag(filepath, tag)
+            self._json_response({"ok": True, "tags": tags})
 
         else:
             self.send_error(404)

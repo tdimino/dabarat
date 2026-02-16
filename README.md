@@ -12,6 +12,7 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 
 - **Live-reload preview** — 500ms polling detects file changes automatically
 - **Multi-tab support** — open multiple `.md` files; cross-file linking via `--add`
+- **Tab reuse** — launching a new file while the server is running adds it as a tab instead of restarting
 - **5 annotation types** — Comment, Question, Suggestion, Important, Bookmark
 - **Selection-based carousel** — select any text, pick an annotation type from the floating UI
 - **Threaded replies** — reply to any annotation inline
@@ -21,8 +22,10 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - **Catppuccin dark/light themes** — Mocha (dark) and Latte (light), toggled in the status bar
 - **Resizable TOC sidebar** — drag the right edge to adjust width (persisted across sessions)
 - **Adjustable font size** — persisted in `localStorage`
+- **Cross-file links** — clicking a `.md` link in content opens the target as a new tab
 - **Smart text anchoring** — selections can span bold, italic, and code nodes
 - **CLI annotation** — write annotations directly from the command line without a browser
+- **Chrome `--app` mode** — opens in a frameless window (falls back to default browser)
 
 ## Quick Start
 
@@ -36,10 +39,13 @@ Opens in Chrome `--app` mode (falls back to default browser). No install, no bui
 # Multiple files
 python3 -m md_preview_and_annotate file1.md file2.md
 
+# Tab reuse — if the server is already running, new files open as tabs automatically
+python3 -m md_preview_and_annotate another-file.md
+
 # Custom port and author
 python3 -m md_preview_and_annotate document.md --port 8080 --author "Alice"
 
-# Add a file to a running server
+# Explicit add to a running server (legacy)
 python3 -m md_preview_and_annotate --add another-file.md
 
 # Annotate from CLI (no browser needed)
@@ -90,6 +96,8 @@ python3 -m md_preview_and_annotate --annotate document.md \
 | Multi-tab | Yes | No | Yes | No |
 | Threaded replies | Yes | No | No | No |
 | Bookmark persistence | Global index | No | No | No |
+| Tab reuse | Yes (automatic) | No | No | No |
+| Cross-file links | Yes | No | No | No |
 | Orphan auto-cleanup | Yes | No | No | No |
 | Last updated | 2026 | 2020 (abandoned) | 2026 | 2026 |
 

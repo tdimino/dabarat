@@ -224,7 +224,7 @@ md_preview_and_annotate/
 
 ## Global Claude.md Integration
 
-This tool was designed to work within a broader Claude Code ecosystem. For details on how `~/.claude/`, `CLAUDE.md`, `soul.md`, and the global bookmarks directory fit together, see [**The ~/.claude/ Ecosystem**](CLAUDE-CODE-ECOSYSTEM.md).
+This tool was designed to work within a broader Claude Code ecosystem. For details on how `~/.claude/`, `CLAUDE.md`, `soul.md`, and the global bookmarks directory fit together, see [**The ~/.claude/ Ecosystem**](claude-code-ecosystem.md).
 
 ## License
 

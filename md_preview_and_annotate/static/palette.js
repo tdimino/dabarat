@@ -26,9 +26,16 @@ const CommandPalette = {
     archived:  { bg: 'rgba(108,112,134,0.20)', fg: '#6c7086' },
     research:  { bg: 'rgba(203,166,247,0.20)', fg: '#cba6f7' },
     personal:  { bg: 'rgba(245,194,231,0.20)', fg: '#f5c2e7' },
+    'prompt:system':    { bg: 'rgba(137,180,250,0.20)', fg: '#89b4fa' },
+    'prompt:user':      { bg: 'rgba(166,227,161,0.20)', fg: '#a6e3a1' },
+    'prompt:assistant': { bg: 'rgba(203,166,247,0.20)', fg: '#cba6f7' },
+    'prompt:chain':     { bg: 'rgba(250,179,135,0.20)', fg: '#fab387' },
+    'prompt:cognitive':  { bg: 'rgba(245,194,231,0.20)', fg: '#f5c2e7' },
+    'prompt:tested':    { bg: 'rgba(148,226,213,0.20)', fg: '#94e2d5' },
     _default:  { bg: 'rgba(148,226,213,0.20)', fg: '#94e2d5' },
   },
-  PREDEFINED_TAGS: ['draft', 'reviewed', 'final', 'important', 'archived', 'research', 'personal'],
+  PREDEFINED_TAGS: ['draft', 'reviewed', 'final', 'important', 'archived', 'research', 'personal',
+    'prompt:system', 'prompt:user', 'prompt:assistant', 'prompt:chain', 'prompt:cognitive', 'prompt:tested'],
 
   _tagColor(tag) {
     return this.TAG_COLORS[tag] || this.TAG_COLORS._default;
@@ -93,6 +100,11 @@ const CommandPalette = {
       { id: 'toggle-ann', label: 'Toggle Annotations', icon: 'ph-chat-circle-dots', action: () => {
         const g = document.getElementById('annotations-gutter');
         g.classList.contains('overlay-open') ? closeGutterOverlay() : openGutterOverlay();
+      }},
+    ]);
+    this.register('View', [
+      { id: 'show-frontmatter', label: 'Show Frontmatter', icon: 'ph-file-code', action: () => {
+        if (typeof showFrontmatterPopup === 'function') showFrontmatterPopup();
       }},
     ]);
     this.register('Tags', [

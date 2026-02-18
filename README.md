@@ -28,6 +28,9 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - **Chrome `--app` mode** — opens in a frameless window (falls back to default browser)
 - **Command palette** — `Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
 - **File tagging** — tag files with predefined (`draft`, `reviewed`, `final`, `important`, `archived`, `research`, `personal`) or custom tags; tags persist in sidecar JSON alongside annotations and display as colored pills in the palette header, status bar, and tab bar
+- **Prompt engineering support** — `.prompt.md` files with YAML frontmatter render a clickable metadata indicator bar showing name, version, type, and variable count; clicking opens a full metadata popup with model, temperature, labels, tags, and a variables table with types, defaults, and descriptions
+- **Template variable highlighting** — `{{variable}}` (Mustache) and `${variable}` (shell) template slots are highlighted as colored pills in the preview; pills include CSS-only tooltips showing variable schema from frontmatter
+- **Prompt-specific tags** — 6 additional tags for prompt workflows: `prompt:system`, `prompt:user`, `prompt:assistant`, `prompt:chain`, `prompt:cognitive`, `prompt:tested`
 - **Finder integration (macOS)** — `.app` bundle registers as `.md` handler for Open With
 
 ## Quick Start
@@ -214,13 +217,14 @@ md_preview_and_annotate/
 ├── template.py          # HTML shell assembly (inlines JS + CSS)
 ├── annotations.py       # Sidecar JSON I/O + orphan cleanup + tag persistence
 ├── bookmarks.py         # Global ~/.claude/bookmarks/ persistence
+├── frontmatter.py       # YAML frontmatter parser (stdlib, pyyaml fallback) + mtime cache
 └── static/
-    ├── app.js           # Client-side rendering, carousel, gutter (~1190 lines)
-    ├── palette.js       # Command palette + tag mode (Cmd+K) (~650 lines)
-    └── styles.css       # Catppuccin Mocha + Latte (~1465 lines)
+    ├── app.js           # Client rendering, frontmatter popup, variable highlighting (~1480 lines)
+    ├── palette.js       # Command palette + tag mode + prompt tags (Cmd+K) (~660 lines)
+    └── styles.css       # Catppuccin Mocha + Latte + frontmatter/variable styles (~1770 lines)
 ```
 
-**Data flow:** `__main__.py` → `server.py` → `template.py` assembles the HTML shell → `static/app.js` renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks additionally persist via `bookmarks.py` → `~/.claude/bookmarks/`.
+**Data flow:** `__main__.py` → `server.py` → `template.py` assembles the HTML shell → `static/app.js` renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks additionally persist via `bookmarks.py` → `~/.claude/bookmarks/`. For `.prompt.md` files, `frontmatter.py` parses YAML frontmatter and returns it alongside content via `/api/content`; the client renders a metadata indicator bar, popup, and variable highlights.
 
 ## Global Claude.md Integration
 

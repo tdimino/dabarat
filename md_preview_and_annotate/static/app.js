@@ -15,6 +15,7 @@ const defaultAuthor = window.MDPREVIEW_CONFIG.defaultAuthor;
 /* Track last-rendered markdown to avoid redundant DOM updates */
 let lastRenderedMd = '';
 let lastRenderedAnnotationsKey = '';
+let currentFrontmatter = null;
 
 /* ── Font Size ────────────────────────────────────────── */
 let currentSize = parseInt(localStorage.getItem('mdpreview-fontsize') || '15');
@@ -242,6 +243,13 @@ function render(md) {
   updateActiveHeading();
   updateWordCount(md);
 
+  /* Render frontmatter indicator bar (click to open popup) */
+  renderFrontmatterIndicator(currentFrontmatter);
+
+  /* Variable highlighting — must run BEFORE annotation highlights
+     to avoid corrupting annotation text range offsets */
+  applyVariableHighlights(currentFrontmatter);
+
   /* Re-apply annotation highlights after content change */
   applyAnnotationHighlights();
 }
@@ -253,6 +261,295 @@ function updateWordCount(md) {
   const mins = Math.max(1, Math.ceil(words / 250));
   const el = document.getElementById('word-count');
   if (el) el.textContent = words.toLocaleString() + ' words \u00b7 ' + mins + ' min read';
+}
+
+/* ── Frontmatter Indicator Bar ───────────────────────── */
+function renderFrontmatterIndicator(fm) {
+  const existing = document.getElementById('frontmatter-indicator');
+  if (existing) existing.remove();
+  if (!fm || Object.keys(fm).length === 0) return;
+
+  const bar = document.createElement('div');
+  bar.id = 'frontmatter-indicator';
+  bar.className = 'fm-indicator';
+  bar.title = 'Click to view frontmatter';
+  bar.addEventListener('click', () => showFrontmatterPopup(fm));
+
+  const name = fm.name || fm.slug || 'frontmatter';
+  const parts = [name];
+  if (fm.version !== undefined && fm.version !== null) parts.push('v' + fm.version);
+  if (fm.type) parts.push(fm.type);
+  const vars = fm.variables;
+  if (Array.isArray(vars) && vars.length > 0) parts.push(vars.length + ' var' + (vars.length !== 1 ? 's' : ''));
+
+  bar.innerHTML = '<i class="ph ph-file-code" style="font-size:14px; opacity:0.7"></i> ' +
+    parts.map((p, i) => i === 0
+      ? '<span class="fm-ind-name">' + p + '</span>'
+      : '<span class="fm-ind-detail">' + p + '</span>'
+    ).join(' ');
+
+  const content = document.getElementById('content');
+  content.parentNode.insertBefore(bar, content);
+}
+
+/* ── Frontmatter Popup ──────────────────────────────── */
+function showFrontmatterPopup(fm) {
+  if (!fm) fm = currentFrontmatter;
+  if (!fm || Object.keys(fm).length === 0) return;
+
+  /* Remove existing popup */
+  const existing = document.getElementById('fm-popup-backdrop');
+  if (existing) existing.remove();
+
+  const backdrop = document.createElement('div');
+  backdrop.id = 'fm-popup-backdrop';
+  backdrop.className = 'fm-popup-backdrop';
+
+  function closeFmPopup() {
+    backdrop.remove();
+    document.documentElement.style.overflow = '';
+    document.body.style.overflow = '';
+  }
+
+  backdrop.addEventListener('click', (e) => {
+    if (e.target === backdrop) closeFmPopup();
+  });
+
+  /* Lock page scroll while popup is open */
+  document.documentElement.style.overflow = 'hidden';
+  document.body.style.overflow = 'hidden';
+
+  const popup = document.createElement('div');
+  popup.className = 'fm-popup';
+
+  /* Header */
+  const header = document.createElement('div');
+  header.className = 'fm-popup-header';
+  const title = document.createElement('span');
+  title.className = 'fm-popup-title';
+  title.textContent = fm.name || fm.slug || 'Frontmatter';
+  header.appendChild(title);
+  if (fm.version !== undefined && fm.version !== null) {
+    const ver = document.createElement('span');
+    ver.className = 'pmc-badge pmc-version';
+    ver.textContent = 'v' + fm.version;
+    header.appendChild(ver);
+  }
+  if (fm.type) {
+    const typ = document.createElement('span');
+    typ.className = 'pmc-badge pmc-type';
+    typ.textContent = fm.type;
+    header.appendChild(typ);
+  }
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'fm-popup-close';
+  closeBtn.innerHTML = '&times;';
+  closeBtn.addEventListener('click', closeFmPopup);
+  header.appendChild(closeBtn);
+  popup.appendChild(header);
+
+  /* Body — render all frontmatter fields as a table */
+  const body = document.createElement('div');
+  body.className = 'fm-popup-body';
+
+  /* Metadata row: model, temperature, labels */
+  const metaFields = [];
+  if (fm.model) metaFields.push(['model', fm.model]);
+  if (fm.temperature !== undefined) metaFields.push(['temperature', fm.temperature]);
+  if (fm.author) metaFields.push(['author', fm.author]);
+  if (fm.created) metaFields.push(['created', String(fm.created)]);
+
+  if (metaFields.length > 0) {
+    const metaRow = document.createElement('div');
+    metaRow.className = 'fm-popup-meta';
+    metaFields.forEach(([k, v]) => {
+      const item = document.createElement('div');
+      item.className = 'fm-popup-meta-item';
+      item.innerHTML = '<span class="fm-popup-key">' + k + '</span><span class="fm-popup-val">' + v + '</span>';
+      metaRow.appendChild(item);
+    });
+    body.appendChild(metaRow);
+  }
+
+  /* Labels */
+  const labels = fm.labels || [];
+  if (labels.length > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'fm-popup-section';
+    sec.innerHTML = '<div class="fm-popup-key">labels</div>';
+    const pills = document.createElement('div');
+    pills.className = 'fm-popup-pills';
+    labels.forEach(l => {
+      const p = document.createElement('span');
+      p.className = 'pmc-label';
+      p.textContent = l;
+      pills.appendChild(p);
+    });
+    sec.appendChild(pills);
+    body.appendChild(sec);
+  }
+
+  /* Tags */
+  const fmTags = fm.tags || [];
+  if (fmTags.length > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'fm-popup-section';
+    sec.innerHTML = '<div class="fm-popup-key">tags</div>';
+    const pills = document.createElement('div');
+    pills.className = 'fm-popup-pills';
+    fmTags.forEach(t => {
+      const p = document.createElement('span');
+      p.className = 'pmc-tag';
+      p.textContent = '#' + t;
+      pills.appendChild(p);
+    });
+    sec.appendChild(pills);
+    body.appendChild(sec);
+  }
+
+  /* Variables table */
+  const vars = fm.variables || [];
+  if (vars.length > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'fm-popup-section';
+    sec.innerHTML = '<div class="fm-popup-key">variables (' + vars.length + ')</div>';
+    const table = document.createElement('table');
+    table.className = 'fm-popup-var-table';
+    table.innerHTML = '<thead><tr><th>name</th><th>type</th><th>default</th><th>required</th><th>description</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    vars.forEach(v => {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        '<td class="fm-var-name">' + (v.name || '') + '</td>' +
+        '<td>' + (v.type || '') + '</td>' +
+        '<td>' + (v.default !== undefined ? v.default : '') + '</td>' +
+        '<td>' + (v.required ? 'yes' : '') + '</td>' +
+        '<td class="fm-var-desc">' + (v.description || '') + '</td>';
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    sec.appendChild(table);
+    body.appendChild(sec);
+  }
+
+  /* depends_on */
+  const deps = fm.depends_on || [];
+  if (deps.length > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'fm-popup-section';
+    sec.innerHTML = '<div class="fm-popup-key">depends_on</div>';
+    const pills = document.createElement('div');
+    pills.className = 'fm-popup-pills';
+    deps.forEach(d => {
+      const p = document.createElement('span');
+      p.className = 'pmc-badge pmc-version';
+      p.textContent = d;
+      pills.appendChild(p);
+    });
+    sec.appendChild(pills);
+    body.appendChild(sec);
+  }
+
+  /* Raw YAML fallback: show any other keys not already rendered */
+  const shownKeys = new Set(['name', 'slug', 'version', 'type', 'model', 'temperature',
+    'author', 'created', 'labels', 'tags', 'variables', 'depends_on']);
+  const extraKeys = Object.keys(fm).filter(k => !shownKeys.has(k));
+  if (extraKeys.length > 0) {
+    const sec = document.createElement('div');
+    sec.className = 'fm-popup-section';
+    sec.innerHTML = '<div class="fm-popup-key">other</div>';
+    const pre = document.createElement('pre');
+    pre.className = 'fm-popup-raw';
+    const extra = {};
+    extraKeys.forEach(k => { extra[k] = fm[k]; });
+    pre.textContent = JSON.stringify(extra, null, 2);
+    sec.appendChild(pre);
+    body.appendChild(sec);
+  }
+
+  popup.appendChild(body);
+  backdrop.appendChild(popup);
+  document.body.appendChild(backdrop);
+
+  /* Close on Escape */
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      closeFmPopup();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+}
+
+/* ── Variable Highlighting ───────────────────────────── */
+function applyVariableHighlights(fm) {
+  const content = document.getElementById('content');
+  const varRegex = /(\{\{([a-zA-Z_][\w.]*?)\}\})|(\$\{([a-zA-Z_][\w.]*?)\})/g;
+  const varDefs = (fm && fm.variables) || [];
+
+  const walker = document.createTreeWalker(content, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      if (node.parentElement.closest('pre, code, .tpl-var-pill')) {
+        return NodeFilter.FILTER_REJECT;
+      }
+      return NodeFilter.FILTER_ACCEPT;
+    }
+  });
+
+  /* Group matches by text node to handle multiple vars in one node */
+  const nodeGroups = new Map();
+  let node;
+  while (node = walker.nextNode()) {
+    const text = node.textContent;
+    let m;
+    varRegex.lastIndex = 0;
+    while ((m = varRegex.exec(text)) !== null) {
+      const isMustache = !!m[1];
+      if (!nodeGroups.has(node)) nodeGroups.set(node, []);
+      nodeGroups.get(node).push({
+        match: m[0], name: m[2] || m[4],
+        index: m.index, syntax: isMustache ? 'mustache' : 'dollar'
+      });
+    }
+  }
+
+  if (nodeGroups.size === 0) return;
+
+  function makePill(name, matchText, syntax) {
+    const pill = document.createElement('span');
+    pill.className = 'tpl-var-pill';
+    pill.dataset.var = name;
+    pill.dataset.syntax = syntax;
+    pill.textContent = matchText;
+    const varDef = varDefs.find(v => v.name === name);
+    if (varDef) {
+      const parts = [];
+      if (varDef.type) parts.push(varDef.type);
+      if (varDef.default !== undefined) parts.push('default: ' + varDef.default);
+      if (varDef.description) parts.push(varDef.description);
+      if (parts.length) pill.dataset.tooltip = parts.join(' \u00b7 ');
+    }
+    return pill;
+  }
+
+  /* Replace each text node with a fragment of text + pill nodes */
+  for (const [textNode, nodeMatches] of nodeGroups) {
+    nodeMatches.sort((a, b) => a.index - b.index);
+    const frag = document.createDocumentFragment();
+    const fullText = textNode.textContent;
+    let cursor = 0;
+    for (const m of nodeMatches) {
+      if (m.index > cursor) {
+        frag.appendChild(document.createTextNode(fullText.slice(cursor, m.index)));
+      }
+      frag.appendChild(makePill(m.name, m.match, m.syntax));
+      cursor = m.index + m.match.length;
+    }
+    if (cursor < fullText.length) {
+      frag.appendChild(document.createTextNode(fullText.slice(cursor)));
+    }
+    textNode.parentNode.replaceChild(frag, textNode);
+  }
 }
 
 /* ── Tags ────────────────────────────────────────────── */
@@ -409,7 +706,10 @@ async function fetchTabContent(id) {
     if (data.error || !tabs[id]) return;
     tabs[id].content = data.content;
     tabs[id].mtime = data.mtime;
-    if (id === activeTabId) render(data.content);
+    if (id === activeTabId) {
+      currentFrontmatter = data.frontmatter || null;
+      render(data.content);
+    }
   } catch (e) { /* ignore */ }
 }
 
@@ -1069,6 +1369,7 @@ async function poll() {
       if (!data.error && data.mtime !== tabs[activeTabId].mtime) {
         tabs[activeTabId].content = data.content;
         tabs[activeTabId].mtime = data.mtime;
+        currentFrontmatter = data.frontmatter || null;
         render(data.content);
       }
     } catch (e) { /* ignore */ }
@@ -1171,6 +1472,10 @@ async function init() {
         .then(data => {
           tabs[id].content = data.content;
           tabs[id].mtime = data.mtime;
+          /* Set frontmatter for the active tab so indicator + popup work */
+          if (id === activeTabId) {
+            currentFrontmatter = data.frontmatter || null;
+          }
         })
         .catch(() => {})
     )

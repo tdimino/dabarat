@@ -14,7 +14,8 @@ CLI (__main__.py)
   │            ├─ GET / → template.py assembles HTML shell
   │            │           (inlines app.js + palette.js + styles.css)
   │            │
-  │            ├─ GET /api/content → reads .md file, returns content + mtime
+  │            ├─ GET /api/content → reads .md file, returns content + mtime + frontmatter
+  │            │                    (frontmatter.py parses YAML, strips from content)
   │            ├─ GET /api/annotations → annotations.py loads sidecar JSON, runs orphan cleanup
   │            ├─ POST /api/annotate → annotations.py writes sidecar JSON
   │            │                       (bookmark type also → bookmarks.py → ~/.claude/bookmarks/)
@@ -60,6 +61,13 @@ CLI (__main__.py)
 - Per-snippet files in `snippets/` subdirectory
 - Filename format: `{date}-{slug}.md` with deduplication counter
 - Called by server when annotation type is `bookmark`
+
+### `frontmatter.py` (~170 lines)
+- Extracts YAML frontmatter delimited by `---` at file start (handles BOM, CRLF)
+- Stdlib-only `parse_yaml_subset()` for scalars, inline lists, block lists, list-of-dicts
+- Falls back to `pyyaml` (`yaml.safe_load`) if installed
+- Mtime-keyed cache: `(filepath, mtime)` → `(frontmatter_dict, body_str)`
+- Called by `server.py` in `/api/content` — returns `frontmatter` field alongside `content`
 
 ## Key Design Decisions
 

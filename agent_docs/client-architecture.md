@@ -1,12 +1,13 @@
 # Client Architecture
 
-Two JS modules — `app.js` (rendering, state, annotations) and `palette.js` (command palette + tags).
+Two JS modules — `app.js` (rendering, state, annotations, frontmatter, variable highlighting) and `palette.js` (command palette + tags).
 
-## app.js (~1190 lines)
+## app.js (~1480 lines)
 
 ### State
 - `tabs` — object keyed by tab ID, holds `{ filepath, filename, content, mtime, scrollY }`
 - `activeTabId` — currently displayed tab
+- `currentFrontmatter` — parsed YAML frontmatter for the active tab (null if none)
 - `annotationsCache` — keyed by tab ID, holds annotation arrays
 - `tagsCache` — keyed by tab ID, holds tag arrays
 - `annotateSelection` — current text selection for annotation creation
@@ -14,14 +15,21 @@ Two JS modules — `app.js` (rendering, state, annotations) and `palette.js` (co
 
 ### Rendering Pipeline
 1. `poll()` runs every 500ms, fetches `/api/content` for active tab
-2. If `mtime` changed, calls `render(md)` which:
+2. If `mtime` changed, sets `currentFrontmatter` from response, calls `render(md)` which:
    - Skips if `md === lastRenderedMd`
    - Parses markdown via `marked.parse()` (GFM mode)
    - Builds TOC from h1–h4 headings
    - Assigns heading IDs (`slugify(text) + '-' + index`)
    - Runs `hljs.highlightElement()` on code blocks
+   - Calls `renderFrontmatterIndicator()` — clickable bar showing name, version, type, var count
+   - Calls `applyVariableHighlights()` — wraps `{{var}}` and `${var}` in colored pills (BEFORE annotations)
    - Calls `applyAnnotationHighlights()` to wrap annotated text in `<mark>` elements
 3. Scroll spy updates active heading in TOC (throttled via `requestAnimationFrame`)
+
+### Frontmatter System
+- **Indicator bar**: `renderFrontmatterIndicator(fm)` — compact bar above content with name + badge pills
+- **Popup**: `showFrontmatterPopup(fm)` — modal with metadata grid (model, temp, author, created), labels, tags, variables table, depends_on; scroll-locked backdrop with Escape/click-outside dismiss
+- **Variable highlighting**: `applyVariableHighlights(fm)` — DOM TreeWalker finds `{{var}}` and `${var}` in text nodes, wraps in `.tpl-var-pill` spans with CSS-only tooltips from frontmatter schema; skips `<pre>`, `<code>`, already-highlighted nodes; processes in forward order using fragment replacement
 
 ### Annotation System
 - **Text anchoring**: `findTextRange(container, searchText)` finds anchor text across DOM nodes

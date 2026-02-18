@@ -10,6 +10,7 @@ from urllib.parse import urlparse, parse_qs, unquote
 
 from . import annotations
 from . import bookmarks
+from . import frontmatter
 from .template import get_html
 
 
@@ -51,7 +52,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
-        self.wfile.write(json.dumps(data).encode())
+        self.wfile.write(json.dumps(data, default=str).encode())
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -69,8 +70,11 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         tab["mtime"] = mtime
                 except Exception:
                     pass
+                # Parse frontmatter — strip from content, return as separate field
+                fm, body = frontmatter.get_frontmatter(tab["filepath"])
                 self._json_response({
-                    "content": tab["content"],
+                    "content": body if fm else tab["content"],
+                    "frontmatter": fm,
                     "mtime": tab["mtime"],
                 })
             else:

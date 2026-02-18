@@ -13,6 +13,9 @@ const CommandPalette = {
   els: {},
   _pendingOpen: false,
   _tagMode: false,
+  _diffPickerMode: false,
+  _settingsMode: false,
+  _rafPending: {},
 
   /* ── Tanit SVG (simplified Sign of Tanit) ───────────── */
   TANIT_SVG: '<svg viewBox="0 0 24 26" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="3.5"/><line x1="3" y1="11" x2="21" y2="11"/><path d="M7 11 L12 24 L17 11" fill="none"/></svg>',
@@ -76,12 +79,14 @@ const CommandPalette = {
   },
 
   _deferSeedRecents() {
+    let retries = 0;
     const attempt = () => {
       if (typeof tabs !== 'undefined' && Object.keys(tabs).length > 0) {
         Object.values(tabs).forEach(t => {
           if (t.filepath && t.filename) this.saveRecent(t.filepath, t.filename);
         });
-      } else {
+      } else if (retries < 10) {
+        retries++;
         setTimeout(attempt, 500);
       }
     };
@@ -91,6 +96,7 @@ const CommandPalette = {
   _registerDefaults() {
     this.register('File', [
       { id: 'open-file', label: 'Open File\u2026', icon: 'ph-folder-open', action: () => this._openFilePicker() },
+      { id: 'compare-with', label: 'Compare with\u2026', icon: 'ph-git-diff', action: () => this._openDiffPicker() },
     ]);
     this.register('View', [
       { id: 'toggle-theme', label: 'Toggle Theme', icon: 'ph-moon', action: () => toggleTheme() },
@@ -101,11 +107,17 @@ const CommandPalette = {
         const g = document.getElementById('annotations-gutter');
         g.classList.contains('overlay-open') ? closeGutterOverlay() : openGutterOverlay();
       }},
+      { id: 'show-variables', label: 'Show Variables', icon: 'ph-brackets-curly', action: () => {
+        if (typeof diffState !== 'undefined' && diffState.active) return;
+        if (window.innerWidth <= 1400) openGutterOverlay();
+        switchGutterTab('variables');
+      }},
     ]);
     this.register('View', [
       { id: 'show-frontmatter', label: 'Show Frontmatter', icon: 'ph-file-code', action: () => {
         if (typeof showFrontmatterPopup === 'function') showFrontmatterPopup();
       }},
+      { id: 'settings', label: 'Settings', icon: 'ph-gear-six', action: () => this._enterSettingsMode() },
     ]);
     this.register('Tags', [
       { id: 'add-tag', label: 'Add Tag\u2026', icon: 'ph-tag', action: () => this._enterTagMode() },
@@ -123,17 +135,24 @@ const CommandPalette = {
     const container = document.createElement('div');
     container.className = 'palette-container';
 
+    container.setAttribute('role', 'dialog');
+    container.setAttribute('aria-label', 'Command palette');
+
     const input = document.createElement('input');
     input.className = 'palette-input';
     input.type = 'text';
     input.placeholder = 'Type a command\u2026';
+    input.setAttribute('role', 'combobox');
+    input.setAttribute('aria-autocomplete', 'list');
     input.addEventListener('input', () => {
       const val = input.value;
-      if (val.startsWith('#') && !this._tagMode) {
+      if (val.startsWith('#') && !this._tagMode && !this._settingsMode) {
         this._enterTagMode();
         input.value = val.slice(1);
       }
-      if (this._tagMode) {
+      if (this._settingsMode) {
+        this._renderSettingsPanel(input.value);
+      } else if (this._tagMode) {
         this._renderTagSuggestions(input.value);
       } else {
         this.selectedIndex = 0;
@@ -146,6 +165,7 @@ const CommandPalette = {
 
     const list = document.createElement('div');
     list.className = 'palette-list';
+    list.setAttribute('role', 'listbox');
 
     container.appendChild(input);
     container.appendChild(header);
@@ -374,10 +394,187 @@ const CommandPalette = {
     this.close();
   },
 
+  /* ── Settings Mode ─────────────────────────────────── */
+  SETTINGS_SCHEMA: [
+    { category: 'Appearance', items: [
+      { key: 'theme', label: 'Theme', type: 'toggle', options: ['mocha', 'latte'],
+        icons: ['ph-moon', 'ph-sun'],
+        get: () => currentTheme,
+        set: (v) => { if (v === 'mocha' || v === 'latte') { currentTheme = v; applyTheme(); applyOpacity(); } }
+      },
+      { key: 'fontsize', label: 'Body Font Size', type: 'slider', min: 11, max: 22, step: 1, unit: 'px',
+        get: () => currentSize,
+        set: (v) => { currentSize = Math.max(11, Math.min(22, parseInt(v))); applyFontSize(); }
+      },
+      { key: 'tocfontsize', label: 'TOC Font Size', type: 'slider', min: -4, max: 6, step: 1, unit: '',
+        format: (v) => (parseInt(v) > 0 ? '+' : '') + v,
+        get: () => tocSize,
+        set: (v) => { tocSize = Math.max(-4, Math.min(6, parseInt(v))); applyTocFontSize(); }
+      },
+      { key: 'opacity', label: 'Window Opacity', type: 'slider', min: 0, max: 5, step: 1, unit: '',
+        format: (v) => ['100%', '95%', '90%', '85%', '80%', '70%'][v] || v,
+        get: () => opacityIndex,
+        set: (v) => { opacityIndex = Math.max(0, Math.min(5, parseInt(v))); applyOpacity(); }
+      },
+    ]},
+    { category: 'Layout', items: [
+      { key: 'tocwidth', label: 'TOC Width', type: 'slider', min: 180, max: 500, step: 10, unit: 'px',
+        get: () => parseInt(getComputedStyle(document.documentElement).getPropertyValue('--toc-width')) || 250,
+        set: (v) => {
+          v = Math.max(180, Math.min(500, parseInt(v)));
+          document.documentElement.style.setProperty('--toc-width', v + 'px');
+          localStorage.setItem('mdpreview-toc-width', v);
+        }
+      },
+    ]},
+    { category: 'Annotations', items: [
+      { key: 'author', label: 'Default Author', type: 'text',
+        get: () => defaultAuthor,
+        set: (v) => { defaultAuthor = v.trim().slice(0, 50) || 'Anonymous'; localStorage.setItem('mdpreview-author', defaultAuthor); }
+      },
+    ]},
+  ],
+
+  _enterSettingsMode() {
+    this._settingsMode = true;
+    this.els.input.value = '';
+    this.els.input.placeholder = 'Search settings\u2026';
+    this._renderSettingsPanel('');
+    this.els.input.focus();
+  },
+
+  _exitSettingsMode() {
+    this._settingsMode = false;
+    this.els.input.placeholder = 'Type a command\u2026';
+    this.els.input.value = '';
+    this.selectedIndex = 0;
+  },
+
+  _renderSettingsPanel(query) {
+    const list = this.els.list;
+    list.innerHTML = '';
+    const q = (query || '').toLowerCase().trim();
+
+    /* Back arrow */
+    const back = document.createElement('div');
+    back.className = 'settings-back';
+    back.innerHTML = '<i class="ph ph-arrow-left"></i><span>Back to commands</span>';
+    back.addEventListener('click', () => {
+      this._exitSettingsMode();
+      this._filter('');
+    });
+    list.appendChild(back);
+
+    this.SETTINGS_SCHEMA.forEach(group => {
+      const filtered = group.items.filter(item =>
+        !q || item.label.toLowerCase().includes(q) || item.key.includes(q) || group.category.toLowerCase().includes(q)
+      );
+      if (filtered.length === 0) return;
+
+      const header = document.createElement('div');
+      header.className = 'settings-category';
+      header.textContent = group.category;
+      list.appendChild(header);
+
+      filtered.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'settings-row';
+
+        const label = document.createElement('span');
+        label.className = 'settings-label';
+        label.textContent = item.label;
+        row.appendChild(label);
+
+        const control = this._buildControl(item);
+        row.appendChild(control);
+
+        list.appendChild(row);
+      });
+    });
+  },
+
+  _buildControl(item) {
+    const wrap = document.createElement('div');
+    wrap.className = 'settings-control';
+
+    if (item.type === 'toggle') {
+      const group = document.createElement('div');
+      group.className = 'settings-toggle-group';
+      item.options.forEach((opt, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'settings-toggle-btn' + (item.get() === opt ? ' active' : '');
+        const text = opt.charAt(0).toUpperCase() + opt.slice(1);
+        if (item.icons && item.icons[i]) {
+          btn.innerHTML = '<i class="ph ' + item.icons[i] + '"></i> ' + text;
+        } else {
+          btn.textContent = text;
+        }
+        btn.addEventListener('click', () => {
+          item.set(opt);
+          group.querySelectorAll('.settings-toggle-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+        group.appendChild(btn);
+      });
+      wrap.appendChild(group);
+    }
+    else if (item.type === 'slider') {
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.className = 'settings-slider';
+      slider.min = item.min;
+      slider.max = item.max;
+      slider.step = item.step;
+      slider.value = item.get();
+
+      const val = document.createElement('span');
+      val.className = 'settings-value';
+      const formatVal = (v) => item.format ? item.format(v) : v + (item.unit || '');
+      val.textContent = formatVal(slider.value);
+
+      const updateTrack = () => {
+        const pct = ((slider.value - item.min) / (item.max - item.min)) * 100;
+        slider.style.setProperty('--range-pct', pct + '%');
+      };
+      updateTrack();
+
+      slider.addEventListener('input', () => {
+        const key = item.key;
+        val.textContent = formatVal(slider.value);
+        updateTrack();
+        if (this._rafPending[key]) return;
+        this._rafPending[key] = true;
+        requestAnimationFrame(() => {
+          item.set(slider.value);
+          this._rafPending[key] = false;
+        });
+      });
+
+      wrap.appendChild(slider);
+      wrap.appendChild(val);
+    }
+    else if (item.type === 'text') {
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'settings-text';
+      input.value = item.get();
+      input.addEventListener('change', () => {
+        item.set(input.value);
+      });
+      input.addEventListener('keydown', (e) => {
+        e.stopPropagation();
+      });
+      wrap.appendChild(input);
+    }
+
+    return wrap;
+  },
+
   /* ── Open / Close ──────────────────────────────────── */
   open() {
     this.isOpen = true;
     this._tagMode = false;
+    this._settingsMode = false;
     this._refreshCommands();
     this._refreshHeader();
     this.els.input.value = '';
@@ -391,6 +588,7 @@ const CommandPalette = {
   close() {
     this.isOpen = false;
     this._tagMode = false;
+    this._settingsMode = false;
     this.els.backdrop.classList.remove('visible');
   },
 
@@ -422,6 +620,12 @@ const CommandPalette = {
       if (Object.keys(tabs).length > 1) {
         cmds.push({ id: 'close-tab', label: 'Close Current Tab', category: 'Tabs', icon: 'ph-x', action: () => closeTab(activeTabId) });
       }
+    }
+
+    /* Dynamic: Exit Compare (only when diff mode is active) */
+    if (typeof diffState !== 'undefined' && diffState.active) {
+      cmds.push({ id: 'exit-compare', label: 'Exit Compare', category: 'File', icon: 'ph-x-circle',
+        action: () => exitDiffMode() });
     }
 
     this.commands = cmds;
@@ -553,8 +757,15 @@ const CommandPalette = {
       }
       if (!this.isOpen) return;
 
+      /* In settings mode, let controls handle their own events */
+      if (this._settingsMode && e.target !== this.els.input && e.key !== 'Escape') return;
+
       if (e.key === 'Escape') {
-        if (this._tagMode) {
+        if (this._settingsMode) {
+          this._exitSettingsMode();
+          this._filter('');
+          e.preventDefault();
+        } else if (this._tagMode) {
           this._exitTagMode();
           this.els.input.value = '';
           this._filter('');
@@ -564,9 +775,9 @@ const CommandPalette = {
           e.preventDefault();
         }
       }
-      else if (e.key === 'ArrowDown') { e.preventDefault(); this._navigate(1); }
-      else if (e.key === 'ArrowUp') { e.preventDefault(); this._navigate(-1); }
-      else if (e.key === 'Enter') { e.preventDefault(); this._execute(); }
+      else if (e.key === 'ArrowDown' && !this._settingsMode) { e.preventDefault(); this._navigate(1); }
+      else if (e.key === 'ArrowUp' && !this._settingsMode) { e.preventDefault(); this._navigate(-1); }
+      else if (e.key === 'Enter' && !this._settingsMode) { e.preventDefault(); this._execute(); }
     });
   },
 
@@ -616,12 +827,36 @@ const CommandPalette = {
     input.click();
   },
 
-  /* ── Hint Badge ────────────────────────────────────── */
-  HINT_SHOW_MS: 5 * 60 * 1000,
-  HINT_IDLE_MS: 2 * 60 * 1000,
-  _hintTimer: null,
-  _idleTimer: null,
-  _lastActivity: 0,
+  /* ── Diff File Picker ──────────────────────────────── */
+  _openDiffPicker() {
+    if (typeof diffState !== 'undefined' && diffState.active) {
+      /* Already in diff mode — exit instead */
+      this.close();
+      exitDiffMode();
+      return;
+    }
+    this.close();
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.md,.markdown,.mdown,.mkd,.txt';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.onchange = () => {
+      const file = input.files[0];
+      input.remove();
+      if (file && typeof enterDiffMode === 'function') {
+        enterDiffMode(file.name);
+      }
+    };
+    window.addEventListener('focus', function cleanup() {
+      window.removeEventListener('focus', cleanup);
+      setTimeout(() => { if (document.body.contains(input)) input.remove(); }, 300);
+    });
+    input.click();
+  },
+
+  /* ── Hint Badge (show once, then disappear) ────────── */
+  HINT_SHOW_MS: 8000,
 
   _initHint() {
     const hint = document.createElement('div');
@@ -633,27 +868,9 @@ const CommandPalette = {
     this.els.hint = hint;
 
     requestAnimationFrame(() => hint.classList.add('visible'));
-    this._lastActivity = Date.now();
-
-    this._hintTimer = setTimeout(() => this._hideHint(), this.HINT_SHOW_MS);
-
-    const onActivity = () => { this._lastActivity = Date.now(); };
-    document.addEventListener('mousemove', onActivity, { passive: true });
-    document.addEventListener('keydown', onActivity, { passive: true });
-    document.addEventListener('click', onActivity, { passive: true });
-
-    this._idleTimer = setInterval(() => {
-      const idle = Date.now() - this._lastActivity;
-      if (idle >= this.HINT_IDLE_MS && !this.els.hint.classList.contains('visible')) {
-        this.els.hint.classList.add('visible');
-        clearTimeout(this._hintTimer);
-        this._hintTimer = setTimeout(() => this._hideHint(), this.HINT_SHOW_MS);
-      }
-    }, 30000);
-  },
-
-  _hideHint() {
-    if (this.els.hint) this.els.hint.classList.remove('visible');
+    setTimeout(() => {
+      if (this.els.hint) this.els.hint.classList.remove('visible');
+    }, this.HINT_SHOW_MS);
   },
 };
 

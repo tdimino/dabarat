@@ -5,18 +5,23 @@ import http.server
 import json
 import mimetypes
 import os
+import threading
 import uuid
 from urllib.parse import urlparse, parse_qs, unquote
 
 from . import annotations
 from . import bookmarks
 from . import frontmatter
+from . import history
+from . import recent
 from .template import get_html
 
 
 class PreviewHandler(http.server.BaseHTTPRequestHandler):
     _tabs = {}
+    _tabs_lock = threading.Lock()
     default_author = "Tom"
+    _server_port = 3031
 
     def log_message(self, format, *args):
         pass
@@ -31,16 +36,25 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         except Exception:
             content = ""
             mtime = 0
-        cls._tabs[tab_id] = {
-            "filepath": filepath,
-            "content": content,
-            "mtime": mtime,
-        }
+        with cls._tabs_lock:
+            cls._tabs[tab_id] = {
+                "filepath": filepath,
+                "content": content,
+                "mtime": mtime,
+            }
+        # Track in recent files
+        try:
+            recent.add_entry(filepath, content=content)
+        except Exception:
+            pass
         return tab_id
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
         if not length:
+            return {}
+        if length > 10 * 1024 * 1024:  # 10 MB cap
+            self.rfile.read(length)  # drain
             return {}
         try:
             return json.loads(self.rfile.read(length))
@@ -51,8 +65,27 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "no-cache")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
         self.end_headers()
         self.wfile.write(json.dumps(data, default=str).encode())
+
+    def _check_origin(self):
+        """Reject POST/PUT/DELETE from foreign origins (CSRF protection)."""
+        if self.command in ("POST", "PUT", "DELETE"):
+            origin = self.headers.get("Origin", "")
+            if not origin:
+                self._json_response({"error": "origin header required"}, 403)
+                return False
+            port = self._server_port
+            allowed = {
+                f"http://localhost:{port}",
+                f"http://127.0.0.1:{port}",
+            }
+            if origin not in allowed:
+                self._json_response({"error": "forbidden"}, 403)
+                return False
+        return True
 
     def do_GET(self):
         parsed = urlparse(self.path)
@@ -123,6 +156,87 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
+        elif parsed.path == "/api/recent":
+            try:
+                entries = recent.load()
+                self._json_response({"entries": entries})
+            except Exception as e:
+                self._json_response({"entries": [], "error": str(e)})
+
+        elif parsed.path == "/api/versions":
+            tab_id = params.get("tab", [None])[0]
+            if tab_id and tab_id in self._tabs:
+                filepath = self._tabs[tab_id]["filepath"]
+                try:
+                    versions = history.list_versions(filepath)
+                    self._json_response({"versions": versions})
+                except Exception as e:
+                    self._json_response({"versions": [], "error": str(e)})
+            else:
+                self._json_response({"error": "tab not found"}, 404)
+
+        elif parsed.path == "/api/version":
+            tab_id = params.get("tab", [None])[0]
+            commit_hash = params.get("hash", [None])[0]
+            if not tab_id or tab_id not in self._tabs:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            if not commit_hash:
+                self._json_response({"error": "hash required"}, 400)
+                return
+            filepath = self._tabs[tab_id]["filepath"]
+            try:
+                content = history.get_version_content(filepath, commit_hash)
+                if content is not None:
+                    self._json_response({"content": content})
+                else:
+                    self._json_response({"error": "version not found"}, 404)
+            except ValueError as e:
+                self._json_response({"error": str(e)}, 400)
+
+        elif parsed.path == "/api/diff":
+            tab_id = params.get("tab", [None])[0]
+            against = params.get("against", [None])[0]
+            if not tab_id or tab_id not in self._tabs:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            if not against:
+                self._json_response({"error": "against path required"}, 400)
+                return
+            # Resolve relative paths from the tab's directory
+            against_path = against
+            if not os.path.isabs(against_path):
+                base_dir = os.path.dirname(self._tabs[tab_id]["filepath"])
+                against_path = os.path.join(base_dir, against_path)
+            against_path = os.path.abspath(against_path)
+            # Restrict to markdown/text files in open tab directories
+            _, ext = os.path.splitext(against_path)
+            if ext.lower() not in {".md", ".markdown", ".txt", ".mdown", ".mkd"}:
+                self._json_response({"error": "only markdown files allowed"}, 400)
+                return
+            tab_dirs = [os.path.dirname(t["filepath"]) for t in self._tabs.values()]
+            if not any(against_path.startswith(d + os.sep) or against_path == os.path.join(d, os.path.basename(against_path)) for d in tab_dirs):
+                self._json_response({"error": "path outside allowed directories"}, 403)
+                return
+            if not os.path.isfile(against_path):
+                self._json_response({"error": "file not found: " + against_path}, 404)
+                return
+            tab = self._tabs[tab_id]
+            left_content = tab["content"]
+            try:
+                with open(against_path, encoding="utf-8") as f:
+                    right_content = f.read()
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
+                return
+            from . import diff
+            result = diff.prepare_diff(left_content, right_content)
+            result["left_path"] = tab["filepath"]
+            result["right_path"] = against_path
+            result["left_filename"] = os.path.basename(tab["filepath"])
+            result["right_filename"] = os.path.basename(against_path)
+            self._json_response(result)
+
         elif parsed.path != "/" and parsed.path != "":
             # Try to serve static files relative to open tab directories
             rel_path = unquote(parsed.path.lstrip("/"))
@@ -131,7 +245,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 tab_dir = os.path.dirname(tab["filepath"])
                 candidate = os.path.normpath(os.path.join(tab_dir, rel_path))
                 # Prevent directory traversal
-                if not candidate.startswith(tab_dir):
+                if not candidate.startswith(tab_dir + os.sep):
                     continue
                 if os.path.isfile(candidate):
                     ctype, _ = mimetypes.guess_type(candidate)
@@ -164,10 +278,14 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         html = get_html(title=title, default_author=self.default_author)
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("X-Frame-Options", "DENY")
         self.end_headers()
         self.wfile.write(html.encode())
 
     def do_POST(self):
+        if not self._check_origin():
+            return
         parsed = urlparse(self.path)
         body = self._read_body()
 
@@ -207,11 +325,73 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/close":
             tab_id = body.get("id", "")
-            if tab_id in self._tabs:
-                del self._tabs[tab_id]
-                self._json_response({"ok": True})
-            else:
+            with self._tabs_lock:
+                if tab_id in self._tabs:
+                    del self._tabs[tab_id]
+                    self._json_response({"ok": True})
+                else:
+                    self._json_response({"error": "tab not found"}, 404)
+
+        elif parsed.path == "/api/rename":
+            tab_id = body.get("tab", "")
+            new_name = body.get("name", "").strip()
+            if tab_id not in self._tabs:
                 self._json_response({"error": "tab not found"}, 404)
+                return
+            if not new_name:
+                self._json_response({"error": "name required"}, 400)
+                return
+            if "/" in new_name or "\\" in new_name:
+                self._json_response({"error": "name cannot contain path separators"}, 400)
+                return
+            if not new_name.endswith(".md"):
+                new_name += ".md"
+
+            old_path = self._tabs[tab_id]["filepath"]
+            new_path = os.path.join(os.path.dirname(old_path), new_name)
+
+            if new_path == old_path:
+                self._json_response({"ok": True, "filepath": old_path, "filename": os.path.basename(old_path)})
+                return
+            if os.path.exists(new_path):
+                self._json_response({"error": f"file already exists: {new_name}"}, 409)
+                return
+
+            try:
+                os.rename(old_path, new_path)
+                # Rename sidecar files
+                for suffix in [".annotations.json", ".annotations.resolved.json"]:
+                    old_sc = old_path + suffix
+                    new_sc = new_path + suffix
+                    if os.path.exists(old_sc):
+                        os.rename(old_sc, new_sc)
+                self._tabs[tab_id]["filepath"] = new_path
+                self._json_response({"ok": True, "filepath": new_path, "filename": new_name})
+            except OSError as e:
+                self._json_response({"error": str(e)}, 500)
+
+        elif parsed.path == "/api/browse":
+            import platform
+            import subprocess as sp
+            if platform.system() != "Darwin":
+                self._json_response({"error": "file browser only on macOS"}, 501)
+                return
+            script = (
+                'set f to choose file of type {"md", "markdown", "txt"} '
+                'with prompt "Choose a Markdown file"\n'
+                'return POSIX path of f'
+            )
+            try:
+                result = sp.run(
+                    ["osascript", "-e", script],
+                    capture_output=True, text=True, timeout=60,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    self._json_response({"filepath": result.stdout.strip()})
+                else:
+                    self._json_response({"cancelled": True})
+            except Exception:
+                self._json_response({"cancelled": True})
 
         elif parsed.path == "/api/annotate":
             tab_id = body.get("tab", "")
@@ -322,6 +502,67 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             annotations.write(filepath, data)
             self._json_response({"ok": True})
 
+        elif parsed.path == "/api/save":
+            tab_id = body.get("tab", "")
+            content = body.get("content")
+            if tab_id not in self._tabs:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            if content is None:
+                self._json_response({"error": "content required"}, 400)
+                return
+            if len(content) > 10 * 1024 * 1024:  # 10 MB limit
+                self._json_response({"error": "content too large"}, 413)
+                return
+            filepath = self._tabs[tab_id]["filepath"]
+            try:
+                import tempfile
+                dir_name = os.path.dirname(filepath)
+                fd, tmp_path = tempfile.mkstemp(
+                    dir=dir_name, suffix=".tmp", prefix=".mdpreview-"
+                )
+                try:
+                    os.write(fd, content.encode("utf-8"))
+                finally:
+                    os.close(fd)
+                os.replace(tmp_path, filepath)
+                mtime = os.path.getmtime(filepath)
+                self._tabs[tab_id]["content"] = content
+                self._tabs[tab_id]["mtime"] = mtime
+                # Auto-commit to version history
+                version_hash = ""
+                try:
+                    version_hash = history.commit(filepath)
+                except Exception:
+                    pass
+                self._json_response({"ok": True, "mtime": mtime, "version": version_hash})
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
+
+        elif parsed.path == "/api/restore":
+            tab_id = body.get("tab", "")
+            commit_hash = body.get("hash", "")
+            if tab_id not in self._tabs:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            if not commit_hash:
+                self._json_response({"error": "hash required"}, 400)
+                return
+            filepath = self._tabs[tab_id]["filepath"]
+            try:
+                content = history.restore(filepath, commit_hash)
+                if content is not None:
+                    mtime = os.path.getmtime(filepath)
+                    self._tabs[tab_id]["content"] = content
+                    self._tabs[tab_id]["mtime"] = mtime
+                    self._json_response({"ok": True, "content": content, "mtime": mtime})
+                else:
+                    self._json_response({"error": "version not found"}, 404)
+            except ValueError as e:
+                self._json_response({"error": str(e)}, 400)
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
+
         elif parsed.path == "/api/tags":
             tab_id = body.get("tab", "")
             tag = body.get("tag", "").strip()
@@ -344,5 +585,6 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
 
 def start(port, handler_class=PreviewHandler):
-    """Create and return an HTTPServer bound to localhost:port."""
-    return http.server.HTTPServer(("127.0.0.1", port), handler_class)
+    """Create and return a ThreadingHTTPServer bound to localhost:port."""
+    handler_class._server_port = port
+    return http.server.ThreadingHTTPServer(("127.0.0.1", port), handler_class)

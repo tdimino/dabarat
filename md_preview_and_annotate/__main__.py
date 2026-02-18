@@ -141,6 +141,51 @@ def _server_running(port):
         return False
 
 
+def _get_open_filepaths(port):
+    """Get list of filepaths currently open in the running server."""
+    import urllib.request
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/tabs")
+        resp = urllib.request.urlopen(req, timeout=2)
+        tab_list = json.loads(resp.read())
+        return [t["filepath"] for t in tab_list]
+    except Exception:
+        return []
+
+
+def _ask_reuse_dialog(already_open, new_files):
+    """Show macOS native dialog asking to add to existing or open new window."""
+    import platform
+    import subprocess
+
+    if platform.system() != "Darwin":
+        return True
+
+    parts = []
+    if already_open:
+        names = ", ".join(os.path.basename(f) for f in already_open)
+        parts.append(f"Already open: {names}")
+    if new_files:
+        names = ", ".join(os.path.basename(f) for f in new_files)
+        parts.append(f"New: {names}")
+    msg = "\\n".join(parts) if parts else "md-preview is already running."
+
+    script = (
+        f'display dialog "{msg}" '
+        f'with title "md-preview is already running" '
+        f'buttons {{"Open New Window", "Add to Existing"}} '
+        f'default button "Add to Existing"'
+    )
+    try:
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True, text=True, timeout=30,
+        )
+        return "Add to Existing" in result.stdout
+    except Exception:
+        return True
+
+
 def _add_to_running(port, files):
     """Add files to a running server as new tabs."""
     import urllib.request
@@ -187,14 +232,21 @@ def cmd_serve(argv):
         print("Error: no files specified")
         sys.exit(1)
 
-    # Tab reuse: if a server is already running, add files as new tabs
+    # Tab reuse: if a server is already running, ask what to do
     if _server_running(port):
-        results = _add_to_running(port, files)
-        for name, status in results:
-            icon = "\033[38;2;166;227;161m\u2713\033[0m" if "fail" not in status else "\033[38;2;243;139;168m\u2717\033[0m"
-            print(f"{icon} {name} ({status})")
-        print(f"\033[38;2;88;91;112mServer already running at http://127.0.0.1:{port}\033[0m")
-        sys.exit(0)
+        open_paths = _get_open_filepaths(port)
+        already_open = [f for f in files if f in open_paths]
+        new_files = [f for f in files if f not in open_paths]
+
+        if _ask_reuse_dialog(already_open, new_files):
+            results = _add_to_running(port, files)
+            for name, status in results:
+                icon = "\033[38;2;166;227;161m\u2713\033[0m" if "fail" not in status else "\033[38;2;243;139;168m\u2717\033[0m"
+                print(f"{icon} {name} ({status})")
+            print(f"\033[38;2;88;91;112mServer already running at http://127.0.0.1:{port}\033[0m")
+            sys.exit(0)
+        else:
+            _kill_port(port)
 
     _clear_pyc()
     _kill_port(port)
@@ -254,9 +306,9 @@ def main():
 
     if len(sys.argv) < 2:
         print("Usage:")
-        print("  python3 md_preview_and_annotate <file.md> [file2.md ...] [--port PORT] [--author NAME]")
-        print("  python3 md_preview_and_annotate --add <file.md> [--port PORT]")
-        print('  python3 md_preview_and_annotate --annotate <file.md> --text "..." --comment "..." [--author NAME]')
+        print("  mdpreview <file.md> [file2.md ...] [--port PORT] [--author NAME]")
+        print("  mdpreview --add <file.md> [--port PORT]")
+        print('  mdpreview --annotate <file.md> --text "..." --comment "..." [--author NAME]')
         sys.exit(1)
 
     cmd_serve(sys.argv)

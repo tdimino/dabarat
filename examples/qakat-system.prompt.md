@@ -4,7 +4,6 @@ slug: qakat-system
 version: 1
 type: chat
 model: claude-sonnet-4-5-20250929
-temperature: 0.7
 labels: [production]
 author: tom
 created: 2025-08-26

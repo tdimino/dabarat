@@ -12,6 +12,7 @@ variables:
   - name: practitionerName
     type: string
     description: Name of the practitioner to embody
+parent: qakat-system
 tags: [qakat, reference, chatml]
 depends_on:
   - qakat-system

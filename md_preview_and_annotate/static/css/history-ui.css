@@ -1,0 +1,230 @@
+/* ══════════════════════════════════════════════════════════
+   Version History Panel
+   ══════════════════════════════════════════════════════════ */
+
+#version-panel {
+  position: fixed;
+  right: 0; top: 0; bottom: 0;
+  width: 280px;
+  background: var(--toc-bg, var(--ctp-mantle));
+  border-left: 1px solid var(--ctp-surface0);
+  transform: translateX(100%);
+  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#version-panel.open {
+  transform: translateX(0);
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.version-panel-header {
+  display: flex;
+  align-items: center;
+  padding: 12px 12px 8px;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.version-panel-label {
+  font-family: 'Victor Mono', monospace;
+  font-size: 8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: var(--ctp-overlay0);
+  flex: 1;
+  user-select: none;
+}
+
+.version-panel-close {
+  background: none;
+  border: none;
+  color: var(--ctp-overlay0);
+  cursor: pointer;
+  font-size: 14px;
+  width: 22px; height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.version-panel-close:hover {
+  color: var(--ctp-text);
+  background: var(--ctp-surface0);
+}
+
+/* ── Timeline ────────────────────────────────────────── */
+.version-timeline {
+  position: relative;
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0 40px;
+  mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 28px), transparent 100%);
+}
+.version-timeline::-webkit-scrollbar { width: 0; }
+
+/* Vertical line */
+.version-timeline::before {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--ctp-surface1), transparent);
+  pointer-events: none;
+}
+
+/* ── Entry ───────────────────────────────────────────── */
+.version-entry {
+  padding: 10px 12px 10px 44px;
+  position: relative;
+  cursor: pointer;
+  transition: background 150ms;
+  outline: none;
+}
+.version-entry:hover {
+  background: var(--ctp-surface0);
+}
+.version-entry:focus {
+  background: var(--ctp-surface0);
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: -2px;
+}
+
+/* Dot marker */
+.version-entry::before {
+  content: '';
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--ctp-surface1);
+  border: 2px solid var(--toc-bg, var(--ctp-mantle));
+  transition: all 150ms;
+  z-index: 1;
+}
+.version-entry:hover::before {
+  background: var(--ctp-blue);
+}
+.version-entry.current::before {
+  background: var(--ctp-green);
+}
+
+/* ── Entry content ───────────────────────────────────── */
+.version-date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ctp-subtext0);
+  margin-bottom: 2px;
+}
+
+.version-stats {
+  display: flex;
+  gap: 8px;
+  margin-top: 2px;
+}
+.version-stat-add {
+  color: var(--ctp-green);
+  font-family: 'Victor Mono', monospace;
+  font-size: 11px;
+}
+.version-stat-del {
+  color: var(--ctp-red);
+  font-family: 'Victor Mono', monospace;
+  font-size: 11px;
+}
+
+/* Action buttons — hover reveal */
+.version-actions {
+  opacity: 0;
+  transition: opacity 150ms;
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.version-entry:hover .version-actions,
+.version-entry:focus .version-actions {
+  opacity: 1;
+}
+
+.version-btn {
+  background: none;
+  border: 1px solid var(--ctp-surface1);
+  color: var(--ctp-overlay2);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s;
+}
+.version-btn:hover {
+  color: var(--ctp-blue);
+  border-color: var(--ctp-blue);
+}
+.version-btn-restore:hover {
+  color: var(--ctp-yellow);
+  border-color: var(--ctp-yellow);
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.version-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--ctp-overlay0);
+}
+.version-empty i {
+  font-size: 32px;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+.version-empty p {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  margin: 4px 0;
+}
+.version-empty-hint {
+  font-size: 11px !important;
+  color: var(--ctp-overlay0);
+  opacity: 0.7;
+}
+
+/* ── Skeleton loading ────────────────────────────────── */
+.version-entry.skeleton {
+  pointer-events: none;
+}
+.skeleton-line {
+  height: 10px;
+  background: var(--ctp-surface0);
+  border-radius: 4px;
+  margin: 6px 0;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    90deg,
+    var(--ctp-surface0) 25%,
+    var(--ctp-surface1) 50%,
+    var(--ctp-surface0) 75%
+  );
+}
+.skeleton-line.w60 { width: 60%; }
+.skeleton-line.w40 { width: 40%; }
+
+@keyframes skeletonShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

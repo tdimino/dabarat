@@ -1,0 +1,139 @@
+/* ══════════════════════════════════════════════════════════
+   Edit Mode
+   ══════════════════════════════════════════════════════════ */
+
+/* ── Edit View Container ─────────────────────────────────── */
+#edit-view {
+  display: none;
+  flex-direction: column;
+  height: calc(100vh - 34px); /* below tab bar */
+  overflow: hidden;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+.edit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--crust-bg, var(--ctp-crust));
+  border-bottom: 1px solid var(--ctp-surface0);
+  flex-shrink: 0;
+  min-height: 36px;
+}
+
+.edit-toolbar-label {
+  font-family: 'Victor Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--ctp-overlay0);
+  user-select: none;
+}
+
+.edit-toolbar .spacer { flex: 1; }
+
+#edit-status {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay1);
+  margin-right: 8px;
+  user-select: none;
+}
+
+#edit-save-btn,
+#edit-discard-btn {
+  background: none;
+  border: 1px solid var(--ctp-surface1);
+  color: var(--ctp-subtext0);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  padding: 3px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+#edit-save-btn:hover {
+  background: var(--ctp-blue);
+  color: var(--ctp-base);
+  border-color: var(--ctp-blue);
+}
+
+#edit-save-btn.dirty {
+  border-color: var(--ctp-yellow);
+  color: var(--ctp-yellow);
+}
+#edit-save-btn.dirty:hover {
+  background: var(--ctp-yellow);
+  color: var(--ctp-base);
+  border-color: var(--ctp-yellow);
+}
+
+#edit-discard-btn:hover {
+  border-color: var(--ctp-red);
+  color: var(--ctp-red);
+}
+
+/* ── Body (gutter + textarea) ────────────────────────────── */
+.edit-body {
+  flex: 1;
+  display: flex;
+  overflow-y: auto;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Canvas diff gutter — thin strip on the left */
+.edit-gutter {
+  width: 4px;
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+#edit-gutter-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 4px;
+}
+
+/* ── Textarea ────────────────────────────────────────────── */
+#edit-textarea {
+  flex: 1;
+  background: var(--body-bg, var(--ctp-base));
+  color: var(--ctp-text);
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 16px 24px;
+  font-family: 'Victor Mono', monospace;
+  font-size: 13px;
+  line-height: 24px;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  overflow: visible; /* scroll handled by .edit-body */
+}
+
+#edit-textarea::placeholder {
+  color: var(--ctp-overlay0);
+}
+
+#edit-textarea::selection {
+  background: rgba(137, 180, 250, 0.25);
+}
+[data-theme="latte"] #edit-textarea::selection {
+  background: rgba(30, 102, 245, 0.15);
+}
+
+/* Hide default scrollbar on textarea — .edit-body scrolls */
+#edit-textarea::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ── Transition ──────────────────────────────────────────── */
+body.edit-mode #tab-bar {
+  border-bottom-color: var(--ctp-yellow);
+}

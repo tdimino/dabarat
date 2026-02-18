@@ -1,0 +1,156 @@
+/* ══════════════════════════════════════════════════════════
+   Content Typography
+   ══════════════════════════════════════════════════════════ */
+#content {
+  max-width: 900px;
+  padding: 48px 56px 80px;
+  contain: content;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--ctp-text);
+  margin: 1.6em 0 0.6em;
+  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+h1 {
+  font-size: calc(2em * var(--heading-scale));
+  color: var(--ctp-blue);
+  border-bottom: 1px solid var(--ctp-surface0);
+  padding-bottom: 0.35em;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-size: calc(1.5em * var(--heading-scale));
+  color: var(--ctp-blue);
+  border-bottom: 1px solid var(--ctp-surface0);
+  padding-bottom: 0.25em;
+  font-weight: 600;
+}
+h3 {
+  font-size: calc(1.2em * var(--heading-scale));
+  color: var(--ctp-green);
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+}
+h4 {
+  font-size: calc(1.05em * var(--heading-scale));
+  color: var(--ctp-yellow);
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+}
+h5 {
+  font-size: calc(0.95em * var(--heading-scale));
+  color: var(--ctp-peach);
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+}
+
+p { margin: 0.75em 0; }
+strong { color: var(--bold-color); font-weight: 600; }
+em { color: var(--italic-color); font-style: italic; }
+
+blockquote {
+  color: var(--blockquote-color);
+  border-left: 3px solid var(--ctp-mauve);
+  padding: 0.6em 1.2em;
+  margin: 1.2em 0;
+  background: var(--blockquote-bg);
+  border-radius: 0 6px 6px 0;
+}
+blockquote em, blockquote code {
+  font-style: normal;
+}
+
+a { color: var(--ctp-blue); text-decoration: none; }
+a:hover { color: var(--ctp-lavender); text-decoration: underline; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--ctp-surface0);
+  margin: 2.5em 0;
+}
+
+ul, ol { margin: 0.6em 0; padding-left: 2em; }
+li { margin: 0.3em 0; }
+li::marker { color: var(--ctp-overlay1); }
+
+code {
+  background: var(--ctp-surface0);
+  color: var(--ctp-red);
+  padding: 0.15em 0.45em;
+  border-radius: 4px;
+  font-family: 'Victor Mono', 'Fira Code', monospace;
+  font-size: 0.88em;
+}
+pre {
+  background: var(--ctp-mantle);
+  border: 1px solid var(--ctp-surface0);
+  border-radius: 8px;
+  padding: 1.1em 1.3em;
+  overflow-x: auto;
+  margin: 1.2em 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+pre code {
+  background: none;
+  color: var(--ctp-text);
+  padding: 0;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.2em 0;
+  font-size: 13px;
+}
+thead { position: sticky; top: 0; }
+th {
+  background: var(--ctp-mantle);
+  color: var(--ctp-blue);
+  font-weight: 600;
+  text-align: left;
+  padding: 10px 14px;
+  border: 1px solid var(--ctp-surface0);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+td {
+  padding: 8px 14px;
+  border: 1px solid var(--ctp-surface0);
+}
+tr:nth-child(even) { background: var(--row-even-bg); }
+tr:hover { background: var(--row-hover-bg); }
+
+img { max-width: 100%; border-radius: 8px; margin: 1em 0; }
+
+/* ══════════════════════════════════════════════════════════
+   highlight.js — Catppuccin token colors
+   ══════════════════════════════════════════════════════════ */
+.hljs-keyword { color: var(--ctp-mauve); }
+.hljs-string, .hljs-doctag { color: var(--ctp-green); }
+.hljs-number, .hljs-literal { color: var(--ctp-peach); }
+.hljs-comment { color: var(--ctp-overlay0); font-style: italic; }
+.hljs-function, .hljs-title { color: var(--ctp-blue); }
+.hljs-built_in { color: var(--ctp-red); }
+.hljs-type, .hljs-title.class_ { color: var(--ctp-yellow); }
+.hljs-attr, .hljs-attribute { color: var(--ctp-blue); }
+.hljs-selector-class { color: var(--ctp-green); }
+.hljs-selector-id { color: var(--ctp-yellow); }
+.hljs-tag { color: var(--ctp-red); }
+.hljs-name { color: var(--ctp-blue); }
+.hljs-meta { color: var(--ctp-pink); }
+.hljs-regexp { color: var(--ctp-peach); }
+.hljs-variable { color: var(--ctp-text); }
+.hljs-params { color: var(--ctp-maroon); }
+.hljs-property { color: var(--ctp-sky); }
+.hljs-punctuation { color: var(--ctp-overlay2); }
+.hljs-operator { color: var(--ctp-sky); }
+.hljs-symbol { color: var(--ctp-flamingo); }

@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "md-preview-and-annotate"
+version = "0.1.0"
+description = "Zero-dependency Python markdown previewer with annotations"
+requires-python = ">=3.10"
+
+[project.scripts]
+mdpreview = "md_preview_and_annotate.__main__:main"
+mdp = "md_preview_and_annotate.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["md_preview_and_annotate*"]
+
+[tool.setuptools.package-data]
+md_preview_and_annotate = ["static/**/*"]

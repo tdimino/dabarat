@@ -1,0 +1,66 @@
+/* ══════════════════════════════════════════════════════════
+   Status Bar
+   ══════════════════════════════════════════════════════════ */
+#status {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--ctp-crust);
+  border-top: 1px solid var(--ctp-surface0);
+  color: var(--ctp-overlay0);
+  font-family: 'Victor Mono', monospace;
+  font-size: 11px;
+  padding: 4px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  z-index: 30;
+}
+#status .filepath { color: var(--ctp-overlay1); }
+#status .updated {
+  color: var(--ctp-green);
+  display: flex;
+  align-items: center;
+}
+#status .dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  background: var(--ctp-green);
+  border-radius: 50%;
+  margin-right: 6px;
+  flex-shrink: 0;
+  animation: pulse 2s infinite;
+}
+#word-count {
+  color: var(--ctp-overlay0);
+  font-size: 10px;
+}
+#status-tags {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+#status-tags .tag-pill {
+  font-size: 9px;
+  padding: 0 6px;
+  cursor: default;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   Print
+   ══════════════════════════════════════════════════════════ */
+@media print {
+  #toc, #status, #toc-restore, #tab-bar, #annotations-gutter, #annotate-carousel { display: none !important; }
+  #main-area { margin: 0 !important; }
+  #content { max-width: 100%; padding: 0; }
+  body { background: white; color: black; }
+  h1, h2 { color: #1a1a2e; border-bottom-color: #ddd; }
+  h3 { color: #2d6a4f; }
+  a { color: #1a73e8; }
+  table, th, td { border-color: #ccc; }
+  th { background: #f5f5f5; color: #333; }
+}

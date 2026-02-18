@@ -1,0 +1,166 @@
+/* ══════════════════════════════════════════════════════════
+   Home Screen
+   ══════════════════════════════════════════════════════════ */
+
+.home-screen {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+.home-header {
+  margin-bottom: 24px;
+}
+.home-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 28px;
+  font-weight: 600;
+  font-style: italic;
+  color: var(--ctp-lavender);
+  letter-spacing: -0.02em;
+}
+
+/* ── Card Grid ───────────────────────────────────────── */
+.home-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home-card {
+  background: var(--ctp-surface0);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  animation: homeCardSlide 0.3s ease both;
+  cursor: pointer;
+}
+.home-card:hover {
+  border-color: var(--ctp-surface1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes homeCardSlide {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Card Content ────────────────────────────────────── */
+.home-card-content {
+  padding: 14px 16px;
+}
+
+.home-card-filename {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ctp-text);
+  margin-bottom: 2px;
+}
+
+.home-card-path {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay0);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-card-summary {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--ctp-subtext0);
+  line-height: 1.5;
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Card Meta ───────────────────────────────────────── */
+.home-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.home-card-meta span {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay1);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.home-card-meta i {
+  font-size: 11px;
+}
+.home-card-time {
+  margin-left: auto;
+}
+
+/* ── Tag Pills ───────────────────────────────────────── */
+.home-tag {
+  display: inline-block;
+  background: var(--ctp-surface1);
+  color: var(--ctp-subtext0);
+  font-family: 'Victor Mono', monospace;
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+/* ── Empty State ─────────────────────────────────────── */
+.home-empty {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--ctp-overlay0);
+}
+.home-empty i {
+  font-size: 48px;
+  display: block;
+  margin-bottom: 16px;
+  opacity: 0.4;
+}
+.home-empty h2 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--ctp-subtext0);
+  margin-bottom: 8px;
+}
+.home-empty p {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+.home-open-btn {
+  background: var(--ctp-blue);
+  color: var(--ctp-base);
+  border: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  padding: 8px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s;
+}
+.home-open-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+/* ── Loading ─────────────────────────────────────────── */
+.home-loading {
+  max-width: 720px;
+  margin: 60px auto;
+  padding: 0 24px;
+}

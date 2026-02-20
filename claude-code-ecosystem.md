@@ -1,6 +1,6 @@
 # The ~/.claude/ Ecosystem
 
-This document describes the directory structure and conventions that Claude Code uses for persistent configuration, memory, and tool integration. The bookmark index produced by `md-preview-and-annotate` is one component of this larger system.
+This document describes the directory structure and conventions that Claude Code uses for persistent configuration, memory, and tool integration. The bookmark index produced by `Dabarat` is one component of this larger system.
 
 ## The `~/.claude/` Directory
 
@@ -26,7 +26,7 @@ Claude Code maintains a global configuration directory at `~/.claude/`. This is 
 ├── agent_docs/            # Reference documentation (loaded on demand)
 ├── userModels/            # User personality models and social dossiers
 │   └── tomModel.md
-├── bookmarks/             # ← Global bookmark index (from md-preview-and-annotate)
+├── bookmarks/             # ← Global bookmark index (from Dabarat)
 │   ├── INDEX.md           #   Most-recent-first list of all bookmarks
 │   └── snippets/          #   Individual bookmark files
 │       └── 2026-02-15-some-passage.md
@@ -55,7 +55,7 @@ The `soul.md` pattern exists in:
 
 ## Where Bookmarks Fit
 
-When you create a **bookmark** annotation in `md-preview-and-annotate`, it persists in two places:
+When you create a **bookmark** annotation in `Dabarat`, it persists in two places:
 
 1. **Locally** — in the sidecar `file.md.annotations.json` alongside the document
 2. **Globally** — in `~/.claude/bookmarks/`

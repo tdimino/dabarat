@@ -84,13 +84,17 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **localStorage prefix**: `dabarat-*` keys. Migration IIFE in `state.js` copies `mdpreview-*` → `dabarat-*` on first load.
 - **Color convention**: Never use hardcoded rgba channel values—use `rgba(var(--ctp-*-rgb), alpha)` from `theme-variables.css`. RGB companions (`--ctp-yellow-rgb`, `--ctp-blue-rgb`, etc.) auto-switch per theme. Latte overrides only needed when alpha values differ from Mocha defaults. TAG_COLORS in `palette.js` also uses CSS variable references for theme-awareness.
 - **Event delegation**: Never use inline `onclick` handlers in dynamically-built HTML—use `data-*` attributes + `addEventListener` event delegation. This prevents XSS via HTML entity decoding in path strings.
-- **Motion One**: Optional animation CDN loaded as ES module (`@motionone/dom`). Assigns `window.Motion` with `animate`, `stagger`, `spring`. All call sites MUST guard with `if (window.Motion)` for progressive enhancement. Falls back to CSS `@keyframes` animations.
+- **Motion One**: Optional animation CDN loaded as ES module (`@motionone/dom`). Assigns `window.Motion` with `animate`, `stagger`, `spring`. All call sites MUST guard with `if (window.Motion && !_prefersReducedMotion)` for progressive enhancement + accessibility. `_prefersReducedMotion` is a `const` in `state.js`. Falls back to CSS `@keyframes` animations. See `@agent_docs/motion-one.md` for full call site reference.
 - **Image lightbox**: Content images (excluding `.emoji` and `.tpl-var-img`) get `cursor: zoom-in` and open a lightbox overlay on click. Lightbox supports keyboard navigation (arrows, Escape), blur backdrop, and zoom.
 - **Workspace home page**: When home screen is active, TOC sidebar repurposes as directory browser. `_cachedTocContent` saves/restores TOC innerHTML during transitions. `buildToc()` in `render()` always overwrites restored cache immediately after tab activation.
 - **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.
 
-## Detailed Docs
-- @agent_docs/architecture.md
-- @agent_docs/api-reference.md
-- @agent_docs/client-architecture.md
+## On-Demand References
+
+Read these when relevant to the current task:
+
+- `agent_docs/architecture.md` — Data flow, component roles, design decisions
+- `agent_docs/api-reference.md` — All 22 REST API endpoints with JSON schemas
+- `agent_docs/client-architecture.md` — 16 JS modules: state, rendering pipeline, annotation system
+- `agent_docs/motion-one.md` — Motion One call sites, guard pattern, animation principles

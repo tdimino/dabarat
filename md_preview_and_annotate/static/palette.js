@@ -15,6 +15,7 @@ const CommandPalette = {
   _tagMode: false,
   _diffPickerMode: false,
   _settingsMode: false,
+  _hasStaggered: false,
   _rafPending: {},
 
   /* ── Tanit SVG (simplified Sign of Tanit) ───────────── */
@@ -892,6 +893,18 @@ const CommandPalette = {
     this._filter('');
     this.els.backdrop.classList.add('visible');
     this.els.input.focus();
+
+    /* First-open stagger — never re-stagger on filter keystrokes (Raycast principle) */
+    if (window.Motion && !_prefersReducedMotion && !this._hasStaggered) {
+      this._hasStaggered = true;
+      const items = this.els.list.querySelectorAll('.palette-item');
+      if (items.length) {
+        Motion.animate(items,
+          { opacity: [0, 1], y: [6, 0] },
+          { delay: Motion.stagger(0.025), duration: 0.18 }
+        );
+      }
+    }
   },
 
   close() {

@@ -366,6 +366,7 @@ body.home-active #toc-resize-handle {
   white-space: nowrap;
   transition: all 0.15s;
   user-select: none;
+  overflow: hidden; /* enables width-collapse animation on close */
 }
 .tab:hover { color: var(--ctp-text); background: var(--ctp-mantle); }
 .tab.active {
@@ -496,4 +497,19 @@ body.home-active #toc-resize-handle {
   border-radius: 4px;
   outline: none;
   width: 140px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   View Transitions API — circular reveal for theme toggle
+   ══════════════════════════════════════════════════════════ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 9999;
 }

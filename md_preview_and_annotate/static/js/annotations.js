@@ -427,6 +427,17 @@ function renderAnnotations() {
     };
   });
 
+  /* Stagger-animate annotation bubbles */
+  if (window.Motion && !_prefersReducedMotion) {
+    const bubbles = list.querySelectorAll('.ann-bubble');
+    if (bubbles.length) {
+      Motion.animate(bubbles,
+        { opacity: [0, 1], x: [8, 0] },
+        { delay: Motion.stagger(0.03), duration: 0.2 }
+      );
+    }
+  }
+
   /* Apply highlights after bubbles are rendered */
   applyAnnotationHighlights();
 }
@@ -485,7 +496,12 @@ document.addEventListener('mouseup', (e) => {
   const sel = window.getSelection();
 
   if (!sel || sel.isCollapsed || !sel.toString().trim()) {
-    setTimeout(() => { carousel.classList.remove('visible'); }, 200);
+    if (window.Motion && !_prefersReducedMotion && carousel.classList.contains('visible')) {
+      Motion.animate(carousel, { opacity: 0, scale: 0.95 }, { duration: 0.1, easing: 'ease-out' })
+        .finished.then(() => carousel.classList.remove('visible')).catch(() => {});
+    } else {
+      setTimeout(() => { carousel.classList.remove('visible'); }, 200);
+    }
     return;
   }
 
@@ -522,6 +538,14 @@ document.addEventListener('mouseup', (e) => {
   carousel.style.left = (rect.left + rect.width / 2 - carouselWidth / 2 + window.scrollX) + 'px';
   carousel.style.top = (rect.top + window.scrollY - 44) + 'px';
   carousel.classList.add('visible');
+
+  /* Spring entrance for carousel */
+  if (window.Motion && !_prefersReducedMotion) {
+    Motion.animate(carousel,
+      { scale: [0.8, 1], opacity: [0, 1] },
+      { easing: Motion.spring({ stiffness: 400, damping: 25 }) }
+    );
+  }
 });
 
 /* Carousel button click → set type and open form */

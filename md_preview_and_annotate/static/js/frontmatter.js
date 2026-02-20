@@ -112,9 +112,17 @@ function showFrontmatterPopup(fm) {
   backdrop.className = 'fm-popup-backdrop';
 
   function closeFmPopup() {
-    backdrop.remove();
-    document.documentElement.style.overflow = '';
-    document.body.style.overflow = '';
+    const doRemove = () => {
+      backdrop.remove();
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    };
+    if (window.Motion && !_prefersReducedMotion) {
+      Motion.animate(popup, { scale: 0.98, opacity: 0 }, { duration: 0.15, easing: 'ease-in' })
+        .finished.then(doRemove).catch(doRemove);
+    } else {
+      doRemove();
+    }
   }
 
   backdrop.addEventListener('click', (e) => {
@@ -311,6 +319,21 @@ function showFrontmatterPopup(fm) {
   popup.appendChild(body);
   backdrop.appendChild(popup);
   document.body.appendChild(backdrop);
+
+  /* Spring entrance for popup + stagger sections */
+  if (window.Motion && !_prefersReducedMotion) {
+    Motion.animate(popup,
+      { scale: [0.96, 1], opacity: [0, 1] },
+      { easing: Motion.spring({ stiffness: 300, damping: 22 }) }
+    );
+    const sections = popup.querySelectorAll('.fm-popup-section, .fm-popup-meta');
+    if (sections.length) {
+      Motion.animate(sections,
+        { opacity: [0, 1], y: [8, 0] },
+        { delay: Motion.stagger(0.04), duration: 0.2 }
+      );
+    }
+  }
 
   /* Close on Escape */
   const escHandler = (e) => {

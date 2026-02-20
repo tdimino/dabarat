@@ -219,7 +219,7 @@ async function _loadWorkspaceSidebarEntries(dirPath) {
     }
 
     /* Animate sidebar entries */
-    if (window.Motion) {
+    if (window.Motion && !_prefersReducedMotion) {
       const wsEntries = list.querySelectorAll('.ws-entry');
       if (wsEntries.length) {
         Motion.animate(wsEntries,
@@ -240,7 +240,7 @@ async function setHomeView(mode) {
 
   /* Crossfade transition */
   const content = document.getElementById('content');
-  if (content && window.Motion) {
+  if (content && window.Motion && !_prefersReducedMotion) {
     await Motion.animate('.home-grid', { opacity: 0 }, { duration: 0.15 }).finished.catch(() => {});
   }
 
@@ -359,7 +359,7 @@ function _renderHomeContent(content, entries, title, browseData) {
 
   /* Animate header */
   const headerEl = content.querySelector('.home-header');
-  if (window.Motion && headerEl) {
+  if (window.Motion && !_prefersReducedMotion && headerEl) {
     Motion.animate(headerEl,
       { opacity: [0, 1], x: [-20, 0] },
       { duration: 0.3, easing: [0.22, 1, 0.36, 1] }
@@ -368,7 +368,7 @@ function _renderHomeContent(content, entries, title, browseData) {
 
   /* Animate cards — replace CSS animation with Motion One */
   const cardEls = content.querySelectorAll('.home-card');
-  if (window.Motion && cardEls.length) {
+  if (window.Motion && !_prefersReducedMotion && cardEls.length) {
     cardEls.forEach(c => {
       c.style.animation = 'none';
       c.style.opacity = '0';
@@ -524,7 +524,7 @@ async function removeRecentFile(filepath, cardEl) {
     });
     if (cardEl) {
       /* Animate out with Motion One */
-      if (window.Motion) {
+      if (window.Motion && !_prefersReducedMotion) {
         await Motion.animate(cardEl,
           { opacity: 0, x: 40, scale: 0.95 },
           { duration: 0.2, easing: 'ease-in' }

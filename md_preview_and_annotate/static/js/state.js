@@ -28,6 +28,9 @@ let currentFrontmatter = null;
 /* Emoji style: twitter | openmoji | noto | native */
 let emojiStyle = localStorage.getItem('dabarat-emoji-style') || 'twitter';
 
+/* Reduced-motion preference — checked once at load */
+const _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 /* Variable manifest panel state */
 let activeGutterTab = 'notes';
 let fillInMode = false;

@@ -27,7 +27,7 @@ function openLightbox(src, alt, index) {
   document.body.style.overflow = 'hidden';
 
   /* Animate in with Motion One if available */
-  if (window.Motion) {
+  if (window.Motion && !_prefersReducedMotion) {
     Motion.animate(overlay, { opacity: [0, 1] }, { duration: 0.25 });
     Motion.animate(img, { scale: [0.92, 1], opacity: [0, 1] }, { duration: 0.3, easing: [0.22, 1, 0.36, 1] });
   }
@@ -43,7 +43,7 @@ function closeLightbox() {
     document.body.style.overflow = '';
   };
 
-  if (window.Motion) {
+  if (window.Motion && !_prefersReducedMotion) {
     Motion.animate(overlay, { opacity: 0 }, { duration: 0.2 }).finished.then(finish);
   } else {
     finish();

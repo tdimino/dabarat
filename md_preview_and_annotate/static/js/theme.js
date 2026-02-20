@@ -62,12 +62,31 @@ function applyTheme() {
 }
 applyTheme();
 
-function toggleTheme() {
-  const pair = THEME_PAIRS[currentTheme];
-  if (!pair) { localStorage.removeItem(CUSTOM_ACTIVE_KEY); currentTheme = 'mocha'; }
-  else { currentTheme = pair; }
-  applyTheme();
-  applyOpacity();
+function toggleTheme(event) {
+  const doToggle = () => {
+    const pair = THEME_PAIRS[currentTheme];
+    if (!pair) { localStorage.removeItem(CUSTOM_ACTIVE_KEY); currentTheme = 'mocha'; }
+    else { currentTheme = pair; }
+    applyTheme();
+    applyOpacity();
+  };
+
+  /* View Transitions API — circular reveal from toggle button */
+  if (!_prefersReducedMotion && document.startViewTransition) {
+    const x = event ? event.clientX || event.pageX : window.innerWidth / 2;
+    const y = event ? event.clientY || event.pageY : 0;
+    const endRadius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
+
+    const transition = document.startViewTransition(doToggle);
+    transition.ready.then(() => {
+      document.documentElement.animate(
+        { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + endRadius + 'px at ' + x + 'px ' + y + 'px)'] },
+        { duration: 400, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' }
+      );
+    }).catch(() => {});
+  } else {
+    doToggle();
+  }
 }
 
 function cycleTheme() {

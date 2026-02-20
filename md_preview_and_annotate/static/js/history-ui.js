@@ -62,6 +62,17 @@ function renderVersionTimeline(versions) {
       </div>
     </div>`;
   }).join('');
+
+  /* Stagger-animate version entries */
+  if (window.Motion && !_prefersReducedMotion) {
+    const entries = list.querySelectorAll('.version-entry');
+    if (entries.length) {
+      Motion.animate(entries,
+        { opacity: [0, 1], x: [8, 0] },
+        { delay: Motion.stagger(0.03), duration: 0.2 }
+      );
+    }
+  }
 }
 
 async function compareVersion(hash) {

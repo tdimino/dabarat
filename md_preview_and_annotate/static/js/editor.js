@@ -18,10 +18,28 @@ function enterEditMode() {
   editState.savedLines = editState.baseContent.split('\n');
 
   document.body.classList.add('edit-mode');
-  document.getElementById('content').style.display = 'none';
+  const contentEl = document.getElementById('content');
+  const editView = document.getElementById('edit-view');
   const fmIndicator = document.getElementById('frontmatter-indicator');
-  if (fmIndicator) fmIndicator.style.display = 'none';
-  document.getElementById('edit-view').style.display = 'flex';
+
+  /* Crossfade: fade out content, fade in editor */
+  if (window.Motion && !_prefersReducedMotion) {
+    Motion.animate(contentEl, { opacity: 0 }, { duration: 0.15 }).finished.then(() => {
+      contentEl.style.display = 'none';
+      if (fmIndicator) fmIndicator.style.display = 'none';
+      editView.style.display = 'flex';
+      editView.style.opacity = '0';
+      Motion.animate(editView, { opacity: [0, 1] }, { duration: 0.2 });
+    }).catch(() => {
+      contentEl.style.display = 'none';
+      if (fmIndicator) fmIndicator.style.display = 'none';
+      editView.style.display = 'flex';
+    });
+  } else {
+    contentEl.style.display = 'none';
+    if (fmIndicator) fmIndicator.style.display = 'none';
+    editView.style.display = 'flex';
+  }
 
   const textarea = document.getElementById('edit-textarea');
   textarea.value = editState.savedContent;
@@ -37,11 +55,26 @@ function exitEditMode(force) {
   editState.active = false;
   editState.dirty = false;
   document.body.classList.remove('edit-mode');
-  document.getElementById('edit-view').style.display = 'none';
-  document.getElementById('content').style.display = '';
-  lastRenderedMd = '';
-  if (activeTabId && tabs[activeTabId]) {
-    render(tabs[activeTabId].content);
+  const editView = document.getElementById('edit-view');
+  const contentEl = document.getElementById('content');
+
+  const doRestore = () => {
+    editView.style.display = 'none';
+    contentEl.style.display = '';
+    lastRenderedMd = '';
+    if (activeTabId && tabs[activeTabId]) {
+      render(tabs[activeTabId].content);
+    }
+    if (window.Motion && !_prefersReducedMotion) {
+      contentEl.style.opacity = '0';
+      Motion.animate(contentEl, { opacity: [0, 1] }, { duration: 0.2 });
+    }
+  };
+
+  if (window.Motion && !_prefersReducedMotion) {
+    Motion.animate(editView, { opacity: 0 }, { duration: 0.15 }).finished.then(doRestore).catch(doRestore);
+  } else {
+    doRestore();
   }
 }
 

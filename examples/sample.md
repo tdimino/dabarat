@@ -1,6 +1,6 @@
 # The Craftsman's Guide to Markdown
 
-A demonstration of **md-preview-and-annotate**—a zero-dependency Python markdown previewer with annotations, bookmarks, and live reload.
+A demonstration of **Dabarat**—an AI-native markdown previewer with annotations, bookmarks, and live reload. Zero dependencies.
 
 ## Features at a Glance
 
@@ -72,13 +72,14 @@ The entire tool is **6 Python files + 2 static files**:
 md_preview_and_annotate/
 ├── __init__.py          # Package metadata
 ├── __main__.py          # CLI entry point
-├── server.py            # HTTP server + API endpoints
+├── server.py            # HTTP server + 22 API endpoints
 ├── template.py          # HTML shell assembly
 ├── annotations.py       # Sidecar JSON I/O + orphan cleanup
 ├── bookmarks.py         # Global bookmark persistence
 └── static/
-    ├── app.js           # Client-side rendering (~1000 lines)
-    └── styles.css       # Catppuccin Mocha + Latte (~1200 lines)
+    ├── js/              # 16 modules concatenated
+    ├── css/             # 14 modules concatenated
+    └── palette.js       # Command palette (Cmd+K)
 ```
 
 Annotations are stored in **sidecar JSON files** alongside each markdown document (`file.md.annotations.json`), keeping the original document untouched.

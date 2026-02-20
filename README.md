@@ -2,9 +2,9 @@
   <img src="tanit.svg" alt="Tanit" width="120">
 </p>
 
-# md-preview-and-annotate
+# Dabarat
 
-Zero-dependency Python markdown previewer with annotations, bookmarks, and live reload.
+AI-native markdown previewer with annotations, bookmarks, and live reload. Zero dependencies.
 
 ![Dark theme overview](screenshots/01-dark-full.png)
 
@@ -102,8 +102,8 @@ python3 -m md_preview_and_annotate --annotate document.md \
 
 ## How It's Different
 
-| Feature | md-preview-and-annotate | markdown-annotations-svelte | md-review | Specmark |
-|---------|------------------------|---------------------------|-----------|----------|
+| Feature | Dabarat | markdown-annotations-svelte | md-review | Specmark |
+|---------|---------|---------------------------|-----------|----------|
 | Dependencies | **0** (Python stdlib) | Svelte + npm ecosystem | Node.js + npm | Web service |
 | Annotation types | 5 (comment, question, suggestion, flag, bookmark) | Comments only | Inline comments | AI feedback |
 | Themes | Catppuccin Mocha + Latte | Basic | Terminal | Web UI |
@@ -251,9 +251,22 @@ md_preview_and_annotate/
 
 **Data flow:** `__main__.py` → `server.py` → `template.py` assembles a single HTML document (all JS/CSS inlined) → client renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks persist via `bookmarks.py` → `~/.claude/bookmarks/`. For `.prompt.md` files, `frontmatter.py` parses YAML frontmatter and returns it alongside content via `/api/content`. Edit mode saves via `/api/save` (atomic write + auto-commit to `history.py`). Home page workspace browser uses `/api/browse-dir` for enriched directory metadata.
 
+## Origins
+
+Where the name comes from: the Semitic root D-B-R, Plassmann's four-stage model, and the Lady of the Labyrinth. See [**docs/backstory.md**](docs/backstory.md).
+
 ## Global Claude.md Integration
 
 This tool was designed to work within a broader Claude Code ecosystem. For details on how `~/.claude/`, `CLAUDE.md`, `soul.md`, and the global bookmarks directory fit together, see [**The ~/.claude/ Ecosystem**](claude-code-ecosystem.md).
+
+## Companion Projects
+
+Dabarat is part of the [Claudius](https://github.com/tdimino/claudius) ecosystem:
+
+| Project | Description |
+|---------|-------------|
+| [claude-code-minoan](https://github.com/tdimino/claude-code-minoan) | Skill/agent/hook framework for Claude Code |
+| [claudicle](https://github.com/tdimino/claudicle) | 4-layer soul agent framework for AI personalities |
 
 ## License
 

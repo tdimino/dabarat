@@ -84,7 +84,7 @@ def get_html(title="dabarat", default_author="Tom"):
         <div class="chrome-group">
           <i class="ph-fill ph-moon theme-icon icon-moon"></i>
           <div class="theme-switch">
-            <input type="checkbox" id="theme-toggle" onchange="toggleTheme()">
+            <input type="checkbox" id="theme-toggle" onchange="toggleTheme(event)">
             <label class="slider" for="theme-toggle"></label>
           </div>
           <i class="ph-fill ph-sun theme-icon icon-sun"></i>

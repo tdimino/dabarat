@@ -1,4 +1,6 @@
 /* ── Tab Bar ──────────────────────────────────────────── */
+let _lastTabIds = new Set();
+
 function renderTabBar() {
   const bar = document.getElementById('tab-bar');
   bar.innerHTML = '';
@@ -49,6 +51,25 @@ function renderTabBar() {
   addBtn.innerHTML = '<i class="ph ph-plus"></i>';
   addBtn.onclick = showAddFileInput;
   bar.appendChild(addBtn);
+
+  /* Animate newly added tabs */
+  if (window.Motion && !_prefersReducedMotion) {
+    const currentIds = new Set(ids);
+    ids.forEach(id => {
+      if (!_lastTabIds.has(id)) {
+        const el = bar.querySelector('.tab[data-tab="' + id + '"]');
+        if (el) {
+          Motion.animate(el,
+            { opacity: [0, 1], x: [-12, 0] },
+            { duration: 0.2, easing: 'ease-out' }
+          );
+        }
+      }
+    });
+    _lastTabIds = currentIds;
+  } else {
+    _lastTabIds = new Set(ids);
+  }
 }
 
 function switchTab(id) {
@@ -135,6 +156,15 @@ async function closeTab(id) {
 
   /* Exit diff mode if the left tab is being closed */
   if (diffState.active && diffState.leftTabId === id) exitDiffMode();
+
+  /* Animate tab collapse before removing */
+  const tabEl = document.querySelector('.tab[data-tab="' + id + '"]');
+  if (tabEl && window.Motion && !_prefersReducedMotion) {
+    await Motion.animate(tabEl,
+      { opacity: 0, width: '0px', paddingLeft: '0px', paddingRight: '0px' },
+      { duration: 0.15, easing: 'ease-out' }
+    ).finished.catch(() => {});
+  }
 
   try {
     await fetch('/api/close', {

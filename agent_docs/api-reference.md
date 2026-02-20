@@ -35,6 +35,64 @@ Returns tags array for a tab.
 { "tags": ["draft", "research"] }
 ```
 
+### `GET /api/recent`
+Returns recently opened files list (max 20).
+```json
+{ "entries": [{ "path": "/path/to/file.md", "title": "My Document", "opened": "2026-02-18T..." }] }
+```
+
+### `GET /api/versions?tab={id}`
+Returns git-backed version history for a tab's file.
+```json
+{ "versions": [{ "hash": "abc123", "date": "2026-02-18T...", "message": "...", "diff_stats": {...} }] }
+```
+
+### `GET /api/version?tab={id}&hash={commit}`
+Returns file content at a specific git commit.
+```json
+{ "content": "# Hello\n..." }
+```
+
+### `GET /api/browse-dir?path={dir}`
+Returns enriched directory listing with rich metadata for workspace cards. Results are cached in-memory with thread-safe locking. Cache key includes `(dir_path, max_mtime, dir_entry_count)`.
+```json
+{
+  "path": "/absolute/path",
+  "parent": "/parent",
+  "stats": { "fileCount": 12, "totalWords": 24600 },
+  "entries": [
+    {
+      "type": "file",
+      "name": "README.md",
+      "path": "/absolute/path/README.md",
+      "size": 3200,
+      "mtime": 1708099200.0,
+      "wordCount": 3200,
+      "annotationCount": 4,
+      "versionCount": 12,
+      "tags": ["draft"],
+      "badges": { "type": "docs", "model": "opus-4.5" },
+      "summary": "Zero-dependency Python markdown previewer...",
+      "preview": "# Markdown Dabarat\n\nZero-dependency...",
+      "previewImage": "/path/to/image.png"
+    }
+  ]
+}
+```
+Metadata extraction (word count, summary, preview, image) gated behind 1MB file size check.
+
+### `GET /api/preview-image?path={absolute_path}`
+Serves image files for workspace card previews. Restricted to directories of open tabs and directories in the browse cache.
+```json
+// Returns raw image bytes with correct Content-Type
+```
+
+### `GET /api/diff?tab={id}&against={path}`
+Returns structured diff between current tab content and another file.
+```json
+{ "blocks": [...], "stats": { "added": 5, "deleted": 2, "changed": 3 }, "left_filename": "a.md", "right_filename": "b.md" }
+```
+
 ### `GET /{path}`
 Serves static files relative to the directories of open tabs. Used for images referenced in markdown.
 
@@ -53,6 +111,21 @@ Opens a file as a new tab. Resolves relative paths against existing tab director
 Closes a tab by ID.
 ```json
 { "id": "abc123" }
+```
+
+### `POST /api/rename`
+Renames a tab's file on disk. Also renames sidecar annotation files.
+```json
+// Request
+{ "tab": "abc123", "name": "new-name.md" }
+// Response
+{ "ok": true, "filepath": "/absolute/path/new-name.md", "filename": "new-name.md" }
+```
+
+### `POST /api/browse`
+Opens macOS native file picker (osascript). Returns selected filepath or `cancelled: true`.
+```json
+{ "filepath": "/Users/tom/docs/file.md" }
 ```
 
 ### `POST /api/annotate`
@@ -89,6 +162,34 @@ Adds a threaded reply to an existing annotation.
 Permanently deletes an annotation.
 ```json
 { "tab": "abc123", "id": "annotation-id" }
+```
+
+### `POST /api/save`
+Saves edited content to file (atomic write via tempfile + `os.replace`). Auto-commits to git version history.
+```json
+// Request
+{ "tab": "abc123", "content": "# Updated content\n..." }
+// Response
+{ "ok": true, "mtime": 1708099200.0, "version": "abc123" }
+```
+Max content size: 10 MB.
+
+### `POST /api/restore`
+Restores file to a previous git version.
+```json
+// Request
+{ "tab": "abc123", "hash": "abc123" }
+// Response
+{ "ok": true, "content": "# Restored content\n...", "mtime": 1708099200.0 }
+```
+
+### `POST /api/recent/remove`
+Removes a file from the recent files list.
+```json
+// Request
+{ "path": "/absolute/path/to/file.md" }
+// Response
+{ "ok": true }
 ```
 
 ### `POST /api/tags`

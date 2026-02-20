@@ -22,6 +22,7 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - **Catppuccin dark/light themes** — Mocha (dark) and Latte (light), toggled in the status bar
 - **Resizable TOC sidebar** — drag the right edge to adjust width (persisted across sessions)
 - **Adjustable font size** — persisted in `localStorage`
+- **Switchable emoji styles** — Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji; selectable via command palette Settings or `Cmd+K` → Cycle Emoji Style
 - **Cross-file links** — clicking a `.md` link in content opens the target as a new tab
 - **Smart text anchoring** — selections can span bold, italic, and code nodes
 - **CLI annotation** — write annotations directly from the command line without a browser
@@ -31,6 +32,14 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - **Prompt engineering support** — `.prompt.md` files with YAML frontmatter render a clickable metadata indicator bar showing name, version, type, and variable count; clicking opens a full metadata popup with model, temperature, labels, tags, and a variables table with types, defaults, and descriptions
 - **Template variable highlighting** — `{{variable}}` (Mustache) and `${variable}` (shell) template slots are highlighted as colored pills in the preview; pills include CSS-only tooltips showing variable schema from frontmatter
 - **Prompt-specific tags** — 6 additional tags for prompt workflows: `prompt:system`, `prompt:user`, `prompt:assistant`, `prompt:chain`, `prompt:cognitive`, `prompt:tested`
+- **Inline editing** — `Cmd+E` to edit raw markdown with a change-tracking gutter (green/yellow/red diff markers), auto-save with atomic writes
+- **Side-by-side diff** — compare any two markdown files with word-level granularity, synchronized scroll, resizable split
+- **Version history** — git-backed timeline panel with diff stats, compare any version against current, one-click restore
+- **Workspace home page** — TOC sidebar transforms into a directory browser; selecting a folder populates the main area with file cards showing word counts, annotation counts, version counts, smart badges, and markdown previews
+- **Smart file-type badges** — 10 pattern matchers detect prompt, agent config, plan, spec, readme, architecture, changelog, todo, license, and research files
+- **Image lightbox** — click any content image to open a sleek overlay with blur backdrop, keyboard navigation (arrows, Escape), and zoom
+- **Image effects** — content images get subtle border, layered shadows, hover lift + glow, zoom cursor; theme-aware Latte overrides
+- **Motion One animations** — staggered card entrance, sidebar cascade, card removal animation, view toggle crossfade; progressive enhancement with `if (window.Motion)` guards
 - **Finder integration (macOS)** — `.app` bundle registers as `.md` handler for Open With
 
 ## Quick Start
@@ -112,11 +121,11 @@ python3 -m md_preview_and_annotate --annotate document.md \
 Most markdown annotation tools either require a heavy framework (Svelte, React, Electron) or operate only in the terminal. This tool is:
 
 - **Zero-dependency** — pure Python stdlib server. No npm, no pip install, no build step.
-- **Modular** — 6 Python files + 2 static files. Drop it into any project.
+- **Modular** — 10 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document.
 - **AI-native** — built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
-- **Beautiful** — Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography.
+- **Beautiful** — Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
 
-The three CDN scripts (marked.js, highlight.js, Phosphor Icons) load on first page view and are cached by the browser. After that, the tool works fully offline.
+Six CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One) load on first page view and are cached by the browser. Motion One is optional—all animations fall back to CSS `@keyframes` if the CDN is unavailable. After first load, the tool works fully offline.
 
 ## CLI Reference
 
@@ -172,6 +181,8 @@ Press `Cmd+K` (Mac) or `Ctrl+K` to open the command palette. Available commands:
 - **Toggle Sidebar** — show/hide the TOC
 - **Increase/Decrease Font** — adjust font size
 - **Toggle Annotations** — open/close the notes panel
+- **Cycle Emoji Style** — cycle through Twitter → OpenMoji → Noto → Native
+- **Settings** — full settings panel with theme, font sizes, opacity, emoji style, TOC width, and author
 
 The palette header displays file metadata for the active tab: filename, path, word count, estimated read time, annotation count, and any tags as colored pills.
 
@@ -213,18 +224,32 @@ duti -s com.minoanmystery.md-preview .md all
 md_preview_and_annotate/
 ├── __init__.py          # Package metadata
 ├── __main__.py          # CLI entry point (serve, add, annotate)
-├── server.py            # HTTP server + REST API (13 endpoints)
-├── template.py          # HTML shell assembly (inlines JS + CSS)
+├── server.py            # HTTP server + 22 REST API endpoints
+├── template.py          # HTML shell assembly (concatenates 16 JS + 14 CSS modules)
 ├── annotations.py       # Sidecar JSON I/O + orphan cleanup + tag persistence
 ├── bookmarks.py         # Global ~/.claude/bookmarks/ persistence
 ├── frontmatter.py       # YAML frontmatter parser (stdlib, pyyaml fallback) + mtime cache
+├── diff.py              # Side-by-side markdown diff engine (SequenceMatcher)
+├── history.py           # Git-backed version history (~/.dabarat/history/)
+├── recent.py            # Recently opened files + metadata extraction
 └── static/
-    ├── app.js           # Client rendering, frontmatter popup, variable highlighting (~1480 lines)
-    ├── palette.js       # Command palette + tag mode + prompt tags (Cmd+K) (~660 lines)
-    └── styles.css       # Catppuccin Mocha + Latte + frontmatter/variable styles (~1770 lines)
+    ├── js/              # 16 modules concatenated in dependency order
+    │   ├── state.js     # Global state, config
+    │   ├── utils.js     # Shared utilities
+    │   ├── theme.js     # Theme, font, emoji, TOC resize
+    │   ├── render.js    # Markdown rendering pipeline
+    │   ├── ...          # frontmatter, variables, tags, tabs, annotations, diff, editor
+    │   ├── lightbox.js  # Image lightbox (zoom, keyboard nav, blur backdrop)
+    │   ├── home.js      # Workspace-driven home page + directory browser
+    │   ├── polling.js   # 500ms content poll loop
+    │   └── init.js      # Bootstrap
+    ├── css/             # 14 modules concatenated in dependency order
+    │   ├── theme-variables.css  # Catppuccin Mocha + Latte tokens
+    │   └── ...          # layout, typography, annotations, responsive, palette, etc.
+    └── palette.js       # Command palette + tag mode (Cmd+K) — loaded separately
 ```
 
-**Data flow:** `__main__.py` → `server.py` → `template.py` assembles the HTML shell → `static/app.js` renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks additionally persist via `bookmarks.py` → `~/.claude/bookmarks/`. For `.prompt.md` files, `frontmatter.py` parses YAML frontmatter and returns it alongside content via `/api/content`; the client renders a metadata indicator bar, popup, and variable highlights.
+**Data flow:** `__main__.py` → `server.py` → `template.py` assembles a single HTML document (all JS/CSS inlined) → client renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks persist via `bookmarks.py` → `~/.claude/bookmarks/`. For `.prompt.md` files, `frontmatter.py` parses YAML frontmatter and returns it alongside content via `/api/content`. Edit mode saves via `/api/save` (atomic write + auto-commit to `history.py`). Home page workspace browser uses `/api/browse-dir` for enriched directory metadata.
 
 ## Global Claude.md Integration
 

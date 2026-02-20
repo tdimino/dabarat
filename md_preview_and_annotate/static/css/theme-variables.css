@@ -16,6 +16,30 @@
   --ctp-sapphire: #74c7ec;
   --ctp-blue: #89b4fa;
   --ctp-lavender: #b4befe;
+
+  /* RGB companions for rgba() usage */
+  --ctp-rosewater-rgb: 245, 224, 220;
+  --ctp-flamingo-rgb: 242, 205, 205;
+  --ctp-pink-rgb: 245, 194, 231;
+  --ctp-mauve-rgb: 203, 166, 247;
+  --ctp-red-rgb: 243, 139, 168;
+  --ctp-maroon-rgb: 235, 160, 172;
+  --ctp-peach-rgb: 250, 179, 135;
+  --ctp-yellow-rgb: 249, 226, 175;
+  --ctp-green-rgb: 166, 227, 161;
+  --ctp-teal-rgb: 148, 226, 213;
+  --ctp-sky-rgb: 137, 220, 254;
+  --ctp-sapphire-rgb: 116, 199, 236;
+  --ctp-blue-rgb: 137, 180, 250;
+  --ctp-lavender-rgb: 180, 190, 254;
+
+  /* Surface RGB companions */
+  --ctp-surface0-rgb: 49, 50, 68;
+  --ctp-surface1-rgb: 69, 71, 90;
+  --ctp-overlay0-rgb: 108, 112, 134;
+  --ctp-base-rgb: 30, 30, 46;
+  --ctp-mantle-rgb: 24, 24, 37;
+
   --ctp-text: #cdd6f4;
   --ctp-subtext1: #bac2de;
   --ctp-subtext0: #a6adc8;
@@ -32,10 +56,22 @@
   --bold-color: #e6edf3;
   --italic-color: #a5d6ff;
   --blockquote-color: #d4a5ff;
-  --blockquote-bg: rgba(24, 24, 37, 0.6);
-  --toc-active-bg: rgba(137, 180, 250, 0.08);
-  --row-even-bg: rgba(49, 50, 68, 0.25);
-  --row-hover-bg: rgba(137, 180, 250, 0.04);
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.6);
+  --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
+  --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
+  --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+
+  /* Elevation tokens — shadows use black with theme-tuned alpha.
+     Intentional exception to palette-only convention: shadows are
+     inherently dark; using surface-RGB for shadows produces invisible
+     results in light themes where mantle-rgb is near-white. */
+  --elevation-1:
+    0 2px 4px -1px rgba(0, 0, 0, 0.18),
+    0 1px 2px -1px rgba(0, 0, 0, 0.12);
+  --elevation-2:
+    0 12px 24px -8px rgba(0, 0, 0, 0.28),
+    0 6px 12px -4px rgba(0, 0, 0, 0.16),
+    0 2px 4px -1px rgba(0, 0, 0, 0.10);
 
   --base-size: 15px;
   --heading-scale: 1;
@@ -60,6 +96,30 @@
   --ctp-sapphire: #209fb5;
   --ctp-blue: #1e66f5;
   --ctp-lavender: #7287fd;
+
+  /* RGB companions for rgba() usage */
+  --ctp-rosewater-rgb: 220, 138, 120;
+  --ctp-flamingo-rgb: 221, 120, 120;
+  --ctp-pink-rgb: 234, 118, 203;
+  --ctp-mauve-rgb: 136, 57, 239;
+  --ctp-red-rgb: 210, 15, 57;
+  --ctp-maroon-rgb: 230, 69, 83;
+  --ctp-peach-rgb: 254, 100, 11;
+  --ctp-yellow-rgb: 223, 142, 29;
+  --ctp-green-rgb: 64, 160, 43;
+  --ctp-teal-rgb: 23, 146, 153;
+  --ctp-sky-rgb: 4, 165, 229;
+  --ctp-sapphire-rgb: 32, 159, 181;
+  --ctp-blue-rgb: 30, 102, 245;
+  --ctp-lavender-rgb: 114, 135, 253;
+
+  /* Surface RGB companions */
+  --ctp-surface0-rgb: 204, 208, 218;
+  --ctp-surface1-rgb: 188, 192, 204;
+  --ctp-overlay0-rgb: 156, 160, 176;
+  --ctp-base-rgb: 239, 241, 245;
+  --ctp-mantle-rgb: 230, 233, 239;
+
   --ctp-text: #4c4f69;
   --ctp-subtext1: #5c5f77;
   --ctp-subtext0: #6c6f85;
@@ -76,10 +136,306 @@
   --bold-color: #2c2d3a;
   --italic-color: #1e66f5;
   --blockquote-color: #8839ef;
-  --blockquote-bg: rgba(230, 233, 239, 0.8);
-  --toc-active-bg: rgba(30, 102, 245, 0.08);
-  --row-even-bg: rgba(204, 208, 218, 0.3);
-  --row-hover-bg: rgba(30, 102, 245, 0.04);
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
+  --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
+  --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
+  --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+
+  --elevation-1:
+    0 2px 4px -1px rgba(0, 0, 0, 0.08),
+    0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --elevation-2:
+    0 12px 24px -8px rgba(0, 0, 0, 0.14),
+    0 6px 12px -4px rgba(0, 0, 0, 0.08),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+  color-scheme: light;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Rosé Pine (dark)
+   ══════════════════════════════════════════════════════════ */
+[data-theme="rose-pine"] {
+  --ctp-rosewater: #ebbcba;
+  --ctp-flamingo: #ebbcba;
+  --ctp-pink: #eb6f92;
+  --ctp-mauve: #c4a7e7;
+  --ctp-red: #eb6f92;
+  --ctp-maroon: #eb6f92;
+  --ctp-peach: #f6c177;
+  --ctp-yellow: #f6c177;
+  --ctp-green: #9ccfd8;
+  --ctp-teal: #31748f;
+  --ctp-sky: #9ccfd8;
+  --ctp-sapphire: #31748f;
+  --ctp-blue: #9ccfd8;
+  --ctp-lavender: #c4a7e7;
+
+  --ctp-rosewater-rgb: 235, 188, 186;
+  --ctp-flamingo-rgb: 235, 188, 186;
+  --ctp-pink-rgb: 235, 111, 146;
+  --ctp-mauve-rgb: 196, 167, 231;
+  --ctp-red-rgb: 235, 111, 146;
+  --ctp-maroon-rgb: 235, 111, 146;
+  --ctp-peach-rgb: 246, 193, 119;
+  --ctp-yellow-rgb: 246, 193, 119;
+  --ctp-green-rgb: 156, 207, 216;
+  --ctp-teal-rgb: 49, 116, 143;
+  --ctp-sky-rgb: 156, 207, 216;
+  --ctp-sapphire-rgb: 49, 116, 143;
+  --ctp-blue-rgb: 156, 207, 216;
+  --ctp-lavender-rgb: 196, 167, 231;
+
+  --ctp-surface0-rgb: 31, 29, 46;
+  --ctp-surface1-rgb: 38, 35, 58;
+  --ctp-overlay0-rgb: 82, 79, 103;
+  --ctp-base-rgb: 25, 23, 36;
+  --ctp-mantle-rgb: 21, 19, 32;
+
+  --ctp-text: #e0def4;
+  --ctp-subtext1: #c5c3db;
+  --ctp-subtext0: #aba7c3;
+  --ctp-overlay2: #908caa;
+  --ctp-overlay1: #6e6a86;
+  --ctp-overlay0: #524f67;
+  --ctp-surface2: #403d52;
+  --ctp-surface1: #26233a;
+  --ctp-surface0: #1f1d2e;
+  --ctp-base: #191724;
+  --ctp-mantle: #151320;
+  --ctp-crust: #110f1c;
+
+  --bold-color: #eae8ff;
+  --italic-color: #c4a7e7;
+  --blockquote-color: #c4a7e7;
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.6);
+  --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
+  --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
+  --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+
+  --elevation-1:
+    0 2px 4px -1px rgba(0, 0, 0, 0.18),
+    0 1px 2px -1px rgba(0, 0, 0, 0.12);
+  --elevation-2:
+    0 12px 24px -8px rgba(0, 0, 0, 0.28),
+    0 6px 12px -4px rgba(0, 0, 0, 0.16),
+    0 2px 4px -1px rgba(0, 0, 0, 0.10);
+
+  color-scheme: dark;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Rosé Pine Dawn (light)
+   ══════════════════════════════════════════════════════════ */
+[data-theme="rose-pine-dawn"] {
+  --ctp-rosewater: #d7827e;
+  --ctp-flamingo: #d7827e;
+  --ctp-pink: #b4637a;
+  --ctp-mauve: #907aa9;
+  --ctp-red: #b4637a;
+  --ctp-maroon: #b4637a;
+  --ctp-peach: #ea9d34;
+  --ctp-yellow: #ea9d34;
+  --ctp-green: #56949f;
+  --ctp-teal: #286983;
+  --ctp-sky: #56949f;
+  --ctp-sapphire: #286983;
+  --ctp-blue: #56949f;
+  --ctp-lavender: #907aa9;
+
+  --ctp-rosewater-rgb: 215, 130, 126;
+  --ctp-flamingo-rgb: 215, 130, 126;
+  --ctp-pink-rgb: 180, 99, 122;
+  --ctp-mauve-rgb: 144, 122, 169;
+  --ctp-red-rgb: 180, 99, 122;
+  --ctp-maroon-rgb: 180, 99, 122;
+  --ctp-peach-rgb: 234, 157, 52;
+  --ctp-yellow-rgb: 234, 157, 52;
+  --ctp-green-rgb: 86, 148, 159;
+  --ctp-teal-rgb: 40, 105, 131;
+  --ctp-sky-rgb: 86, 148, 159;
+  --ctp-sapphire-rgb: 40, 105, 131;
+  --ctp-blue-rgb: 86, 148, 159;
+  --ctp-lavender-rgb: 144, 122, 169;
+
+  --ctp-surface0-rgb: 223, 218, 217;
+  --ctp-surface1-rgb: 206, 202, 205;
+  --ctp-overlay0-rgb: 172, 168, 184;
+  --ctp-base-rgb: 255, 250, 243;
+  --ctp-mantle-rgb: 250, 244, 237;
+
+  --ctp-text: #575279;
+  --ctp-subtext1: #625e80;
+  --ctp-subtext0: #797593;
+  --ctp-overlay2: #847f99;
+  --ctp-overlay1: #9893a5;
+  --ctp-overlay0: #aca8b8;
+  --ctp-surface2: #b8b4b6;
+  --ctp-surface1: #cecacd;
+  --ctp-surface0: #dfdad9;
+  --ctp-base: #fffaf3;
+  --ctp-mantle: #faf4ed;
+  --ctp-crust: #f2e9e1;
+
+  --bold-color: #3e3a58;
+  --italic-color: #56949f;
+  --blockquote-color: #907aa9;
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
+  --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
+  --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
+  --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+
+  --elevation-1:
+    0 2px 4px -1px rgba(0, 0, 0, 0.08),
+    0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --elevation-2:
+    0 12px 24px -8px rgba(0, 0, 0, 0.14),
+    0 6px 12px -4px rgba(0, 0, 0, 0.08),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+  color-scheme: light;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Tokyo Night Storm (dark)
+   ══════════════════════════════════════════════════════════ */
+[data-theme="tokyo-storm"] {
+  --ctp-rosewater: #ff9e64;
+  --ctp-flamingo: #ff9e64;
+  --ctp-pink: #bb9af7;
+  --ctp-mauve: #9d7cd8;
+  --ctp-red: #f7768e;
+  --ctp-maroon: #f7768e;
+  --ctp-peach: #ff9e64;
+  --ctp-yellow: #e0af68;
+  --ctp-green: #9ece6a;
+  --ctp-teal: #73daca;
+  --ctp-sky: #7dcfff;
+  --ctp-sapphire: #2ac3de;
+  --ctp-blue: #7aa2f7;
+  --ctp-lavender: #bb9af7;
+
+  --ctp-rosewater-rgb: 255, 158, 100;
+  --ctp-flamingo-rgb: 255, 158, 100;
+  --ctp-pink-rgb: 187, 154, 247;
+  --ctp-mauve-rgb: 157, 124, 216;
+  --ctp-red-rgb: 247, 118, 142;
+  --ctp-maroon-rgb: 247, 118, 142;
+  --ctp-peach-rgb: 255, 158, 100;
+  --ctp-yellow-rgb: 224, 175, 104;
+  --ctp-green-rgb: 158, 206, 106;
+  --ctp-teal-rgb: 115, 218, 202;
+  --ctp-sky-rgb: 125, 207, 255;
+  --ctp-sapphire-rgb: 42, 195, 222;
+  --ctp-blue-rgb: 122, 162, 247;
+  --ctp-lavender-rgb: 187, 154, 247;
+
+  --ctp-surface0-rgb: 41, 46, 66;
+  --ctp-surface1-rgb: 52, 59, 88;
+  --ctp-overlay0-rgb: 65, 72, 104;
+  --ctp-base-rgb: 36, 40, 59;
+  --ctp-mantle-rgb: 31, 35, 53;
+
+  --ctp-text: #c0caf5;
+  --ctp-subtext1: #a9b1d6;
+  --ctp-subtext0: #9aa5ce;
+  --ctp-overlay2: #737aa2;
+  --ctp-overlay1: #565f89;
+  --ctp-overlay0: #414868;
+  --ctp-surface2: #3b4261;
+  --ctp-surface1: #343b58;
+  --ctp-surface0: #292e42;
+  --ctp-base: #24283b;
+  --ctp-mantle: #1f2335;
+  --ctp-crust: #1b1e2e;
+
+  --bold-color: #d5deff;
+  --italic-color: #7aa2f7;
+  --blockquote-color: #bb9af7;
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.6);
+  --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
+  --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
+  --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+
+  --elevation-1:
+    0 2px 4px -1px rgba(0, 0, 0, 0.18),
+    0 1px 2px -1px rgba(0, 0, 0, 0.12);
+  --elevation-2:
+    0 12px 24px -8px rgba(0, 0, 0, 0.28),
+    0 6px 12px -4px rgba(0, 0, 0, 0.16),
+    0 2px 4px -1px rgba(0, 0, 0, 0.10);
+
+  color-scheme: dark;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Tokyo Night Light
+   ══════════════════════════════════════════════════════════ */
+[data-theme="tokyo-light"] {
+  --ctp-rosewater: #965027;
+  --ctp-flamingo: #8c4351;
+  --ctp-pink: #8c4351;
+  --ctp-mauve: #7b43ba;
+  --ctp-red: #8c4351;
+  --ctp-maroon: #8c4351;
+  --ctp-peach: #965027;
+  --ctp-yellow: #8f5e15;
+  --ctp-green: #385f0d;
+  --ctp-teal: #33635c;
+  --ctp-sky: #006c86;
+  --ctp-sapphire: #006c86;
+  --ctp-blue: #2959aa;
+  --ctp-lavender: #65359d;
+
+  --ctp-rosewater-rgb: 150, 80, 39;
+  --ctp-flamingo-rgb: 140, 67, 81;
+  --ctp-pink-rgb: 140, 67, 81;
+  --ctp-mauve-rgb: 123, 67, 186;
+  --ctp-red-rgb: 140, 67, 81;
+  --ctp-maroon-rgb: 140, 67, 81;
+  --ctp-peach-rgb: 150, 80, 39;
+  --ctp-yellow-rgb: 143, 94, 21;
+  --ctp-green-rgb: 56, 95, 13;
+  --ctp-teal-rgb: 51, 99, 92;
+  --ctp-sky-rgb: 0, 108, 134;
+  --ctp-sapphire-rgb: 0, 108, 134;
+  --ctp-blue-rgb: 41, 89, 170;
+  --ctp-lavender-rgb: 101, 53, 157;
+
+  --ctp-surface0-rgb: 193, 194, 199;
+  --ctp-surface1-rgb: 176, 178, 186;
+  --ctp-overlay0-rgb: 136, 139, 148;
+  --ctp-base-rgb: 230, 231, 237;
+  --ctp-mantle-rgb: 220, 222, 227;
+
+  --ctp-text: #343b59;
+  --ctp-subtext1: #484d63;
+  --ctp-subtext0: #565a70;
+  --ctp-overlay2: #6c6e75;
+  --ctp-overlay1: #7c7e88;
+  --ctp-overlay0: #888b94;
+  --ctp-surface2: #9da0ab;
+  --ctp-surface1: #b0b2ba;
+  --ctp-surface0: #c1c2c7;
+  --ctp-base: #e6e7ed;
+  --ctp-mantle: #dcdee3;
+  --ctp-crust: #cbcdd4;
+
+  --bold-color: #24293f;
+  --italic-color: #2959aa;
+  --blockquote-color: #7b43ba;
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
+  --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
+  --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
+  --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+
+  --elevation-1:
+    0 2px 4px -1px rgba(0, 0, 0, 0.08),
+    0 1px 2px -1px rgba(0, 0, 0, 0.06);
+  --elevation-2:
+    0 12px 24px -8px rgba(0, 0, 0, 0.14),
+    0 6px 12px -4px rgba(0, 0, 0, 0.08),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
 
   color-scheme: light;
 }

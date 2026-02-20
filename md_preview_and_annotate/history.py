@@ -7,7 +7,7 @@ import os
 import re
 import subprocess
 
-HISTORY_DIR = os.path.expanduser("~/.mdpreview/history")
+HISTORY_DIR = os.path.expanduser("~/.dabarat/history")
 GIT_HASH_RE = re.compile(r"^[0-9a-f]{4,40}$")
 
 _version_cache = {}  # filepath -> (head_hash, versions_list)
@@ -22,11 +22,11 @@ def _ensure_repo():
             ["git", "init"], cwd=HISTORY_DIR, capture_output=True, timeout=10
         )
         subprocess.run(
-            ["git", "config", "user.name", "mdpreview"],
+            ["git", "config", "user.name", "dabarat"],
             cwd=HISTORY_DIR, capture_output=True, timeout=5,
         )
         subprocess.run(
-            ["git", "config", "user.email", "system@mdpreview"],
+            ["git", "config", "user.email", "system@dabarat"],
             cwd=HISTORY_DIR, capture_output=True, timeout=5,
         )
 

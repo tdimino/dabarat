@@ -72,11 +72,11 @@
 }
 .ann-bubble:hover {
   border-left-color: var(--ctp-blue);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(var(--ctp-mantle-rgb), 0.12);
 }
 .ann-bubble.focused {
   border-left-color: var(--ctp-yellow);
-  box-shadow: 0 0 0 1px var(--ctp-yellow), 0 2px 12px rgba(249, 226, 175, 0.15);
+  box-shadow: 0 0 0 1px var(--ctp-yellow), 0 2px 12px rgba(var(--ctp-yellow-rgb), 0.15);
 }
 .ann-bubble.resolved {
   opacity: 0.45;
@@ -252,7 +252,7 @@
 
 /* Annotation highlight in content — Google Docs style */
 mark.annotation-highlight {
-  background: rgba(249, 226, 175, 0.25);
+  background: rgba(var(--ctp-yellow-rgb), 0.25);
   border-bottom: none;
   border-radius: 2px;
   color: inherit;
@@ -261,27 +261,27 @@ mark.annotation-highlight {
   transition: background 0.2s;
 }
 mark.annotation-highlight:hover {
-  background: rgba(249, 226, 175, 0.45);
+  background: rgba(var(--ctp-yellow-rgb), 0.45);
 }
 mark.annotation-highlight.pulse {
   animation: annPulse 0.6s ease;
 }
 @keyframes annPulse {
-  0% { background: rgba(249, 226, 175, 0.55); }
-  100% { background: rgba(249, 226, 175, 0.25); }
+  0% { background: rgba(var(--ctp-yellow-rgb), 0.55); }
+  100% { background: rgba(var(--ctp-yellow-rgb), 0.25); }
 }
 
 /* Highlight color by annotation type */
-mark.annotation-highlight[data-type="comment"]    { background: rgba(249, 226, 175, 0.25); }
-mark.annotation-highlight[data-type="comment"]:hover    { background: rgba(249, 226, 175, 0.45); }
-mark.annotation-highlight[data-type="question"]   { background: rgba(137, 180, 250, 0.20); }
-mark.annotation-highlight[data-type="question"]:hover   { background: rgba(137, 180, 250, 0.38); }
-mark.annotation-highlight[data-type="suggestion"]  { background: rgba(166, 227, 161, 0.20); }
-mark.annotation-highlight[data-type="suggestion"]:hover  { background: rgba(166, 227, 161, 0.38); }
-mark.annotation-highlight[data-type="important"]  { background: rgba(250, 179, 135, 0.20); }
-mark.annotation-highlight[data-type="important"]:hover  { background: rgba(250, 179, 135, 0.38); }
-mark.annotation-highlight[data-type="bookmark"]   { background: rgba(203, 166, 247, 0.20); }
-mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 166, 247, 0.38); }
+mark.annotation-highlight[data-type="comment"]    { background: rgba(var(--ctp-yellow-rgb), 0.25); }
+mark.annotation-highlight[data-type="comment"]:hover    { background: rgba(var(--ctp-yellow-rgb), 0.45); }
+mark.annotation-highlight[data-type="question"]   { background: rgba(var(--ctp-blue-rgb), 0.20); }
+mark.annotation-highlight[data-type="question"]:hover   { background: rgba(var(--ctp-blue-rgb), 0.38); }
+mark.annotation-highlight[data-type="suggestion"]  { background: rgba(var(--ctp-green-rgb), 0.20); }
+mark.annotation-highlight[data-type="suggestion"]:hover  { background: rgba(var(--ctp-green-rgb), 0.38); }
+mark.annotation-highlight[data-type="important"]  { background: rgba(var(--ctp-peach-rgb), 0.20); }
+mark.annotation-highlight[data-type="important"]:hover  { background: rgba(var(--ctp-peach-rgb), 0.38); }
+mark.annotation-highlight[data-type="bookmark"]   { background: rgba(var(--ctp-mauve-rgb), 0.20); }
+mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(--ctp-mauve-rgb), 0.38); }
 
 /* Annotation type picker in form */
 .ann-type-picker {
@@ -308,11 +308,11 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 
 .ann-type-btn i { font-size: 12px; }
 .ann-type-btn:hover { border-color: var(--ctp-overlay0); color: var(--ctp-text); }
 .ann-type-btn.selected { border-color: var(--type-color); color: var(--type-color); background: var(--type-bg); }
-.ann-type-btn[data-type="comment"]    { --type-color: var(--ctp-yellow); --type-bg: rgba(249, 226, 175, 0.10); }
-.ann-type-btn[data-type="question"]   { --type-color: var(--ctp-blue);   --type-bg: rgba(137, 180, 250, 0.10); }
-.ann-type-btn[data-type="suggestion"] { --type-color: var(--ctp-green);  --type-bg: rgba(166, 227, 161, 0.10); }
-.ann-type-btn[data-type="important"]  { --type-color: var(--ctp-peach);  --type-bg: rgba(250, 179, 135, 0.10); }
-.ann-type-btn[data-type="bookmark"]   { --type-color: var(--ctp-mauve);  --type-bg: rgba(203, 166, 247, 0.10); }
+.ann-type-btn[data-type="comment"]    { --type-color: var(--ctp-yellow); --type-bg: rgba(var(--ctp-yellow-rgb), 0.10); }
+.ann-type-btn[data-type="question"]   { --type-color: var(--ctp-blue);   --type-bg: rgba(var(--ctp-blue-rgb), 0.10); }
+.ann-type-btn[data-type="suggestion"] { --type-color: var(--ctp-green);  --type-bg: rgba(var(--ctp-green-rgb), 0.10); }
+.ann-type-btn[data-type="important"]  { --type-color: var(--ctp-peach);  --type-bg: rgba(var(--ctp-peach-rgb), 0.10); }
+.ann-type-btn[data-type="bookmark"]   { --type-color: var(--ctp-mauve);  --type-bg: rgba(var(--ctp-mauve-rgb), 0.10); }
 
 /* Type icon in annotation bubble */
 .ann-type-icon {
@@ -326,11 +326,11 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 
 .ann-type-icon.bookmark   { color: var(--ctp-mauve); }
 
 /* Bubble left border accent by type */
-.ann-bubble[data-type="comment"]    { border-left: 3px solid rgba(249, 226, 175, 0.5); }
-.ann-bubble[data-type="question"]   { border-left: 3px solid rgba(137, 180, 250, 0.5); }
-.ann-bubble[data-type="suggestion"] { border-left: 3px solid rgba(166, 227, 161, 0.5); }
-.ann-bubble[data-type="important"]  { border-left: 3px solid rgba(250, 179, 135, 0.5); }
-.ann-bubble[data-type="bookmark"]   { border-left: 3px solid rgba(203, 166, 247, 0.5); }
+.ann-bubble[data-type="comment"]    { border-left: 3px solid rgba(var(--ctp-yellow-rgb), 0.5); }
+.ann-bubble[data-type="question"]   { border-left: 3px solid rgba(var(--ctp-blue-rgb), 0.5); }
+.ann-bubble[data-type="suggestion"] { border-left: 3px solid rgba(var(--ctp-green-rgb), 0.5); }
+.ann-bubble[data-type="important"]  { border-left: 3px solid rgba(var(--ctp-peach-rgb), 0.5); }
+.ann-bubble[data-type="bookmark"]   { border-left: 3px solid rgba(var(--ctp-mauve-rgb), 0.5); }
 
 /* Annotate carousel — appears on text selection */
 #annotate-carousel {
@@ -343,7 +343,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 
   gap: 2px;
   align-items: stretch;
   z-index: 20;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(137, 180, 250, 0.1);
+  box-shadow: 0 4px 20px rgba(var(--ctp-mantle-rgb), 0.4), 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.1);
   animation: carouselPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 #annotate-carousel.visible { display: flex; }
@@ -377,11 +377,11 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 
 }
 .carousel-btn:active { transform: scale(0.95); }
 
-.carousel-btn[data-type="comment"]    { --btn-type-color: var(--ctp-yellow); --btn-type-bg: rgba(249, 226, 175, 0.12); }
-.carousel-btn[data-type="question"]   { --btn-type-color: var(--ctp-blue);   --btn-type-bg: rgba(137, 180, 250, 0.12); }
-.carousel-btn[data-type="suggestion"] { --btn-type-color: var(--ctp-green);  --btn-type-bg: rgba(166, 227, 161, 0.12); }
-.carousel-btn[data-type="important"]  { --btn-type-color: var(--ctp-peach);  --btn-type-bg: rgba(250, 179, 135, 0.12); }
-.carousel-btn[data-type="bookmark"]   { --btn-type-color: var(--ctp-mauve);  --btn-type-bg: rgba(203, 166, 247, 0.12); }
+.carousel-btn[data-type="comment"]    { --btn-type-color: var(--ctp-yellow); --btn-type-bg: rgba(var(--ctp-yellow-rgb), 0.12); }
+.carousel-btn[data-type="question"]   { --btn-type-color: var(--ctp-blue);   --btn-type-bg: rgba(var(--ctp-blue-rgb), 0.12); }
+.carousel-btn[data-type="suggestion"] { --btn-type-color: var(--ctp-green);  --btn-type-bg: rgba(var(--ctp-green-rgb), 0.12); }
+.carousel-btn[data-type="important"]  { --btn-type-color: var(--ctp-peach);  --btn-type-bg: rgba(var(--ctp-peach-rgb), 0.12); }
+.carousel-btn[data-type="bookmark"]   { --btn-type-color: var(--ctp-mauve);  --btn-type-bg: rgba(var(--ctp-mauve-rgb), 0.12); }
 
 @keyframes carouselPop {
   from { transform: scale(0.7) translateY(4px); opacity: 0; }
@@ -395,7 +395,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 
   padding: 12px;
   margin-bottom: 12px;
   border: 1px solid var(--ctp-blue);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px rgba(var(--ctp-mantle-rgb), 0.15);
 }
 .ann-form-label {
   font-family: 'Victor Mono', monospace;
@@ -458,7 +458,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(203, 
   transition: all 0.15s;
 }
 .ann-btn-primary:hover {
-  box-shadow: 0 2px 8px rgba(137, 180, 250, 0.3);
+  box-shadow: 0 2px 8px rgba(var(--ctp-blue-rgb), 0.3);
 }
 .ann-btn-ghost {
   background: none;

@@ -124,10 +124,10 @@
 }
 
 #edit-textarea::selection {
-  background: rgba(137, 180, 250, 0.25);
+  background: rgba(var(--ctp-blue-rgb), 0.25);
 }
 [data-theme="latte"] #edit-textarea::selection {
-  background: rgba(30, 102, 245, 0.15);
+  background: rgba(var(--ctp-blue-rgb), 0.15);
 }
 
 /* Hide default scrollbar on textarea — .edit-body scrolls */

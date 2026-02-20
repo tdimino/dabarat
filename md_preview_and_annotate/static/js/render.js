@@ -65,6 +65,7 @@ function render(md) {
 
   const content = document.getElementById('content');
   content.innerHTML = html;
+  applyEmojiStyle(content);
 
   /* Assign IDs to headings */
   content.querySelectorAll('h1, h2, h3, h4').forEach((h, i) => {
@@ -101,6 +102,9 @@ function render(md) {
 
   /* Re-apply annotation highlights after content change */
   applyAnnotationHighlights();
+
+  /* Attach lightbox to content images */
+  if (typeof attachLightboxToContent === 'function') attachLightboxToContent();
 
   /* Refresh variables panel if it's the active gutter tab */
   if (activeGutterTab === 'variables') renderVariables();

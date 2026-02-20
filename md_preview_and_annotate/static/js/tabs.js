@@ -3,6 +3,19 @@ function renderTabBar() {
   const bar = document.getElementById('tab-bar');
   bar.innerHTML = '';
 
+  /* Home button */
+  const homeBtn = document.createElement('button');
+  homeBtn.id = 'tab-home';
+  homeBtn.title = 'Home';
+  homeBtn.innerHTML = '<i class="ph ph-house-simple"></i>';
+  homeBtn.className = homeScreenActive ? 'active' : '';
+  homeBtn.onclick = () => {
+    if (homeScreenActive) return;
+    showHomeScreen();
+    renderTabBar();
+  };
+  bar.appendChild(homeBtn);
+
   const ids = Object.keys(tabs);
   ids.forEach(id => {
     const tab = tabs[id];
@@ -15,13 +28,11 @@ function renderTabBar() {
     nameSpan.textContent = tab.filename;
     div.appendChild(nameSpan);
 
-    if (ids.length > 1) {
-      const close = document.createElement('span');
-      close.className = 'tab-close';
-      close.innerHTML = '&times;';
-      close.onclick = (e) => { e.stopPropagation(); closeTab(id); };
-      div.appendChild(close);
-    }
+    const close = document.createElement('span');
+    close.className = 'tab-close';
+    close.innerHTML = '&times;';
+    close.onclick = (e) => { e.stopPropagation(); closeTab(id); };
+    div.appendChild(close);
 
     div.onclick = () => switchTab(id);
     div.oncontextmenu = (e) => {
@@ -41,7 +52,14 @@ function renderTabBar() {
 }
 
 function switchTab(id) {
-  if (id === activeTabId || !tabs[id]) return;
+  if (!tabs[id]) return;
+  if (id === activeTabId && !homeScreenActive) return;
+
+  /* Leave home screen if active */
+  if (homeScreenActive) {
+    hideHomeScreen();
+    renderTabBar();
+  }
 
   /* Exit edit mode if active */
   if (editState.active) {
@@ -69,7 +87,7 @@ function switchTab(id) {
   activeTabId = id;
   lastRenderedMd = '';  /* Force re-render for new tab */
   lastRenderedAnnotationsKey = '';
-  localStorage.setItem('mdpreview-active-tab', id);
+  localStorage.setItem('dabarat-active-tab', id);
 
   renderTabBar();
 
@@ -112,7 +130,8 @@ async function fetchTabContent(id) {
 }
 
 async function closeTab(id) {
-  if (Object.keys(tabs).length <= 1) return;
+  /* Exit edit mode if active on this tab */
+  if (editState.active && editState.tabId === id) exitEditMode(true);
 
   /* Exit diff mode if the left tab is being closed */
   if (diffState.active && diffState.leftTabId === id) exitDiffMode();
@@ -136,6 +155,8 @@ async function closeTab(id) {
     if (activeTabId && tabs[activeTabId].content) {
       render(tabs[activeTabId].content);
       document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
+    } else if (!activeTabId) {
+      showHomeScreen();
     }
   }
   renderTabBar();
@@ -162,10 +183,8 @@ function showTabContextMenu(x, y, tabId) {
     { label: 'Copy Path', icon: 'ph-copy', action: () => {
       navigator.clipboard.writeText(tabs[tabId].filepath);
     }},
+    { label: 'Close', icon: 'ph-x', action: () => closeTab(tabId) },
   ];
-  if (Object.keys(tabs).length > 1) {
-    items.push({ label: 'Close', icon: 'ph-x', action: () => closeTab(tabId) });
-  }
 
   items.forEach(item => {
     const row = document.createElement('div');
@@ -290,6 +309,8 @@ function showAddFileInput() {
           if (typeof CommandPalette !== 'undefined' && data.filepath) {
             CommandPalette.saveRecent(data.filepath, data.filename);
           }
+          if (homeScreenActive) hideHomeScreen();
+          if (data.id) switchTab(data.id);
           renderTabBar();
         } catch(err) {
           console.error('Failed to add file:', err);

@@ -1,0 +1,123 @@
+/* ══════════════════════════════════════════════════════════
+   Image Lightbox
+   ══════════════════════════════════════════════════════════ */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: rgba(var(--ctp-mantle-rgb), 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+.lightbox.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+[data-theme="latte"] .lightbox {
+  background: rgba(var(--ctp-mantle-rgb), 0.75);
+}
+
+/* Close button */
+.lightbox-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(var(--ctp-surface0-rgb), 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.4);
+  color: var(--ctp-text);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+  z-index: 1001;
+}
+.lightbox-close:hover {
+  background: rgba(var(--ctp-surface1-rgb), 0.8);
+  transform: scale(1.08);
+}
+
+/* Image stage */
+.lightbox-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 80vh;
+}
+.lightbox-stage img {
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 24px 80px rgba(var(--ctp-mantle-rgb), 0.6);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Caption */
+.lightbox-caption {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ctp-subtext1);
+  margin-top: 16px;
+  text-align: center;
+  max-width: 600px;
+  font-style: italic;
+}
+
+/* Navigation */
+.lightbox-nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+.lightbox-prev,
+.lightbox-next {
+  background: rgba(var(--ctp-surface0-rgb), 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.3);
+  color: var(--ctp-text);
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+}
+.lightbox-prev:hover,
+.lightbox-next:hover {
+  background: rgba(var(--ctp-surface1-rgb), 0.7);
+  transform: scale(1.08);
+}
+
+.lightbox-counter {
+  font-family: 'Victor Mono', monospace;
+  font-size: 11px;
+  color: var(--ctp-overlay1);
+}
+
+/* Focus states for keyboard accessibility */
+.lightbox-close:focus-visible,
+.lightbox-prev:focus-visible,
+.lightbox-next:focus-visible {
+  outline: 2px solid var(--ctp-lavender);
+  outline-offset: 2px;
+}

@@ -1,6 +1,6 @@
 # Agent Docs
 
-Detailed reference documentation for md-preview-and-annotate internals.
+Detailed reference documentation for Markdown Dabarat internals.
 
 ## Files
 

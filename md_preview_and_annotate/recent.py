@@ -8,7 +8,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
-RECENT_FILE = os.path.expanduser("~/.mdpreview/recent.json")
+RECENT_FILE = os.path.expanduser("~/.dabarat/recent.json")
 MAX_RECENT = 20
 MAX_FILE_READ = 1 * 1024 * 1024  # 1MB for metadata extraction
 ALLOWED_EXT = {".md", ".markdown", ".txt"}
@@ -64,17 +64,46 @@ def _extract_summary(filepath, max_chars=200):
             text = parts[2]
     # Strip code blocks
     text = re.sub(r"```[\s\S]*?```", "", text)
+    # Strip HTML tags
+    text = re.sub(r"<[^>]+>", "", text)
     # Find first paragraph (non-header, non-list)
     for para in re.split(r"\n\s*\n+", text.strip()):
         if para.startswith("#") or re.match(r"^\s*[-*+]\s", para):
             continue
-        clean = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", para)  # strip links
+        clean = re.sub(r"<[^>]+>", "", para)  # strip any remaining HTML
+        clean = re.sub(r"\[([^\]]+)\]\([^\)]+\)", r"\1", clean)  # strip links
         clean = re.sub(r"!\[.*?\]\([^\)]+\)", "", clean)  # strip images
         clean = re.sub(r"[*_`~]+", "", clean)  # strip emphasis
+        clean = " ".join(clean.split())  # collapse whitespace
         clean = clean.strip()
         if clean:
             return clean[:max_chars] + ("..." if len(clean) > max_chars else "")
     return ""
+
+
+def _extract_preview(filepath, max_chars=500):
+    """Extract first portion of markdown for rendered preview (preserving formatting)."""
+    try:
+        text = Path(filepath).read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return ""
+    # Strip YAML frontmatter
+    if text.startswith("---"):
+        parts = text.split("---", 2)
+        if len(parts) >= 3:
+            text = parts[2]
+    # Strip HTML tags (images, alignment divs, etc.)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = text.strip()
+    # Take first N chars, try to break at a paragraph boundary
+    if len(text) > max_chars:
+        # Find last double-newline before max_chars
+        cut = text.rfind("\n\n", 0, max_chars)
+        if cut > max_chars // 3:
+            text = text[:cut]
+        else:
+            text = text[:max_chars]
+    return text.strip()
 
 
 def load():
@@ -98,21 +127,112 @@ def save(entries):
     _atomic_write(RECENT_FILE, {"version": "1.0", "entries": entries[:MAX_RECENT]})
 
 
+def _extract_word_count(filepath):
+    """Count words in a markdown file."""
+    try:
+        text = Path(filepath).read_text(encoding="utf-8", errors="ignore")
+        # Strip frontmatter
+        if text.startswith("---"):
+            parts = text.split("---", 2)
+            if len(parts) >= 3:
+                text = parts[2]
+        return len(text.split())
+    except Exception:
+        return 0
+
+
+def _extract_preview_image(filepath):
+    """Extract first image path from markdown, returning absolute path or URL."""
+    try:
+        raw = Path(filepath).read_text(encoding="utf-8", errors="ignore")
+        img_match = re.search(r"!\[.*?\]\(([^)]+)\)", raw)
+        if img_match:
+            img_path = img_match.group(1)
+            if not img_path.startswith(("http://", "https://")):
+                img_path = os.path.join(os.path.dirname(filepath), img_path)
+                if os.path.isfile(img_path):
+                    return img_path
+                return ""
+            return img_path
+    except Exception:
+        pass
+    return ""
+
+
+def _count_annotations(filepath):
+    """Count active annotations for a file."""
+    try:
+        from . import annotations as _ann_mod
+        data, _ = _ann_mod.read(filepath)
+        return len(data.get("annotations", []))
+    except Exception:
+        return 0
+
+
+def _count_versions(filepath):
+    """Count version history entries for a file."""
+    try:
+        from . import history as _hist_mod
+        return len(_hist_mod.list_versions(filepath))
+    except Exception:
+        return 0
+
+
+def remove_entry(filepath):
+    """Remove a file from recent entries."""
+    path = os.path.abspath(filepath)
+    with _lock:
+        entries = load()
+        entries = [e for e in entries if e["path"] != path]
+        save(entries)
+
+
 def add_entry(filepath, content=None, tags=None):
     """Add or update a recent file entry (called on every file open)."""
     path = os.path.abspath(filepath)
     with _lock:
         entries = load()
         entries = [e for e in entries if e["path"] != path]
+        # Detect first image in the markdown for card preview
+        preview_image = ""
+        try:
+            raw = Path(path).read_text(encoding="utf-8", errors="ignore")
+            img_match = re.search(r"!\[.*?\]\(([^)]+)\)", raw)
+            if img_match:
+                img_path = img_match.group(1)
+                if not img_path.startswith(("http://", "https://")):
+                    img_path = os.path.join(os.path.dirname(path), img_path)
+                    if os.path.isfile(img_path):
+                        preview_image = img_path
+                else:
+                    preview_image = img_match.group(1)
+        except Exception:
+            pass
+
+        # Extract frontmatter badges
+        fm_badges = {}
+        try:
+            from . import frontmatter as _fm_mod
+            fm, _ = _fm_mod.get_frontmatter(path)
+            if fm:
+                for k in ("type", "model", "version", "status"):
+                    if k in fm:
+                        fm_badges[k] = str(fm[k])
+        except Exception:
+            pass
+
         entry = {
             "path": path,
             "filename": os.path.basename(path),
             "lastOpened": datetime.now(timezone.utc).isoformat(),
             "wordCount": len((content or "").split()),
-            "annotationCount": 0,
-            "versionCount": 0,
+            "annotationCount": _count_annotations(path),
+            "versionCount": _count_versions(path),
             "tags": tags or [],
             "summary": _extract_summary(path),
+            "preview": _extract_preview(path),
+            "previewImage": preview_image,
+            "frontmatter": fm_badges if fm_badges else None,
         }
         entries = [entry] + entries[: MAX_RECENT - 1]
         save(entries)

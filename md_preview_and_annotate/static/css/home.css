@@ -1,16 +1,26 @@
 /* ══════════════════════════════════════════════════════════
-   Home Screen
+   Home Screen — Workspace-Driven Design
    ══════════════════════════════════════════════════════════ */
 
-.home-screen {
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 48px 24px;
+/* When home is active, content area uses full width with TOC sidebar */
+body.home-active #content {
+  display: flex;
+  justify-content: flex-start;
+  max-width: none;
+  padding: 0;
 }
 
-/* ── Header ──────────────────────────────────────────── */
+.home-screen {
+  width: 100%;
+  padding: 32px 40px 48px;
+}
+
+/* ── Workspace Header ───────────────────────────────────── */
 .home-header {
   margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 .home-title {
   font-family: 'Cormorant Garamond', Georgia, serif;
@@ -20,102 +30,483 @@
   color: var(--ctp-lavender);
   letter-spacing: -0.02em;
 }
+.home-workspace-path {
+  font-family: 'Victor Mono', monospace;
+  font-size: 11px;
+  color: var(--ctp-overlay0);
+  margin-top: 2px;
+}
+.home-workspace-stats {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay0);
+  margin-left: 12px;
+}
 
-/* ── Card Grid ───────────────────────────────────────── */
+/* ── Quick Actions ──────────────────────────────────────── */
+.home-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.home-action-btn {
+  background: var(--ctp-surface0);
+  color: var(--ctp-subtext0);
+  border: 1px solid var(--ctp-surface1);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.home-action-btn:hover {
+  background: var(--ctp-surface1);
+  color: var(--ctp-text);
+  border-color: var(--ctp-surface2);
+}
+.home-action-btn.active {
+  background: rgba(var(--ctp-blue-rgb), 0.15);
+  color: var(--ctp-blue);
+  border-color: rgba(var(--ctp-blue-rgb), 0.3);
+}
+
+/* ── Card Grid — RAM pattern (Repeat, Auto, Minmax) ──────── */
 .home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+/* ── Card ────────────────────────────────────────────────── */
+.home-card {
+  position: relative;
+  background: var(--ctp-surface0);
+  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: var(--elevation-1);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  /* CSS fallback animation — replaced by Motion One if available */
+  animation: homeCardSlide 0.3s ease both;
 }
 
-.home-card {
-  background: var(--ctp-surface0);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-  animation: homeCardSlide 0.3s ease both;
-  cursor: pointer;
+/* Accent strip — colored top border based on file type */
+.home-card-accent {
+  height: 3px;
+  background: var(--accent, var(--ctp-blue));
 }
+
 .home-card:hover {
-  border-color: var(--ctp-surface1);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: rgba(var(--ctp-lavender-rgb), 0.3);
+  transform: translateY(-2px);
+  box-shadow: var(--elevation-2);
+}
+.home-card:active {
+  transform: translateY(0);
+  box-shadow: var(--elevation-1);
+  transition-duration: 0.08s;
+}
+
+/* ── Card Remove Button ─────────────────────────────────── */
+.home-card-remove {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 22px;
+  height: 22px;
+  background: rgba(var(--ctp-surface1-rgb), 0.85);
+  border: none;
+  border-radius: 4px;
+  color: var(--ctp-overlay0);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  z-index: 2;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.home-card:hover .home-card-remove { opacity: 1; }
+.home-card-remove:hover {
+  background: var(--ctp-red);
+  color: var(--ctp-base);
 }
 
 @keyframes homeCardSlide {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Card Content ────────────────────────────────────── */
-.home-card-content {
-  padding: 14px 16px;
+/* ── Card Body ──────────────────────────────────────────── */
+.home-card-body {
+  padding: 20px 24px 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
+.home-card-header {
+  margin-bottom: 8px;
+}
+
+.home-card-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding-right: 32px;
+  line-height: 1;
+}
+.home-card-icon {
+  font-size: 16px;
+  color: var(--ctp-green);
+  flex-shrink: 0;
+  /* Align icon visually with text baseline */
+  position: relative;
+  top: 2px;
+  display: inline-flex;
+  align-items: center;
+}
 .home-card-filename {
   font-family: 'DM Sans', sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--ctp-text);
-  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
 }
-
+.home-card-time {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay0);
+  flex-shrink: 0;
+  margin-left: auto;
+  /* Align timestamp with filename baseline */
+  position: relative;
+  top: -1px;
+}
 .home-card-path {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
   color: var(--ctp-overlay0);
-  margin-bottom: 6px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* ── Card Badges (frontmatter) ──────────────────────────── */
+.home-card-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  max-height: 24px;
+  margin-bottom: 8px;
+}
+.home-badge {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.home-badge i { font-size: 11px; }
+/* Frontmatter badges */
+.home-badge-type   { background: rgba(var(--ctp-blue-rgb), 0.15); color: var(--ctp-blue); }
+.home-badge-model  { background: rgba(var(--ctp-mauve-rgb), 0.15); color: var(--ctp-mauve); }
+.home-badge-version { background: rgba(var(--ctp-green-rgb), 0.15); color: var(--ctp-green); }
+.home-badge-status { background: rgba(var(--ctp-peach-rgb), 0.15); color: var(--ctp-peach); }
+
+/* Smart file-type badges */
+.home-badge-prompt    { background: rgba(var(--ctp-yellow-rgb), 0.18); color: var(--ctp-yellow); }
+.home-badge-agent     { background: rgba(var(--ctp-mauve-rgb), 0.18); color: var(--ctp-mauve); }
+.home-badge-plan      { background: rgba(var(--ctp-sky-rgb), 0.18); color: var(--ctp-sky); }
+.home-badge-spec      { background: rgba(var(--ctp-teal-rgb), 0.18); color: var(--ctp-teal); }
+.home-badge-readme    { background: rgba(var(--ctp-blue-rgb), 0.18); color: var(--ctp-blue); }
+.home-badge-arch      { background: rgba(var(--ctp-flamingo-rgb), 0.18); color: var(--ctp-flamingo); }
+.home-badge-changelog { background: rgba(var(--ctp-green-rgb), 0.18); color: var(--ctp-green); }
+.home-badge-todo      { background: rgba(var(--ctp-peach-rgb), 0.18); color: var(--ctp-peach); }
+.home-badge-license   { background: rgba(var(--ctp-overlay1-rgb), 0.18); color: var(--ctp-overlay1); }
+.home-badge-research  { background: rgba(var(--ctp-lavender-rgb), 0.18); color: var(--ctp-lavender); }
+
+/* ── Card Preview ───────────────────────────────────────── */
+.home-card-preview {
+  margin: 0 -24px 12px;
+  overflow: hidden;
+}
+.home-card-preview-img {
+  height: 180px;
+  background: var(--ctp-mantle);
+  position: relative;
+}
+.home-card-preview-img img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  border-radius: 0;
+}
+/* Glass overlay gradient on image previews */
+.home-card-preview-img::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 40%,
+    rgba(var(--ctp-surface0-rgb), 0.85) 100%
+  );
+  pointer-events: none;
+}
+
+.home-card-preview-md {
+  height: 120px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ctp-subtext0);
+  overflow: hidden;
+  position: relative;
+  padding: 12px 24px 0;
+  background: rgba(var(--ctp-mantle-rgb), 0.5);
+  border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
+}
+.home-card-preview-md .home-card-preview-fade {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 48px;
+  background: linear-gradient(
+    transparent,
+    rgba(var(--ctp-surface0-rgb), 0.95)
+  );
+  pointer-events: none;
+}
+.home-card-preview-md h1,
+.home-card-preview-md h2,
+.home-card-preview-md h3 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ctp-text);
+  margin: 0 0 6px 0;
+}
+.home-card-preview-md p { margin: 0 0 6px 0; }
+.home-card-preview-md code {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  background: var(--ctp-surface1);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+.home-card-preview-md pre {
+  font-size: 10px;
+  padding: 6px 8px;
+  background: var(--ctp-surface1);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 4px 0;
+}
+.home-card-preview-md ul,
+.home-card-preview-md ol {
+  padding-left: 16px;
+  margin: 2px 0;
+}
+.home-card-preview-md img   { display: none; }
+.home-card-preview-md table { font-size: 10px; }
+
 .home-card-summary {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  color: var(--ctp-subtext0);
+  line-height: 1.55;
+  margin-bottom: 10px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  line-clamp: 3;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
+/* Description text field under cards */
+.home-card-desc {
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   color: var(--ctp-subtext0);
   line-height: 1.5;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  line-clamp: 2;
   overflow: hidden;
+  overflow-wrap: anywhere;
+  padding: 0 2px;
 }
 
-/* ── Card Meta ───────────────────────────────────────── */
-.home-card-meta {
+/* ── Card Footer ────────────────────────────────────────── */
+.home-card-footer {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.3);
+  margin-top: auto;
 }
-.home-card-meta span {
+.home-card-footer span {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
   color: var(--ctp-overlay1);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 4px;
+  line-height: 1;
 }
-.home-card-meta i {
-  font-size: 11px;
+.home-card-footer i {
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
 }
-.home-card-time {
+.home-card-tags {
   margin-left: auto;
+  display: flex;
+  gap: 5px;
 }
-
-/* ── Tag Pills ───────────────────────────────────────── */
 .home-tag {
   display: inline-block;
   background: var(--ctp-surface1);
   color: var(--ctp-subtext0);
   font-family: 'Victor Mono', monospace;
   font-size: 9px;
-  padding: 1px 6px;
-  border-radius: 3px;
+  padding: 2px 8px;
+  border-radius: 4px;
 }
 
-/* ── Empty State ─────────────────────────────────────── */
+/* ── TOC Sidebar as Workspace Browser ───────────────────── */
+/* Workspace sidebar header in TOC */
+.ws-header {
+  padding: 8px 14px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ws-path {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay0);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-actions {
+  display: flex;
+  gap: 6px;
+}
+.ws-btn {
+  background: var(--ctp-surface0);
+  color: var(--ctp-subtext0);
+  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.ws-btn:hover {
+  background: var(--ctp-surface1);
+  color: var(--ctp-text);
+}
+.ws-btn.active {
+  background: rgba(var(--ctp-blue-rgb), 0.15);
+  color: var(--ctp-blue);
+  border-color: rgba(var(--ctp-blue-rgb), 0.3);
+}
+.ws-stats {
+  font-family: 'Victor Mono', monospace;
+  font-size: 9px;
+  color: var(--ctp-overlay0);
+  padding: 6px 14px 0;
+  border-top: 1px solid rgba(var(--ctp-surface0-rgb), 0.8);
+}
+
+/* Workspace file list entries in TOC */
+.ws-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--ctp-subtext1);
+  transition: background 0.1s, color 0.1s;
+}
+.ws-entry:hover {
+  background: var(--ctp-surface0);
+  color: var(--ctp-text);
+}
+.ws-entry i {
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.ws-entry.ws-dir i   { color: var(--ctp-blue); }
+.ws-entry.ws-file i  { color: var(--ctp-green); }
+.ws-entry-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-entry-size {
+  font-family: 'Victor Mono', monospace;
+  font-size: 9px;
+  color: var(--ctp-overlay0);
+  flex-shrink: 0;
+}
+.ws-separator {
+  border: none;
+  border-top: 1px dashed rgba(var(--ctp-surface1-rgb), 0.5);
+  margin: 4px 14px;
+}
+.ws-empty {
+  padding: 20px 14px;
+  text-align: center;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--ctp-overlay0);
+}
+.ws-empty i {
+  font-size: 18px;
+  display: block;
+  margin-bottom: 6px;
+  opacity: 0.4;
+}
+
+/* ── Empty State ────────────────────────────────────────── */
 .home-empty {
   text-align: center;
   padding: 80px 20px;
@@ -151,16 +542,54 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all 0.15s;
+  transition: opacity 0.15s, transform 0.15s;
 }
 .home-open-btn:hover {
   opacity: 0.9;
   transform: translateY(-1px);
 }
 
-/* ── Loading ─────────────────────────────────────────── */
+/* ── Loading ────────────────────────────────────────────── */
 .home-loading {
-  max-width: 720px;
+  max-width: 960px;
   margin: 60px auto;
-  padding: 0 24px;
+  padding: 0 32px;
+}
+
+/* ── Focus States ──────────────────────────────────────── */
+.home-card:focus-visible,
+.home-action-btn:focus-visible,
+.home-open-btn:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
+}
+.ws-btn:focus-visible,
+.ws-entry:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: -1px;
+}
+
+/* ── Responsive ─────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* TOC collapses — still allow 2-col since full viewport available */
+  .home-screen {
+    padding: 24px 20px;
+  }
+}
+@media (max-width: 700px) {
+  /* Safety: force single column when auto-fill minmax can't fit 2 */
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 600px) {
+  .home-screen {
+    padding: 16px 12px;
+  }
+  .home-card-body {
+    padding: 16px 16px 12px;
+  }
+  .home-card-preview {
+    margin: 0 -16px 10px;
+  }
 }

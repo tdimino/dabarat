@@ -16,11 +16,20 @@
   gap: 16px;
   z-index: 30;
 }
-#status .filepath { color: var(--ctp-overlay1); }
+#status .filepath {
+  color: var(--ctp-overlay1);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
 #status .updated {
   color: var(--ctp-green);
   display: flex;
   align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 #status .dot {
   display: inline-block;
@@ -34,11 +43,15 @@
 #word-count {
   color: var(--ctp-overlay0);
   font-size: 10px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 #status-tags {
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 1;
+  overflow: hidden;
 }
 #status-tags .tag-pill {
   font-size: 9px;

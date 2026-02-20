@@ -223,10 +223,10 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 #toc a.active {
   color: var(--ctp-blue);
   border-left-color: var(--ctp-blue);
-  box-shadow: -4px 0 8px -3px rgba(137, 180, 250, 0.15);
+  box-shadow: -4px 0 8px -3px rgba(var(--ctp-blue-rgb), 0.15);
 }
 [data-theme="latte"] #toc a.active {
-  box-shadow: -4px 0 8px -3px rgba(30, 102, 245, 0.12);
+  box-shadow: -4px 0 8px -3px rgba(var(--ctp-blue-rgb), 0.12);
 }
 
 /* h1 — document title */
@@ -309,6 +309,20 @@ body.toc-collapsed #toc-restore {
 }
 #toc-restore:hover { background: var(--ctp-surface0); color: var(--ctp-text); }
 
+/* ── Home-active: TOC stays visible as workspace browser ── */
+body.home-active #toc {
+  display: flex;
+}
+body.home-active #toc-label {
+  /* Label text updated by JS to "WORKSPACE" */
+}
+body.home-active #main-area {
+  margin-left: var(--toc-width, 260px);
+}
+body.home-active #toc-resize-handle {
+  display: block;
+}
+
 /* ══════════════════════════════════════════════════════════
    Main Area Layout
    ══════════════════════════════════════════════════════════ */
@@ -333,6 +347,7 @@ body.toc-collapsed #toc-restore {
   min-height: 34px;
   overflow-x: auto;
   scrollbar-width: none;
+  margin-right: -260px;
 }
 #tab-bar::-webkit-scrollbar { width: 0; height: 0; }
 
@@ -367,7 +382,7 @@ body.toc-collapsed #toc-restore {
   border-radius: 3px;
 }
 .tab:hover .tab-close { display: inline; }
-.tab-close:hover { color: var(--ctp-red); background: rgba(243, 139, 168, 0.1); }
+.tab-close:hover { color: var(--ctp-red); background: rgba(var(--ctp-red-rgb), 0.1); }
 .tab-tag-dot {
   display: inline-block;
   width: 6px; height: 6px;
@@ -375,6 +390,22 @@ body.toc-collapsed #toc-restore {
   margin-left: 4px;
   flex-shrink: 0;
 }
+
+#tab-home {
+  background: none;
+  border: none;
+  color: var(--ctp-overlay0);
+  cursor: pointer;
+  padding: 0 10px;
+  font-size: 14px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--ctp-surface0);
+}
+#tab-home:hover { color: var(--ctp-text); }
+#tab-home.active { color: var(--ctp-lavender); }
 
 #tab-add {
   background: none;
@@ -432,7 +463,7 @@ body.toc-collapsed #toc-restore {
   border-radius: 8px;
   padding: 4px 0;
   z-index: 100;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 16px rgba(var(--ctp-mantle-rgb), 0.35);
   min-width: 140px;
   animation: fmFadeIn 0.08s ease;
 }

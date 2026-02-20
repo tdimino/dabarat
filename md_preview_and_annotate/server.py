@@ -17,6 +17,11 @@ from . import recent
 from .template import get_html
 
 
+_browse_cache = {}  # keyed by (dirpath, max_mtime, file_count) → response dict
+_browse_cache_lock = threading.Lock()
+_BROWSE_CACHE_MAX = 20
+
+
 class PreviewHandler(http.server.BaseHTTPRequestHandler):
     _tabs = {}
     _tabs_lock = threading.Lock()
@@ -163,6 +168,156 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             except Exception as e:
                 self._json_response({"entries": [], "error": str(e)})
 
+        elif parsed.path == "/api/browse-dir":
+            dir_path = params.get("path", [None])[0]
+            if not dir_path:
+                dir_path = os.path.expanduser("~")
+            dir_path = os.path.abspath(dir_path)
+            if not os.path.isdir(dir_path):
+                self._json_response({"error": "not a directory"}, 404)
+                return
+            try:
+                md_exts = {".md", ".markdown", ".txt", ".mdown", ".mkd"}
+
+                # Compute max mtime + file count for cache key (count catches deletions)
+                max_mtime = 0.0
+                dir_entry_count = 0
+                try:
+                    for name in os.listdir(dir_path):
+                        if not name.startswith("."):
+                            dir_entry_count += 1
+                            try:
+                                mt = os.path.getmtime(os.path.join(dir_path, name))
+                                if mt > max_mtime:
+                                    max_mtime = mt
+                            except Exception:
+                                pass
+                except Exception:
+                    pass
+
+                cache_key = (dir_path, max_mtime, dir_entry_count)
+                with _browse_cache_lock:
+                    cached = _browse_cache.get(cache_key)
+                if cached is not None:
+                    self._json_response(cached)
+                    return
+
+                entries = []
+                total_words = 0
+                file_count = 0
+                for name in sorted(os.listdir(dir_path), key=str.lower):
+                    if name.startswith("."):
+                        continue
+                    full = os.path.join(dir_path, name)
+                    if os.path.isdir(full):
+                        md_count = 0
+                        try:
+                            for sub in os.listdir(full):
+                                if not sub.startswith("."):
+                                    _, se = os.path.splitext(sub)
+                                    if se.lower() in md_exts:
+                                        md_count += 1
+                                    if md_count >= 99:
+                                        break
+                        except Exception:
+                            pass
+                        entries.append({"name": name, "type": "dir", "path": full, "mdCount": md_count})
+                    else:
+                        _, ext = os.path.splitext(name)
+                        if ext.lower() in md_exts:
+                            entry = {"name": name, "type": "file", "path": full}
+                            file_count += 1
+                            try:
+                                st = os.stat(full)
+                                entry["size"] = st.st_size
+                                entry["mtime"] = st.st_mtime
+                            except Exception:
+                                pass
+                            # Tags + annotation count
+                            try:
+                                tags = annotations.read_tags(full)
+                                if tags:
+                                    entry["tags"] = tags
+                            except Exception:
+                                pass
+                            try:
+                                ann_data, _ = annotations.read(full)
+                                ac = len(ann_data.get("annotations", []))
+                                if ac:
+                                    entry["annotationCount"] = ac
+                            except Exception:
+                                pass
+                            # Frontmatter badges + description
+                            try:
+                                fm, _ = frontmatter.get_frontmatter(full)
+                                if fm:
+                                    badges = {}
+                                    for k in ("type", "model", "version", "status", "description", "summary"):
+                                        if k in fm:
+                                            badges[k] = str(fm[k])
+                                    if badges:
+                                        entry["badges"] = badges
+                            except Exception:
+                                pass
+                            # Rich metadata: word count, summary, preview, image, versions
+                            # Gate all file-reading extractions behind size check (< 1 MB)
+                            file_small = entry.get("size", 0) < 1024 * 1024
+                            if file_small:
+                                try:
+                                    wc = recent._extract_word_count(full)
+                                    if wc:
+                                        entry["wordCount"] = wc
+                                        total_words += wc
+                                except Exception:
+                                    pass
+                                try:
+                                    s = recent._extract_summary(full)
+                                    if s:
+                                        entry["summary"] = s
+                                except Exception:
+                                    pass
+                                try:
+                                    p = recent._extract_preview(full)
+                                    if p:
+                                        entry["preview"] = p
+                                except Exception:
+                                    pass
+                                try:
+                                    img = recent._extract_preview_image(full)
+                                    if img:
+                                        entry["previewImage"] = img
+                                except Exception:
+                                    pass
+                            try:
+                                vc = recent._count_versions(full)
+                                if vc:
+                                    entry["versionCount"] = vc
+                            except Exception:
+                                pass
+                            entries.append(entry)
+
+                result = {
+                    "path": dir_path,
+                    "parent": os.path.dirname(dir_path) if dir_path != "/" else None,
+                    "dirname": os.path.basename(dir_path) or dir_path,
+                    "stats": {"fileCount": file_count, "totalWords": total_words},
+                    "entries": entries,
+                }
+                # Cache result (bounded, thread-safe)
+                with _browse_cache_lock:
+                    if len(_browse_cache) >= _BROWSE_CACHE_MAX:
+                        try:
+                            oldest = next(iter(_browse_cache))
+                            del _browse_cache[oldest]
+                        except StopIteration:
+                            pass
+                    _browse_cache[cache_key] = result
+                self._json_response(result)
+            except PermissionError:
+                self._json_response({"error": "permission denied"}, 403)
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
+
         elif parsed.path == "/api/versions":
             tab_id = params.get("tab", [None])[0]
             if tab_id and tab_id in self._tabs:
@@ -237,6 +392,41 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             result["right_filename"] = os.path.basename(against_path)
             self._json_response(result)
 
+        elif parsed.path == "/api/preview-image":
+            # Serve images referenced in home screen cards
+            img_path = params.get("path", [None])[0]
+            if not img_path or not os.path.isabs(img_path):
+                self.send_error(400)
+                return
+            img_path = os.path.normpath(img_path)
+            if not os.path.isfile(img_path):
+                self.send_error(404)
+                return
+            # Restrict to directories of open tabs or cached browse dirs
+            tab_dirs = [os.path.dirname(t["filepath"]) for t in self._tabs.values()]
+            with _browse_cache_lock:
+                browse_dirs = [k[0] for k in _browse_cache]
+            allowed_dirs = tab_dirs + browse_dirs
+            if not any(img_path.startswith(d + os.sep) for d in allowed_dirs):
+                self.send_error(403)
+                return
+            ctype, _ = mimetypes.guess_type(img_path)
+            if not ctype or not ctype.startswith("image/"):
+                self.send_error(403)
+                return
+            try:
+                with open(img_path, "rb") as f:
+                    data = f.read()
+                self.send_response(200)
+                self.send_header("Content-Type", ctype)
+                self.send_header("Content-Length", str(len(data)))
+                self.send_header("Cache-Control", "max-age=3600")
+                self.end_headers()
+                self.wfile.write(data)
+            except Exception:
+                self.send_error(500)
+            return
+
         elif parsed.path != "/" and parsed.path != "":
             # Try to serve static files relative to open tab directories
             rel_path = unquote(parsed.path.lstrip("/"))
@@ -274,7 +464,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
     def _serve_html_shell(self):
         first_tab = next(iter(self._tabs), "")
         first_file = self._tabs[first_tab]["filepath"] if first_tab else ""
-        title = os.path.basename(first_file) if first_file else "mdpreview"
+        title = os.path.basename(first_file) if first_file else "dabarat"
         html = get_html(title=title, default_author=self.default_author)
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
@@ -519,7 +709,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 import tempfile
                 dir_name = os.path.dirname(filepath)
                 fd, tmp_path = tempfile.mkstemp(
-                    dir=dir_name, suffix=".tmp", prefix=".mdpreview-"
+                    dir=dir_name, suffix=".tmp", prefix=".dabarat-"
                 )
                 try:
                     os.write(fd, content.encode("utf-8"))
@@ -560,6 +750,17 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     self._json_response({"error": "version not found"}, 404)
             except ValueError as e:
                 self._json_response({"error": str(e)}, 400)
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
+
+        elif parsed.path == "/api/recent/remove":
+            filepath = body.get("path", "")
+            if not filepath:
+                self._json_response({"error": "path required"}, 400)
+                return
+            try:
+                recent.remove_entry(filepath)
+                self._json_response({"ok": True})
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)
 

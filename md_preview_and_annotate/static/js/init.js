@@ -8,7 +8,7 @@ async function init() {
   });
 
   /* Restore active tab from localStorage, or use first */
-  const stored = localStorage.getItem('mdpreview-active-tab');
+  const stored = localStorage.getItem('dabarat-active-tab');
   if (stored && tabs[stored]) {
     activeTabId = stored;
   } else if (tabList.length > 0) {
@@ -34,7 +34,9 @@ async function init() {
     )
   );
 
-  if (activeTabId && tabs[activeTabId]) {
+  if (Object.keys(tabs).length === 0) {
+    showHomeScreen();
+  } else if (activeTabId && tabs[activeTabId]) {
     render(tabs[activeTabId].content);
     document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
   }

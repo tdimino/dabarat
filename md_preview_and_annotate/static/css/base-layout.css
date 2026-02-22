@@ -320,7 +320,7 @@ body.home-active #main-area {
   margin-left: var(--toc-width, 260px);
   margin-right: 0;
 }
-body.home-active #tab-bar {
+body.home-active #tab-bar-wrapper {
   margin-right: 0;
 }
 body.home-active #toc-resize-handle {
@@ -340,10 +340,37 @@ body.home-active #toc-resize-handle {
 /* ══════════════════════════════════════════════════════════
    Tab Bar
    ══════════════════════════════════════════════════════════ */
-#tab-bar {
+#tab-bar-wrapper {
   position: sticky;
   top: 0;
   z-index: 5;
+  margin-right: -260px;
+}
+/* Edge fade indicators — visible when tabs overflow */
+#tab-bar-wrapper::before,
+#tab-bar-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+#tab-bar-wrapper::before {
+  left: 0;
+  background: linear-gradient(90deg, var(--crust-bg, var(--ctp-crust)) 30%, transparent);
+}
+#tab-bar-wrapper::after {
+  right: 0;
+  background: linear-gradient(-90deg, var(--crust-bg, var(--ctp-crust)) 30%, transparent);
+}
+#tab-bar-wrapper.has-overflow-left::before  { opacity: 1; }
+#tab-bar-wrapper.has-overflow-right::after  { opacity: 1; }
+
+#tab-bar {
   background: var(--crust-bg, var(--ctp-crust));
   border-bottom: 1px solid var(--ctp-surface0);
   display: flex;
@@ -351,7 +378,6 @@ body.home-active #toc-resize-handle {
   min-height: 34px;
   overflow-x: auto;
   scrollbar-width: none;
-  margin-right: -260px;
 }
 #tab-bar::-webkit-scrollbar { width: 0; height: 0; }
 
@@ -368,9 +394,16 @@ body.home-active #toc-resize-handle {
   border-bottom: 2px solid var(--ctp-surface0);
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, width 0.15s, opacity 0.15s, padding 0.15s;
   user-select: none;
   overflow: hidden; /* enables width-collapse animation on close */
+  flex-shrink: 1;
+  min-width: 60px;
+  max-width: 160px;
+}
+.tab > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .tab:hover { color: var(--ctp-text); background: var(--ctp-mantle); }
 .tab.active {

@@ -100,7 +100,7 @@ def get_html(title="dabarat", default_author="Tom"):
   <button id="toc-restore" title="Show sidebar" onclick="toggleToc()"><i class="ph ph-caret-right"></i></button>
 
   <div id="main-area">
-    <div id="tab-bar"></div>
+    <div id="tab-bar-wrapper"><div id="tab-bar"></div></div>
     <div id="content"></div>
     <div id="diff-view" style="display:none">
       <div class="diff-header">

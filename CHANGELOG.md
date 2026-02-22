@@ -29,6 +29,8 @@ All notable changes to Markdown Dabarat.
 - **Focus-visible states** — keyboard accessibility for cards, buttons, sidebar entries
 
 ### Home Page Polish
+- **Simplified home cards** — removed redundant `home-card-desc` description line, stripped leading H1 from markdown preview (avoids filename duplication), reduced preview height 120→80px, increased grid gap 16→20px
+- **Tab overflow handling** — tabs shrink with `flex-shrink:1` (min-width 60px, max-width 160px) and filename ellipsis; edge fade gradient indicators appear when tabs overflow; auto-scroll to active tab on switch; tab bar wrapped in `#tab-bar-wrapper` for fade positioning
 - **Tab bar full-width** — `body.home-active` now clears `margin-right: 0` on both `#main-area` and `#tab-bar`, eliminating the 260px dead zone from the hidden annotations gutter
 - **True-center empty state** — `.home-screen` uses flex column layout; `.home-empty` fills remaining space with `flex: 1` + `justify-content: center` for genuine vertical centering
 - **Reduced empty state weight** — icon 48→36px, heading 22→18px, opacity 0.4→0.3 for quieter ambient UI

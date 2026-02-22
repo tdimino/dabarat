@@ -47,7 +47,10 @@
 - **Carousel**: text selection triggers a floating 5-button carousel positioned above the selection; clicking a type opens the annotation form in the gutter
 
 ### Tab System
-- Tab bar rendered by `renderTabBar()` — click to switch, X to close, + to add
+- Tab bar rendered by `renderTabBar()` inside `#tab-bar-wrapper` — click to switch, X to close, + to add
+- Tabs shrink to fit: `flex-shrink:1`, `min-width: 60px`, `max-width: 160px`, filename truncated with `text-overflow: ellipsis`
+- Edge fade gradients on `#tab-bar-wrapper` indicate overflow when tabs exceed available width
+- Auto-scroll to active tab on `switchTab()` via `scrollIntoView({ inline: 'nearest' })`
 - `switchTab()` saves scroll position, resets render caches, fetches content
 - Tab reuse: server-side `--add` flag sends POST to running instance
 - Cross-file links: clicking a `.md` link in content calls `openFileAsTab()` via POST `/api/add`
@@ -147,7 +150,7 @@ Self-contained module with state, DOM construction, keyboard handling, command r
 ### File Cards
 - `_renderHomeContent(data, mode)` — builds card grid from browse-dir or recent API response
 - **Smart badges**: 10 pattern matchers in `_fileBadges` array detect prompt, agent config, plan, spec, readme, architecture, changelog, todo, license, research files (client-side, heuristic)
-- **Card description**: pulls from frontmatter `description` > frontmatter `summary` > server-extracted summary
+- **Card layout**: no separate description line; markdown preview (80px height) serves as the card body, with leading H1 stripped to avoid filename duplication; grid gap 20px
 - **Accent colors**: per-extension color strip (`_accentColors` map) using Catppuccin palette
 - **Motion One**: staggered card entrance (`delay: Motion.stagger(0.06)`), guarded with `if (window.Motion)`
 - **Equal-height**: flexbox column layout with `flex: 1` on card body

@@ -70,6 +70,24 @@ function renderTabBar() {
   } else {
     _lastTabIds = new Set(ids);
   }
+
+  /* Update overflow fade indicators */
+  _updateTabOverflow();
+}
+
+/* ── Tab Overflow Indicators ─────────────────────────── */
+let _tabOverflowBound = false;
+function _updateTabOverflow() {
+  const bar = document.getElementById('tab-bar');
+  const wrapper = document.getElementById('tab-bar-wrapper');
+  if (!bar || !wrapper) return;
+  wrapper.classList.toggle('has-overflow-left', bar.scrollLeft > 4);
+  wrapper.classList.toggle('has-overflow-right',
+    bar.scrollLeft < bar.scrollWidth - bar.clientWidth - 4);
+  if (!_tabOverflowBound) {
+    bar.addEventListener('scroll', _updateTabOverflow, { passive: true });
+    _tabOverflowBound = true;
+  }
 }
 
 function switchTab(id) {
@@ -111,6 +129,12 @@ function switchTab(id) {
   localStorage.setItem('dabarat-active-tab', id);
 
   renderTabBar();
+
+  /* Auto-scroll active tab into view */
+  const activeEl = document.querySelector('.tab.active');
+  if (activeEl) {
+    activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  }
 
   /* Restore per-tab frontmatter (prevents stale indicator bar from other tabs) */
   currentFrontmatter = tabs[id].frontmatter || null;

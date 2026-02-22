@@ -91,7 +91,7 @@
     justify-content: center;
   }
   #main-area { margin-left: 0; }
-  #tab-bar { margin-right: 0; }
+  #tab-bar-wrapper { margin-right: 0; }
   /* Home-active: hide TOC on narrow screens */
   body.home-active #toc {
     transform: translateX(calc(-1 * var(--toc-width, 260px)));

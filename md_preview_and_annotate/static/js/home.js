@@ -612,7 +612,9 @@ function _buildCard(e, i) {
     previewHtml = `<div class="home-card-preview home-card-preview-img"><img src="${imgSrc}" alt="" loading="lazy"></div>`;
   } else if (e.preview && typeof marked !== 'undefined') {
     try {
-      const rendered = marked.parse(e.preview, { breaks: false, gfm: true });
+      let rendered = marked.parse(e.preview, { breaks: false, gfm: true });
+      /* Strip leading H1 — it duplicates the filename already in the card header */
+      rendered = rendered.replace(/^\s*<h1[^>]*>[\s\S]*?<\/h1>\s*/, '');
       previewHtml = `<div class="home-card-preview home-card-preview-md"><div class="home-card-preview-content">${rendered}</div><div class="home-card-preview-fade"></div></div>`;
     } catch (_) {
       previewHtml = e.summary ? `<p class="home-card-summary">${escapeHtml(e.summary)}</p>` : '';
@@ -636,10 +638,6 @@ function _buildCard(e, i) {
   const fileBadge = _detectFileBadge(filename, e.path || '');
   if (fileBadge) fmBadges = fileBadge + fmBadges;
 
-  /* Description: frontmatter description > frontmatter summary > server summary */
-  const desc = (fm && fm.description) || (fm && fm.summary) || e.summary || '';
-  const descHtml = desc ? `<p class="home-card-desc">${escapeHtml(desc)}</p>` : '';
-
   const timestamp = e.lastOpened || (e.mtime ? new Date(e.mtime * 1000).toISOString() : '');
   const timeDisplay = timestamp ? _homeTimeAgo(timestamp) : '';
 
@@ -658,7 +656,6 @@ function _buildCard(e, i) {
         <p class="home-card-path">${escapeHtml((e.path || '').replace(os_home, '~'))}</p>
       </div>
       ${fmBadges ? `<div class="home-card-badges">${fmBadges}</div>` : ''}
-      ${descHtml}
       ${previewHtml}
       <div class="home-card-footer">
         ${e.wordCount ? `<span><i class="ph ph-text-aa"></i> ${e.wordCount.toLocaleString()}</span>` : ''}

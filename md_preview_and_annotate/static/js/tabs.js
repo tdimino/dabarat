@@ -52,6 +52,40 @@ function renderTabBar() {
   addBtn.onclick = showAddFileInput;
   bar.appendChild(addBtn);
 
+  /* Overflow dropdown — hidden until _updateTabOverflow detects overflow */
+  if (ids.length >= 2) {
+    const overflowBtn = document.createElement('button');
+    overflowBtn.id = 'tab-overflow';
+    overflowBtn.title = 'All tabs';
+    overflowBtn.innerHTML = '<i class="ph ph-caret-down"></i>';
+    overflowBtn.style.display = 'none';
+    overflowBtn.onclick = (e) => {
+      e.stopPropagation();
+      showTabOverflowMenu(overflowBtn);
+    };
+    bar.appendChild(overflowBtn);
+  }
+
+  /* Scroll arrow buttons — appended to wrapper, not bar */
+  const wrapper = document.getElementById('tab-bar-wrapper');
+  wrapper.querySelectorAll('.tab-scroll-arrow').forEach(el => el.remove());
+
+  const leftArrow = document.createElement('button');
+  leftArrow.className = 'tab-scroll-arrow tab-scroll-left';
+  leftArrow.innerHTML = '<i class="ph ph-caret-left"></i>';
+  leftArrow.onclick = () => {
+    bar.scrollBy({ left: -120, behavior: 'smooth' });
+  };
+  wrapper.appendChild(leftArrow);
+
+  const rightArrow = document.createElement('button');
+  rightArrow.className = 'tab-scroll-arrow tab-scroll-right';
+  rightArrow.innerHTML = '<i class="ph ph-caret-right"></i>';
+  rightArrow.onclick = () => {
+    bar.scrollBy({ left: 120, behavior: 'smooth' });
+  };
+  wrapper.appendChild(rightArrow);
+
   /* Animate newly added tabs */
   if (window.Motion && !_prefersReducedMotion) {
     const currentIds = new Set(ids);
@@ -81,9 +115,19 @@ function _updateTabOverflow() {
   const bar = document.getElementById('tab-bar');
   const wrapper = document.getElementById('tab-bar-wrapper');
   if (!bar || !wrapper) return;
-  wrapper.classList.toggle('has-overflow-left', bar.scrollLeft > 4);
-  wrapper.classList.toggle('has-overflow-right',
-    bar.scrollLeft < bar.scrollWidth - bar.clientWidth - 4);
+  const hasLeft = bar.scrollLeft > 4;
+  const hasRight = bar.scrollLeft < bar.scrollWidth - bar.clientWidth - 4;
+  wrapper.classList.toggle('has-overflow-left', hasLeft);
+  wrapper.classList.toggle('has-overflow-right', hasRight);
+
+  /* Toggle scroll arrow buttons and overflow dropdown */
+  const leftArr = wrapper.querySelector('.tab-scroll-left');
+  const rightArr = wrapper.querySelector('.tab-scroll-right');
+  if (leftArr) leftArr.classList.toggle('visible', hasLeft);
+  if (rightArr) rightArr.classList.toggle('visible', hasRight);
+  const overflowBtn = bar.querySelector('#tab-overflow');
+  if (overflowBtn) overflowBtn.style.display = (hasLeft || hasRight) ? '' : 'none';
+
   if (!_tabOverflowBound) {
     bar.addEventListener('scroll', _updateTabOverflow, { passive: true });
     _tabOverflowBound = true;
@@ -154,8 +198,9 @@ function switchTab(id) {
     window.scrollTo(0, tabs[id].scrollY || 0);
   });
 
-  /* Update status bar */
+  /* Update status bar and window title */
   document.getElementById('status-filepath').textContent = tabs[id].filepath;
+  document.title = tabs[id].filename + ' — dabarat';
 }
 
 /* Fetch content for a single tab and render if active */
@@ -258,6 +303,52 @@ function showTabContextMenu(x, y, tabId) {
   });
 
   /* Dismiss on click-outside or Escape — use AbortController to prevent leaks */
+  const ctrl = new AbortController();
+  menu._dismissCtrl = ctrl;
+  setTimeout(() => {
+    document.addEventListener('click', (e) => {
+      if (!menu.contains(e.target)) { dismissTabContextMenu(); ctrl.abort(); }
+    }, { signal: ctrl.signal });
+  }, 0);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { dismissTabContextMenu(); ctrl.abort(); }
+  }, { signal: ctrl.signal });
+}
+
+/* ── Tab Overflow Dropdown ────────────────────────────── */
+function showTabOverflowMenu(anchor) {
+  dismissTabContextMenu();
+  const menu = document.createElement('div');
+  menu.className = 'tab-context-menu tab-overflow-menu';
+
+  const rect = anchor.getBoundingClientRect();
+  menu.style.right = (window.innerWidth - rect.right) + 'px';
+  menu.style.top = rect.bottom + 'px';
+  menu.style.left = 'auto';
+
+  const ids = Object.keys(tabs);
+  ids.forEach(id => {
+    const row = document.createElement('div');
+    row.className = 'tab-context-item' + (id === activeTabId ? ' active' : '');
+    row.innerHTML = '<i class="ph ph-file-text"></i>' +
+      '<span style="overflow:hidden;text-overflow:ellipsis">' +
+      tabs[id].filename + '</span>';
+    row.title = tabs[id].filepath;
+    row.onclick = () => { dismissTabContextMenu(); switchTab(id); };
+    menu.appendChild(row);
+  });
+
+  document.body.appendChild(menu);
+
+  /* Keep on screen */
+  requestAnimationFrame(() => {
+    const mr = menu.getBoundingClientRect();
+    if (mr.bottom > window.innerHeight)
+      menu.style.top = (window.innerHeight - mr.height - 8) + 'px';
+    if (mr.left < 0) { menu.style.left = '8px'; menu.style.right = 'auto'; }
+  });
+
+  /* Dismiss — reuse AbortController pattern */
   const ctrl = new AbortController();
   menu._dismissCtrl = ctrl;
   setTimeout(() => {

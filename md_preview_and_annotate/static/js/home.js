@@ -65,8 +65,9 @@ async function showHomeScreen() {
   if (toggle) toggle.style.display = 'none';
   if (status) status.style.display = 'none';
 
-  /* Update TOC label */
+  /* Update TOC label and window title */
   if (tocLabel) tocLabel.textContent = _activeWorkspace ? _activeWorkspace.name || 'Workspace' : 'Workspace';
+  document.title = 'dabarat';
 
   const content = document.getElementById('content');
   content.style.display = '';

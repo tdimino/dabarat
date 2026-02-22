@@ -30,6 +30,16 @@ All notable changes to Markdown Dabarat.
 
 ### Typography
 - **Inline code color** — changed from `--ctp-red` (pink-red, reads as "error") to sapphire-family via `--code-fg` token; dark themes use bright sapphire, light themes use darkened `#085570`, Rosé Pine dark uses brightened pine `#5aacca`; all 6 themes pass WCAG AA (4.5:1+) on surface0 backgrounds
+- **Inline code in headings** — `h1-h6 code` scaled to `0.65em` with tighter padding so code spans don't balloon to heading size
+
+### Light Theme Card Colors
+- **`--card-bg` / `--card-bg-rgb` semantic tokens** — dark themes map to `surface0` (unchanged); light themes (Latte, Rosé Pine Dawn, Tokyo Light) map to `#ffffff` so cards float above the page background instead of appearing as heavy grey rectangles
+- **6 home.css surfaces updated** — `.home-card`, `.home-action-btn`, card preview fade gradients, `.ws-btn`, `.home-ws-card` all use `var(--card-bg)` instead of `var(--ctp-surface0)`
+
+### Tab Bar Overflow Controls
+- **Scroll arrow buttons** — left/right chevron buttons appear at tab bar edges when tabs overflow; click to scroll by 120px; positioned absolute on wrapper at z-index 4; `.visible` class toggle for proper flex centering
+- **Overflow dropdown** — caret-down button appears only when tabs actually overflow; lists all open tabs with active tab highlighted in lavender; click to switch; Escape or click-outside to dismiss; reuses `tab-context-menu` visual pattern with `--card-bg` background for light theme legibility
+- **Dynamic window title** — `document.title` updates to `filename — dabarat` on tab switch, resets to `dabarat` on home screen
 
 ### Home Page Polish
 - **Simplified home cards** — removed redundant `home-card-desc` description line, stripped leading H1 from markdown preview (avoids filename duplication), reduced preview height 120→80px, increased grid gap 16→20px
@@ -49,6 +59,13 @@ All notable changes to Markdown Dabarat.
 - **Thread-safe browse cache** — `_browse_cache` protected by `threading.Lock()` under `ThreadingHTTPServer`
 - **Path traversal defense** — `/api/preview-image` restricted to tab directories and cached browse directories
 - **Size-gated extraction** — summary, preview, and image extraction gated behind 1MB file size check
+
+### Layout Fixes
+- **Main area flex fill** — `#main-area` gets `flex: 1; min-width: 0` so the tab bar extends to the viewport edge; eliminates white gap in light themes where body background was visible between the tab bar and annotations gutter
+- **Tilde path expansion** — `/api/add` now runs `os.path.expanduser()` so `~/path/to/file.md` resolves correctly from the tab input and CLI
+
+### Claude Code Integration
+- **dabarat-open hook** — fires on all `.md` writes (not just new files); messages printed to stdout for visible hook feedback; adds tab to running instance or launches new window
 
 ### Bug Fixes
 - **Lightbox null guards** — all 4 DOM references guarded; close-on-rerender prevents stale index

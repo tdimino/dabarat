@@ -372,6 +372,31 @@ body.home-active #toc-resize-handle {
 #tab-bar-wrapper.has-overflow-left::before  { opacity: 1; }
 #tab-bar-wrapper.has-overflow-right::after  { opacity: 1; }
 
+/* ── Tab Scroll Arrows ──────────────────────────────── */
+.tab-scroll-arrow {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 24px;
+  z-index: 4;
+  background: var(--crust-bg, var(--ctp-crust));
+  border: none;
+  color: var(--ctp-overlay1);
+  cursor: pointer;
+  display: none;
+  font-size: 12px;
+  padding: 0;
+  transition: color 0.15s;
+}
+.tab-scroll-arrow.visible {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tab-scroll-arrow:hover { color: var(--ctp-text); }
+.tab-scroll-left  { left: 0; }
+.tab-scroll-right { right: 0; }
+
 #tab-bar {
   background: var(--crust-bg, var(--ctp-crust));
   border-bottom: 1px solid var(--ctp-surface0);
@@ -461,6 +486,21 @@ body.home-active #toc-resize-handle {
 }
 #tab-add:hover { color: var(--ctp-text); }
 
+#tab-overflow {
+  background: none;
+  border: none;
+  border-left: 1px solid var(--ctp-surface0);
+  color: var(--ctp-overlay0);
+  cursor: pointer;
+  padding: 0 10px;
+  font-size: 13px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+#tab-overflow:hover { color: var(--ctp-text); }
+
 .tab-add-input {
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
@@ -525,6 +565,16 @@ body.home-active #toc-resize-handle {
 }
 .tab-context-item:last-child {
   border-radius: 0 0 6px 6px;
+}
+.tab-overflow-menu {
+  max-height: 320px;
+  overflow-y: auto;
+  background: var(--card-bg, var(--ctp-surface0));
+  border-radius: 8px;
+}
+.tab-overflow-menu .tab-context-item.active {
+  background: rgba(var(--ctp-lavender-rgb), 0.12);
+  color: var(--ctp-lavender);
 }
 .tab-rename-input {
   background: var(--ctp-surface0);

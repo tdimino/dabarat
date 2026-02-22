@@ -53,7 +53,7 @@ body.home-active #content {
   align-items: center;
 }
 .home-action-btn {
-  background: var(--ctp-surface0);
+  background: var(--card-bg);
   color: var(--ctp-subtext0);
   border: 1px solid var(--ctp-surface1);
   font-family: 'DM Sans', sans-serif;
@@ -88,7 +88,7 @@ body.home-active #content {
 /* ── Card ────────────────────────────────────────────────── */
 .home-card {
   position: relative;
-  background: var(--ctp-surface0);
+  background: var(--card-bg);
   border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
   border-radius: 12px;
   overflow: hidden;
@@ -273,7 +273,7 @@ body.home-active #content {
   background: linear-gradient(
     180deg,
     transparent 40%,
-    rgba(var(--ctp-surface0-rgb), 0.85) 100%
+    rgba(var(--card-bg-rgb), 0.85) 100%
   );
   pointer-events: none;
 }
@@ -298,7 +298,7 @@ body.home-active #content {
   height: 48px;
   background: linear-gradient(
     transparent,
-    rgba(var(--ctp-surface0-rgb), 0.95)
+    rgba(var(--card-bg-rgb), 0.95)
   );
   pointer-events: none;
 }
@@ -440,7 +440,7 @@ body.home-active #content {
   border-radius: 4px;
 }
 .ws-btn {
-  background: var(--ctp-surface0);
+  background: var(--card-bg);
   color: var(--ctp-subtext0);
   border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
   font-family: 'DM Sans', sans-serif;
@@ -845,7 +845,7 @@ body.home-active #content {
   padding-bottom: 4px;
 }
 .home-ws-card {
-  background: var(--ctp-surface0);
+  background: var(--card-bg);
   border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
   border-radius: 8px;
   padding: 10px 16px;

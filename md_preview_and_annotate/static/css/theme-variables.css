@@ -60,6 +60,7 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+  --code-fg: var(--ctp-sapphire);
 
   /* Elevation tokens — shadows use black with theme-tuned alpha.
      Intentional exception to palette-only convention: shadows are
@@ -140,6 +141,7 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+  --code-fg: #085570;  /* darkened sapphire — 5.35:1 on Latte surface0 */
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.08),
@@ -212,6 +214,7 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+  --code-fg: #5aacca;  /* brightened pine — 6.43:1 on RP surface0 */
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.18),
@@ -284,6 +287,7 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+  --code-fg: #085570;  /* darkened sapphire — 5.96:1 on RP Dawn surface0 */
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.08),
@@ -356,6 +360,7 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+  --code-fg: var(--ctp-sapphire);
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.18),
@@ -428,6 +433,7 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
+  --code-fg: #085570;  /* darkened sapphire — 4.64:1 on Tokyo Light surface0 */
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.08),

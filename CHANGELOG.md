@@ -29,7 +29,7 @@ All notable changes to Markdown Dabarat.
 - **Focus-visible states** — keyboard accessibility for cards, buttons, sidebar entries
 
 ### Typography
-- **Inline code color** — changed from `--ctp-red` (pink-red, reads as "error") to `--ctp-sapphire` (cool medium blue, #74c7ec in Mocha); 8.8:1 contrast, universally color-blind safe, zero semantic conflicts with existing palette usage
+- **Inline code color** — changed from `--ctp-red` (pink-red, reads as "error") to sapphire-family via `--code-fg` token; dark themes use bright sapphire, light themes use darkened `#085570`, Rosé Pine dark uses brightened pine `#5aacca`; all 6 themes pass WCAG AA (4.5:1+) on surface0 backgrounds
 
 ### Home Page Polish
 - **Simplified home cards** — removed redundant `home-card-desc` description line, stripped leading H1 from markdown preview (avoids filename duplication), reduced preview height 120→80px, increased grid gap 16→20px

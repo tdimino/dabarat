@@ -48,7 +48,7 @@
 
 ### Tab System
 - Tab bar rendered by `renderTabBar()` inside `#tab-bar-wrapper` — click to switch, X to close, + to add
-- Tabs shrink to fit: `flex-shrink:1`, `min-width: 60px`, `max-width: 160px`, filename truncated with `text-overflow: ellipsis`
+- **Dynamic tab widths**: `_recalcTabWidths()` computes `clamp(60px, availableWidth/tabCount, 240px)`, sets explicit pixel widths on each `.tab` element (`flex: 0 0 auto`); tabs grow when siblings are closed, shrink when new tabs are added; animated via Motion with `data-closing` guard; fires on `renderTabBar()` (via rAF), `window.resize`, double-rAF on initial render for icon font measurement accuracy
 - Edge fade gradients on `#tab-bar-wrapper` indicate overflow when tabs exceed available width
 - Auto-scroll to active tab on `switchTab()` via `scrollIntoView({ inline: 'nearest' })`
 - `switchTab()` saves scroll position, resets render caches, fetches content

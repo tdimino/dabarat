@@ -498,6 +498,8 @@ body.home-active #content {
   flex-shrink: 0;
 }
 .ws-entry.ws-dir i   { color: var(--ctp-blue); }
+.ws-entry.ws-back i  { color: var(--ctp-overlay1); }
+.ws-entry.ws-back .ws-entry-name { color: var(--ctp-overlay0); }
 .ws-entry.ws-file i  { color: var(--ctp-green); }
 .ws-entry-name {
   flex: 1;
@@ -537,39 +539,101 @@ body.home-active #content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 60px 20px 40px;
+  justify-content: flex-start;
+  padding: 12vh 40px 40px;
   color: var(--ctp-overlay0);
-  gap: 24px;
+  gap: 28px;
 }
 
 /* ── Quote Display (Empty State Soul) ────────────────────── */
+/* Pattern: hairline left accent + radial glow + centered rules */
 .home-quote {
-  text-align: center;
-  max-width: 520px;
+  text-align: left;
+  max-width: 640px;
   border: none;
+  border-inline-start: 1px solid rgba(var(--ctp-lavender-rgb), 0.25);
   margin: 0;
-  padding: 0;
+  padding: 32px 48px 28px 40px;
   transition: opacity 0.3s ease;
+  position: relative;
+  /* Soft radial glow — atmosphere, not containment */
+  background: radial-gradient(ellipse at 20% 40%,
+    rgba(var(--ctp-surface0-rgb), 0.22) 0%,
+    rgba(var(--ctp-surface0-rgb), 0.05) 65%,
+    transparent 100%);
+  border-radius: 0 24px 24px 0;
+}
+/* Short rule above — extends on hover */
+.home-quote::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -1px;
+  width: 32px;
+  height: 1px;
+  background: rgba(var(--ctp-lavender-rgb), 0.25);
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.home-quote:hover::before { width: 64px; }
+/* Hairline divider between quote and attribution */
+.home-quote::after {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: var(--ctp-overlay0);
+  opacity: 0.18;
+  margin: 20px 0 14px;
 }
 .home-quote-text {
   font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 20px;
+  font-size: 24px;
   font-style: italic;
   font-weight: 400;
   color: var(--ctp-subtext0);
-  line-height: 1.55;
-  margin: 0 0 10px 0;
+  line-height: 1.65;
+  margin: 0;
   white-space: pre-line;
+  position: relative;
+  z-index: 1;
 }
 .home-quote-source {
   display: block;
   font-family: 'DM Sans', sans-serif;
   font-size: 11px;
   font-style: normal;
-  font-variant: small-caps;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
   color: var(--ctp-overlay0);
-  letter-spacing: 0.04em;
+}
+.home-quote-refresh {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  color: var(--ctp-overlay0);
+  cursor: pointer;
+  padding: 5px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s, color 0.15s, background 0.15s;
+  z-index: 2;
+}
+.home-quote:hover .home-quote-refresh { opacity: 0.5; }
+.home-quote-refresh:hover {
+  opacity: 1 !important;
+  color: var(--ctp-lavender);
+  background: rgba(var(--ctp-surface1-rgb), 0.5);
+}
+.home-quote-refresh:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 1px;
+  opacity: 1;
 }
 .home-open-btn {
   background: transparent;

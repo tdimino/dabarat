@@ -1,4 +1,7 @@
 /* ── Tab Bar ──────────────────────────────────────────── */
+const TAB_MIN_WIDTH = 60;
+const TAB_MAX_WIDTH = 240;
+let _prevTabWidth = 0;
 let _lastTabIds = new Set();
 
 function renderTabBar() {
@@ -52,13 +55,12 @@ function renderTabBar() {
   addBtn.onclick = showAddFileInput;
   bar.appendChild(addBtn);
 
-  /* Overflow dropdown — hidden until _updateTabOverflow detects overflow */
-  if (ids.length >= 2) {
+  /* Overflow dropdown — visible at 6+ tabs (useful even without scroll overflow) */
+  if (ids.length >= 6) {
     const overflowBtn = document.createElement('button');
     overflowBtn.id = 'tab-overflow';
     overflowBtn.title = 'All tabs';
     overflowBtn.innerHTML = '<i class="ph ph-caret-down"></i>';
-    overflowBtn.style.display = 'none';
     overflowBtn.onclick = (e) => {
       e.stopPropagation();
       showTabOverflowMenu(overflowBtn);
@@ -105,8 +107,13 @@ function renderTabBar() {
     _lastTabIds = new Set(ids);
   }
 
-  /* Update overflow fade indicators */
-  _updateTabOverflow();
+  /* Calculate and set dynamic tab widths (double-rAF on first render
+     ensures icon fonts are loaded for accurate offsetWidth measurement) */
+  if (_prevTabWidth === 0) {
+    requestAnimationFrame(() => requestAnimationFrame(() => _recalcTabWidths()));
+  } else {
+    requestAnimationFrame(() => _recalcTabWidths());
+  }
 }
 
 /* ── Tab Overflow Indicators ─────────────────────────── */
@@ -120,19 +127,66 @@ function _updateTabOverflow() {
   wrapper.classList.toggle('has-overflow-left', hasLeft);
   wrapper.classList.toggle('has-overflow-right', hasRight);
 
-  /* Toggle scroll arrow buttons and overflow dropdown */
+  /* Toggle scroll arrow buttons */
   const leftArr = wrapper.querySelector('.tab-scroll-left');
   const rightArr = wrapper.querySelector('.tab-scroll-right');
   if (leftArr) leftArr.classList.toggle('visible', hasLeft);
   if (rightArr) rightArr.classList.toggle('visible', hasRight);
-  const overflowBtn = bar.querySelector('#tab-overflow');
-  if (overflowBtn) overflowBtn.style.display = (hasLeft || hasRight) ? '' : 'none';
 
   if (!_tabOverflowBound) {
     bar.addEventListener('scroll', _updateTabOverflow, { passive: true });
     _tabOverflowBound = true;
   }
 }
+
+/* ── Dynamic Tab Width Calculation ─────────────────────── */
+/* Calculates and sets explicit tab widths based on available space,
+   similar to how Chrome/Firefox dynamically size tabs.
+   Formula: tabWidth = clamp(MIN, availableWidth / tabCount, MAX) */
+function _recalcTabWidths() {
+  const bar = document.getElementById('tab-bar');
+  if (!bar) return;
+
+  const tabEls = Array.from(bar.querySelectorAll('.tab')).filter(el => !el.dataset.closing);
+  const tabCount = tabEls.length;
+  if (tabCount === 0) { _prevTabWidth = 0; _updateTabOverflow(); return; }
+
+  /* Available width = bar's visible width minus all non-tab children */
+  const barWidth = bar.clientWidth;
+  let fixedWidth = 0;
+  for (const child of bar.children) {
+    if (!child.classList.contains('tab')) {
+      fixedWidth += child.offsetWidth;
+    }
+  }
+
+  const availableWidth = barWidth - fixedWidth;
+  const idealWidth = Math.floor(availableWidth / tabCount);
+  const tabWidth = Math.max(TAB_MIN_WIDTH, Math.min(TAB_MAX_WIDTH, idealWidth));
+
+  /* Animate grow/shrink when tab count changes (close or add) */
+  const shouldAnimate = _prevTabWidth > 0 && _prevTabWidth !== tabWidth
+    && window.Motion && !_prefersReducedMotion
+    && document.readyState === 'complete';  /* suppress during initial page load */
+
+  tabEls.forEach(el => {
+    if (shouldAnimate) {
+      el.style.width = _prevTabWidth + 'px';
+      Motion.animate(el,
+        { width: tabWidth + 'px' },
+        { duration: 0.2, easing: 'ease-out' }
+      );
+    } else {
+      el.style.width = tabWidth + 'px';
+    }
+  });
+
+  _prevTabWidth = tabWidth;
+  _updateTabOverflow();
+}
+
+/* Recalc on window resize */
+window.addEventListener('resize', _recalcTabWidths);
 
 function switchTab(id) {
   if (!tabs[id]) return;
@@ -229,6 +283,7 @@ async function closeTab(id) {
   /* Animate tab collapse before removing */
   const tabEl = document.querySelector('.tab[data-tab="' + id + '"]');
   if (tabEl && window.Motion && !_prefersReducedMotion) {
+    tabEl.dataset.closing = '1';  /* guard: _recalcTabWidths skips closing tabs */
     await Motion.animate(tabEl,
       { opacity: 0, width: '0px', paddingLeft: '0px', paddingRight: '0px' },
       { duration: 0.15, easing: 'ease-out' }

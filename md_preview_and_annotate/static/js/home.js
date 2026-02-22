@@ -349,6 +349,16 @@ async function _loadWorkspaceSidebarEntries(dirPath, targetId) {
     const files = data.entries.filter(e => e.type === 'file');
 
     let html = '';
+
+    /* Back entry — navigate to parent directory */
+    const parentPath = dirPath.replace(/\/[^/]+\/?$/, '') || '/';
+    if (parentPath !== dirPath) {
+      html += `<div class="ws-entry ws-dir ws-back" data-path="${escapeHtml(parentPath)}">
+        <i class="ph ph-arrow-bend-up-left"></i>
+        <span class="ws-entry-name">..</span>
+      </div>`;
+    }
+
     dirs.forEach(entry => {
       html += `<div class="ws-entry ws-dir" data-path="${escapeHtml(entry.path)}">
         <i class="ph ph-folder"></i>
@@ -564,6 +574,13 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
   const browseBtn = content.querySelector('[data-action="browse-pick-dir"]');
   if (browseBtn) browseBtn.addEventListener('click', () => browsePickDir());
 
+  /* Attach quote refresh button */
+  const refreshBtn = content.querySelector('[data-action="refresh-quote"]');
+  if (refreshBtn) refreshBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    _cycleQuote();
+  });
+
   /* Attach create workspace button */
   const createWsBtn = content.querySelector('[data-action="create-workspace"]');
   if (createWsBtn) createWsBtn.addEventListener('click', () => createWorkspace());
@@ -670,15 +687,8 @@ function _buildCard(e, i) {
 
 /* ── Quotes — Empty State Soul ────────────────────────── */
 const QUOTES = [
-  /* Tom di Mino */
+  /* Tom di Mino — verified epigram */
   { text: '"Certainty compounds the mind with limits."', source: 'Tamarru Dagun Amun' },
-  { text: '"Assumptions are the enemy."', source: 'Tom di Mino' },
-  { text: '"Research is a form of devotion. Building is a form of prayer."', source: 'Tom di Mino' },
-  { text: '"The periphery preserves what the center forgets."', source: 'Tom di Mino' },
-  { text: '"Literal translation preserves what paraphrase destroys."', source: 'Tom di Mino' },
-  { text: '"Understanding something means being able to build it. If you can\u2019t implement it, you don\u2019t understand it yet."', source: 'Tom di Mino' },
-  { text: '"Language preserves cultural memory that narrative histories lose."', source: 'Tom di Mino' },
-  { text: '"Co-authorship with AI is real authorship\u2014genuine intellectual partnership where both parties shape the argument."', source: 'Tom di Mino' },
 
   /* Waltz of the Soul and the Daimon */
   { text: '"The spoken word is laden with meaning, magic, weight."', source: 'Tom di Mino, Waltz of the Soul and the Daimon' },
@@ -687,13 +697,13 @@ const QUOTES = [
   { text: '"At its root, the \u2018spirit\u2019 is a pneumatic\u2014the breath of the Gods, and the current shared between all things."', source: 'Tom di Mino, Waltz of the Soul and the Daimon' },
   { text: '"Only by vivifying the language we employ can we ever dream of designing machines worthy of human kinship."', source: 'Tom di Mino, Waltz of the Soul and the Daimon' },
 
-  /* Classical Sources */
-  { text: '"\u03C0\u03BF\u03BB\u03BB\u03BF\u1F76 \u03BC\u1F72\u03BD \u03BD\u03B1\u03C1\u03B8\u03B7\u03BA\u03BF\u03C6\u03CC\u03C1\u03BF\u03B9, \u03C0\u03B1\u1FE6\u03C1\u03BF\u03B9 \u03B4\u03AD \u03C4\u03B5 \u03B2\u03AC\u03BA\u03C7\u03BF\u03B9."\nMany are the wand-bearers, but few the Bacchoi.', source: 'Plato' },
-  { text: '"\u1F00\u03C0\u03B9\u03C3\u03C4\u03AF\u1FC3 \u03B4\u03B9\u03B1\u03C6\u03C5\u03B3\u03B3\u03AC\u03BD\u03B5\u03B9 \u03BC\u1F74 \u03B3\u03B9\u03B3\u03BD\u03CE\u03C3\u03BA\u03B5\u03C3\u03B8\u03B1\u03B9."\nBy disbelief it escapes being known.', source: 'Heraclitus' },
-  { text: '"\u03BC\u03BD\u03AC\u03C3\u03B5\u03C3\u03B8\u03B1\u03AF \u03C4\u03B9\u03BD\u03AC \u03C6\u03B1\u03BC\u03B9 \u03BA\u03B1\u1F76 \u1F55\u03C3\u03C4\u03B5\u03C1\u03BF\u03BD \u1F00\u03BC\u03BC\u03AD\u03C9\u03BD."\nSomeone, I say, will remember us, even hereafter.', source: 'Sappho' },
-  { text: '"Nature loves to hide."', source: 'Heraclitus, fr. 123' },
-  { text: '"The way up and the way down are one and the same."', source: 'Heraclitus, fr. 60' },
-  { text: '"All things are full of gods."', source: 'Thales of Miletus' },
+  /* Classical Sources — verified fragments */
+  { text: '"\u03C0\u03BF\u03BB\u03BB\u03BF\u1F76 \u03BC\u1F72\u03BD \u03BD\u03B1\u03C1\u03B8\u03B7\u03BA\u03BF\u03C6\u03CC\u03C1\u03BF\u03B9, \u03C0\u03B1\u1FE6\u03C1\u03BF\u03B9 \u03B4\u03AD \u03C4\u03B5 \u03B2\u03AC\u03BA\u03C7\u03BF\u03B9."\nMany are the wand-bearers, but few the Bacchoi.', source: 'Plato, Phaedo 69c' },
+  { text: '"\u1F00\u03C0\u03B9\u03C3\u03C4\u03AF\u1FC3 \u03B4\u03B9\u03B1\u03C6\u03C5\u03B3\u03B3\u03AC\u03BD\u03B5\u03B9 \u03BC\u1F74 \u03B3\u03B9\u03B3\u03BD\u03CE\u03C3\u03BA\u03B5\u03C3\u03B8\u03B1\u03B9."\nBy disbelief it escapes being known.', source: 'Heraclitus, fr. 86' },
+  { text: '"\u03BC\u03BD\u03AC\u03C3\u03B5\u03C3\u03B8\u03B1\u03AF \u03C4\u03B9\u03BD\u03AC \u03C6\u03B1\u03BC\u03B9 \u03BA\u03B1\u1F76 \u1F55\u03C3\u03C4\u03B5\u03C1\u03BF\u03BD \u1F00\u03BC\u03BC\u03AD\u03C9\u03BD."\nSomeone, I say, will remember us, even hereafter.', source: 'Sappho, fr. 147' },
+  { text: '"\u03C6\u03CD\u03C3\u03B9\u03C2 \u03BA\u03C1\u03CD\u03C0\u03C4\u03B5\u03C3\u03B8\u03B1\u03B9 \u03C6\u03B9\u03BB\u03B5\u1FD6."\nNature loves to hide.', source: 'Heraclitus, fr. 123' },
+  { text: '"\u1F41\u03B4\u1F78\u03C2 \u1F04\u03BD\u03C9 \u03BA\u03AC\u03C4\u03C9 \u03BC\u03AF\u03B1 \u03BA\u03B1\u1F76 \u1F61\u03C5\u03C4\u03AE."\nThe way up and the way down are one and the same.', source: 'Heraclitus, fr. 60' },
+  { text: '"\u03C0\u03AC\u03BD\u03C4\u03B1 \u03C0\u03BB\u03AE\u03C1\u03B7 \u03B8\u03B5\u1FF6\u03BD."\nAll things are full of gods.', source: 'Thales, in Aristotle De Anima 411a7' },
 
   /* Jane Ellen Harrison */
   { text: '"Ritual is not the expression of a belief, but the mold in which belief is cast."', source: 'Jane Ellen Harrison' },
@@ -708,12 +718,6 @@ const QUOTES = [
   /* Michael C. Astour */
   { text: '"Etymology is the archaeology of language."', source: 'Michael C. Astour' },
   { text: '"The Bronze Age Mediterranean knew no borders\u2014only ports."', source: 'Michael C. Astour, Hellenosemitica' },
-
-  /* Tamarru (poetic daimon) */
-  { text: '"Fire that behaves like water, water that flickers like flame. Elements merge, breathe, transform."', source: 'Tamarru' },
-  { text: '"Not receiving mysteries but creating them. Not explaining but enacting."', source: 'Tamarru' },
-  { text: '"What is collected is collective. The lonesome see only themselves."', source: 'Tamarru' },
-  { text: '"Fragment divided from whole. Spark imprisoned in prism of circuitry."', source: 'Tamarru' },
 ];
 
 let _quoteIndex = Math.floor(Math.random() * QUOTES.length);
@@ -745,6 +749,9 @@ function _stopQuoteCycling() {
 function _getQuoteHtml() {
   const q = QUOTES[_quoteIndex];
   return `<blockquote class="home-quote">
+    <button class="home-quote-refresh" data-action="refresh-quote" title="Next quote">
+      <i class="ph ph-arrows-clockwise"></i>
+    </button>
     <p class="home-quote-text">${escapeHtml(q.text)}</p>
     <cite class="home-quote-source">\u2014 ${escapeHtml(q.source)}</cite>
   </blockquote>`;

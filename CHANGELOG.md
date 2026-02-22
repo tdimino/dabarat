@@ -36,14 +36,15 @@ All notable changes to Markdown Dabarat.
 - **`--card-bg` / `--card-bg-rgb` semantic tokens** — dark themes map to `surface0` (unchanged); light themes (Latte, Rosé Pine Dawn, Tokyo Light) map to `#ffffff` so cards float above the page background instead of appearing as heavy grey rectangles
 - **6 home.css surfaces updated** — `.home-card`, `.home-action-btn`, card preview fade gradients, `.ws-btn`, `.home-ws-card` all use `var(--card-bg)` instead of `var(--ctp-surface0)`
 
-### Tab Bar Overflow Controls
+### Tab Bar
+- **Dynamic tab widths** — JS-calculated `clamp(60px, availableWidth/tabCount, 240px)` with Motion animation on grow/shrink; tabs visibly expand when siblings are closed and compress when new tabs are added (browser-like behavior); `flex: 0 0 auto` with explicit pixel widths replaces CSS-only `flex: 1 1 0` which couldn't overcome `overflow-x: auto` on the scroll container; `_recalcTabWidths()` measures fixed children (home/add/overflow buttons), distributes remaining space equally, animates via Motion with `data-closing` guard to prevent resize events from stomping close animations; `window.resize` listener for responsive behavior; double-rAF on initial render for accurate icon font measurement
 - **Scroll arrow buttons** — left/right chevron buttons appear at tab bar edges when tabs overflow; click to scroll by 120px; positioned absolute on wrapper at z-index 4; `.visible` class toggle for proper flex centering
-- **Overflow dropdown** — caret-down button appears only when tabs actually overflow; lists all open tabs with active tab highlighted in lavender; click to switch; Escape or click-outside to dismiss; reuses `tab-context-menu` visual pattern with `--card-bg` background for light theme legibility
+- **Overflow dropdown** — caret-down button appears at 6+ tabs; lists all open tabs with active tab highlighted in lavender; click to switch; Escape or click-outside to dismiss; reuses `tab-context-menu` visual pattern with `--card-bg` background for light theme legibility
 - **Dynamic window title** — `document.title` updates to `filename — dabarat` on tab switch, resets to `dabarat` on home screen
 
 ### Home Page Polish
 - **Simplified home cards** — removed redundant `home-card-desc` description line, stripped leading H1 from markdown preview (avoids filename duplication), reduced preview height 120→80px, increased grid gap 16→20px
-- **Tab overflow handling** — tabs shrink with `flex-shrink:1` (min-width 60px, max-width 160px) and filename ellipsis; edge fade gradient indicators appear when tabs overflow; auto-scroll to active tab on switch; tab bar wrapped in `#tab-bar-wrapper` for fade positioning
+- **Tab overflow handling** — tabs sized dynamically via JS `_recalcTabWidths()` (60–240px) with filename ellipsis; edge fade gradient indicators appear when tabs overflow; auto-scroll to active tab on switch; tab bar wrapped in `#tab-bar-wrapper` for fade positioning
 - **Tab bar full-width** — `body.home-active` now clears `margin-right: 0` on both `#main-area` and `#tab-bar`, eliminating the 260px dead zone from the hidden annotations gutter
 - **True-center empty state** — `.home-screen` uses flex column layout; `.home-empty` fills remaining space with `flex: 1` + `justify-content: center` for genuine vertical centering
 - **Reduced empty state weight** — icon 48→36px, heading 22→18px, opacity 0.4→0.3 for quieter ambient UI

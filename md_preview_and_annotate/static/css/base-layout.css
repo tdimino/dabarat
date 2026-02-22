@@ -421,12 +421,10 @@ body.home-active #toc-resize-handle {
   border-bottom: 2px solid var(--ctp-surface0);
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, background 0.15s, border-color 0.15s, width 0.15s, opacity 0.15s, padding 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s, opacity 0.15s, padding 0.15s;
   user-select: none;
   overflow: hidden; /* enables width-collapse animation on close */
-  flex-shrink: 1;
-  min-width: 60px;
-  max-width: 160px;
+  flex: 0 0 auto;  /* JS sets explicit width via _recalcTabWidths() */
 }
 .tab > span:first-child {
   overflow: hidden;

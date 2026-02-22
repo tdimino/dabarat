@@ -169,6 +169,12 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
     0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
     0 0 20px rgba(var(--ctp-blue-rgb), 0.04);
 }
+/* PNGs with transparent backgrounds — no border/shadow framing */
+#content img[src$=".png"]:not(.emoji):not(.tpl-var-img) {
+  border: none;
+  box-shadow: none;
+  border-radius: 0;
+}
 
 /* Image figures */
 .content-figure {

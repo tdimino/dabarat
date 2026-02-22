@@ -13,6 +13,9 @@ body.home-active #content {
 .home-screen {
   width: 100%;
   padding: 32px 40px 48px;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 34px);
 }
 
 /* ── Workspace Header ───────────────────────────────────── */
@@ -416,24 +419,56 @@ body.home-active #content {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  transition: background 0.15s, color 0.15s;
+}
+.ws-path:hover {
+  background: var(--ctp-surface0);
+  color: var(--ctp-subtext0);
+}
+.ws-path-edit {
+  font-size: 9px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.ws-path:hover .ws-path-edit {
+  opacity: 0.6;
 }
 .ws-actions {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+}
+.ws-toggle {
+  display: flex;
+  gap: 1px;
+  background: rgba(var(--ctp-surface0-rgb), 0.5);
+  border-radius: 6px;
+  padding: 2px;
+}
+.ws-toggle .ws-btn {
+  border-color: transparent;
+  border-radius: 4px;
 }
 .ws-btn {
   background: var(--ctp-surface0);
   color: var(--ctp-subtext0);
   border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 4px;
+  font-size: 11px;
+  padding: 5px 10px;
+  min-height: 28px;
+  border-radius: 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: background 0.15s, color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .ws-btn:hover {
   background: var(--ctp-surface1);
@@ -443,6 +478,12 @@ body.home-active #content {
   background: rgba(var(--ctp-blue-rgb), 0.15);
   color: var(--ctp-blue);
   border-color: rgba(var(--ctp-blue-rgb), 0.3);
+}
+.ws-btn:focus {
+  background: var(--ctp-surface1);
+}
+.ws-btn:focus:not(:focus-visible) {
+  outline: none;
 }
 .ws-stats {
   font-family: 'Victor Mono', monospace;
@@ -508,45 +549,358 @@ body.home-active #content {
 
 /* ── Empty State ────────────────────────────────────────── */
 .home-empty {
-  text-align: center;
-  padding: 80px 20px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px 40px;
   color: var(--ctp-overlay0);
+  gap: 24px;
 }
-.home-empty i {
-  font-size: 48px;
-  display: block;
-  margin-bottom: 16px;
-  opacity: 0.4;
+
+/* ── Quote Display (Empty State Soul) ────────────────────── */
+.home-quote {
+  text-align: center;
+  max-width: 520px;
+  border: none;
+  margin: 0;
+  padding: 0;
+  transition: opacity 0.3s ease;
 }
-.home-empty h2 {
+.home-quote-text {
   font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: 22px;
-  font-weight: 600;
+  font-size: 20px;
+  font-style: italic;
+  font-weight: 400;
   color: var(--ctp-subtext0);
-  margin-bottom: 8px;
+  line-height: 1.55;
+  margin: 0 0 10px 0;
+  white-space: pre-line;
 }
-.home-empty p {
+.home-quote-source {
+  display: block;
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  margin-bottom: 20px;
+  font-size: 11px;
+  font-style: normal;
+  font-variant: small-caps;
+  color: var(--ctp-overlay0);
+  letter-spacing: 0.04em;
 }
 .home-open-btn {
-  background: var(--ctp-blue);
-  color: var(--ctp-base);
-  border: none;
+  background: transparent;
+  color: var(--ctp-overlay1);
+  border: 1px solid var(--ctp-surface1);
   font-family: 'DM Sans', sans-serif;
-  font-size: 13px;
-  padding: 8px 20px;
+  font-size: 12px;
+  padding: 7px 16px;
   border-radius: 6px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  transition: opacity 0.15s, transform 0.15s;
+  gap: 5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+}
+.home-open-btn i {
+  font-size: 14px;
 }
 .home-open-btn:hover {
-  opacity: 0.9;
+  background: var(--ctp-surface0);
+  color: var(--ctp-text);
+  border-color: var(--ctp-surface2);
   transform: translateY(-1px);
+}
+
+/* ── Multi-Root Workspace Sidebar ─────────────────────── */
+.ws-header-multi {
+  padding: 10px 14px 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border-bottom: 1px solid rgba(var(--ctp-surface1-rgb), 0.3);
+}
+.ws-workspace-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ctp-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.ws-actions-row {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.ws-action-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ctp-overlay1);
+  width: 26px;
+  height: 26px;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+.ws-action-btn:hover {
+  background: var(--ctp-surface0);
+  color: var(--ctp-text);
+  border-color: var(--ctp-surface1);
+}
+.ws-action-btn:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: -1px;
+}
+
+/* Workspace section (folder root or pinned files) */
+.ws-section {
+  border-bottom: 1px solid rgba(var(--ctp-surface0-rgb), 0.6);
+}
+.ws-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 4px;
+  cursor: pointer;
+  user-select: none;
+}
+.ws-section-caret {
+  font-size: 10px;
+  color: var(--ctp-overlay0);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+.ws-section.collapsed .ws-section-caret {
+  transform: rotate(-90deg);
+}
+.ws-section.collapsed .ws-section-entries {
+  display: none;
+}
+.ws-section-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--ctp-overlay1);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ws-section-remove {
+  background: transparent;
+  border: none;
+  color: var(--ctp-overlay0);
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ws-section-header:hover .ws-section-remove { opacity: 1; }
+.ws-section-remove:hover {
+  background: rgba(var(--ctp-red-rgb), 0.15);
+  color: var(--ctp-red);
+}
+
+/* Per-entry remove button (pinned files) */
+.ws-entry-remove {
+  background: transparent;
+  border: none;
+  color: var(--ctp-overlay0);
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  flex-shrink: 0;
+}
+.ws-entry:hover .ws-entry-remove { opacity: 1; }
+.ws-entry-remove:hover {
+  background: rgba(var(--ctp-red-rgb), 0.15);
+  color: var(--ctp-red);
+}
+
+/* Add-to-workspace dropdown menu */
+.ws-add-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--ctp-surface0);
+  border: 1px solid var(--ctp-surface1);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(var(--ctp-crust-rgb), 0.5);
+  min-width: 180px;
+}
+.ws-add-menu button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: var(--ctp-subtext1);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+}
+.ws-add-menu button:hover {
+  background: var(--ctp-surface1);
+  color: var(--ctp-text);
+}
+.ws-add-menu button i {
+  font-size: 14px;
+  width: 16px;
+  text-align: center;
+}
+.ws-menu-sep {
+  border: none;
+  border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
+  margin: 4px 8px;
+}
+
+/* ── Multi-Root Card Grid Sections ───────────────────────── */
+.home-section {
+  margin-bottom: 32px;
+}
+.home-section:last-child {
+  margin-bottom: 0;
+}
+.home-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(var(--ctp-surface1-rgb), 0.3);
+}
+.home-section-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ctp-subtext1);
+  letter-spacing: 0.02em;
+}
+.home-section-stats {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay0);
+}
+.home-section-remove {
+  background: transparent;
+  border: none;
+  color: var(--ctp-overlay0);
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+}
+.home-section-header:hover .home-section-remove { opacity: 1; }
+.home-section-remove:hover {
+  background: rgba(var(--ctp-red-rgb), 0.15);
+  color: var(--ctp-red);
+}
+.home-section-empty {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--ctp-overlay0);
+  padding: 12px 0;
+  font-style: italic;
+}
+
+/* ── Recent Workspaces Bar ────────────────────────────── */
+.home-recent-ws {
+  margin-bottom: 24px;
+}
+.home-recent-ws-title {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ctp-overlay1);
+  margin-bottom: 10px;
+}
+.home-recent-ws-grid {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.home-ws-card {
+  background: var(--ctp-surface0);
+  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
+  border-radius: 8px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 0;
+  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+}
+.home-ws-card:hover {
+  border-color: rgba(var(--ctp-lavender-rgb), 0.3);
+  background: rgba(var(--ctp-surface1-rgb), 0.5);
+  transform: translateY(-1px);
+}
+.home-ws-card i {
+  font-size: 16px;
+  color: var(--ctp-blue);
+  flex-shrink: 0;
+}
+.home-ws-card-name {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ctp-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.home-ws-card-time {
+  font-family: 'Victor Mono', monospace;
+  font-size: 9px;
+  color: var(--ctp-overlay0);
+  flex-shrink: 0;
+  margin-left: 4px;
+}
+.home-ws-card:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
 }
 
 /* ── Loading ────────────────────────────────────────────── */
@@ -563,8 +917,17 @@ body.home-active #content {
   outline: 2px solid var(--ctp-blue);
   outline-offset: 2px;
 }
+.home-open-btn:focus {
+  background: var(--ctp-surface0);
+}
+.home-open-btn:focus:not(:focus-visible) {
+  outline: none;
+}
 .ws-btn:focus-visible,
-.ws-entry:focus-visible {
+.ws-entry:focus-visible,
+.ws-section-remove:focus-visible,
+.ws-entry-remove:focus-visible,
+.home-section-remove:focus-visible {
   outline: 2px solid var(--ctp-blue);
   outline-offset: -1px;
 }

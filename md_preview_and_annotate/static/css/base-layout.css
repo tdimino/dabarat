@@ -318,6 +318,10 @@ body.home-active #toc-label {
 }
 body.home-active #main-area {
   margin-left: var(--toc-width, 260px);
+  margin-right: 0;
+}
+body.home-active #tab-bar {
+  margin-right: 0;
 }
 body.home-active #toc-resize-handle {
   display: block;

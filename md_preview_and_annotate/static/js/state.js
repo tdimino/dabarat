@@ -35,3 +35,7 @@ const _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce
 let activeGutterTab = 'notes';
 let fillInMode = false;
 let fillInValues = {};
+
+/* Workspace state */
+let _activeWorkspace = null;     // Parsed workspace JSON ({ version, name, folders, files })
+let _activeWorkspacePath = localStorage.getItem('dabarat-workspace-path') || null;

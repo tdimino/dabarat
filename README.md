@@ -35,8 +35,10 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Inline editing** — `Cmd+E` to edit raw markdown with a change-tracking gutter (green/yellow/red diff markers), auto-save with atomic writes
 - **Side-by-side diff** — compare any two markdown files with word-level granularity, synchronized scroll, resizable split
 - **Version history** — git-backed timeline panel with diff stats, compare any version against current, one-click restore
+- **Workspace system** — VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files; collapsible sidebar sections, merged card grid, macOS native dialogs for folder/file picking, recent workspaces tracking
 - **Workspace home page** — TOC sidebar transforms into a directory browser; selecting a folder populates the main area with file cards showing word counts, annotation counts, version counts, smart badges, and markdown previews
 - **Smart file-type badges** — 10 pattern matchers detect prompt, agent config, plan, spec, readme, architecture, changelog, todo, license, and research files
+- **Empty state quotes** — 30 curated quotes from scholarly and classical sources cycle every 5 minutes with crossfade transitions
 - **Image lightbox** — click any content image to open a sleek overlay with blur backdrop, keyboard navigation (arrows, Escape), and zoom
 - **Image effects** — content images get subtle border, layered shadows, hover lift + glow, zoom cursor; theme-aware Latte overrides
 - **Motion One animations** — staggered card entrance, sidebar cascade, card removal animation, view toggle crossfade; progressive enhancement with `if (window.Motion)` guards
@@ -56,6 +58,9 @@ python3 -m md_preview_and_annotate file1.md file2.md
 
 # Tab reuse — if the server is already running, new files open as tabs automatically
 python3 -m md_preview_and_annotate another-file.md
+
+# Open a workspace (multi-root folders + pinned files)
+python3 -m md_preview_and_annotate --workspace research.dabarat-workspace
 
 # Custom port and author
 python3 -m md_preview_and_annotate document.md --port 8080 --author "Alice"
@@ -112,6 +117,7 @@ python3 -m md_preview_and_annotate --annotate document.md \
 | Threaded replies | Yes | No | No | No |
 | Bookmark persistence | Global index | No | No | No |
 | Tab reuse | Yes (automatic) | No | No | No |
+| Multi-root workspaces | Yes (.dabarat-workspace) | No | No | No |
 | Cross-file links | Yes | No | No | No |
 | Orphan auto-cleanup | Yes | No | No | No |
 | Last updated | 2026 | 2020 (abandoned) | 2026 | 2026 |
@@ -121,7 +127,7 @@ python3 -m md_preview_and_annotate --annotate document.md \
 Most markdown annotation tools either require a heavy framework (Svelte, React, Electron) or operate only in the terminal. This tool is:
 
 - **Zero-dependency** — pure Python stdlib server. No npm, no pip install, no build step.
-- **Modular** — 10 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document.
+- **Modular** — 11 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document.
 - **AI-native** — built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
 - **Beautiful** — Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
 
@@ -131,16 +137,19 @@ Six CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, M
 
 ```
 python3 -m md_preview_and_annotate <file.md> [file2.md ...] [OPTIONS]
+python3 -m md_preview_and_annotate --workspace <path.dabarat-workspace> [OPTIONS]
 
 Options:
-  --port PORT       Server port (default: 3031)
-  --author NAME     Default annotation author name (default: "Tom")
-  --add FILE        Add a file to a running server instance
-  --annotate FILE   Write an annotation directly to sidecar JSON (no server)
-    --text TEXT       Anchor text to annotate
-    --comment TEXT    Annotation body
-    --type TYPE       comment | question | suggestion | important | bookmark
-    --author NAME     Author name (default: "Claude")
+  --port PORT            Server port (default: 3031)
+  --author NAME          Default annotation author name (default: "Tom")
+  --workspace FILE       Open a .dabarat-workspace file (multi-root folders + pinned files)
+  --max-instances N      Limit concurrent server instances (default: 5)
+  --add FILE             Add a file to a running server instance
+  --annotate FILE        Write an annotation directly to sidecar JSON (no server)
+    --text TEXT            Anchor text to annotate
+    --comment TEXT          Annotation body
+    --type TYPE            comment | question | suggestion | important | bookmark
+    --author NAME          Author name (default: "Claude")
 ```
 
 ## Annotation Schema
@@ -183,6 +192,11 @@ Press `Cmd+K` (Mac) or `Ctrl+K` to open the command palette. Available commands:
 - **Toggle Annotations** — open/close the notes panel
 - **Cycle Emoji Style** — cycle through Twitter → OpenMoji → Noto → Native
 - **Settings** — full settings panel with theme, font sizes, opacity, emoji style, TOC width, and author
+- **New Workspace...** — save dialog to create a `.dabarat-workspace` file
+- **Open Workspace...** — file picker for `.dabarat-workspace` files
+- **Add Folder to Workspace** — folder picker (visible when workspace is active)
+- **Add File to Workspace** — file picker (visible when workspace is active)
+- **Close Workspace** — deactivate current workspace (visible when workspace is active)
 
 The palette header displays file metadata for the active tab: filename, path, word count, estimated read time, annotation count, and any tags as colored pills.
 
@@ -198,6 +212,43 @@ CommandPalette.register('My Tools', [
   { id: 'my-cmd', label: 'Do Something', icon: 'ph-star', action: () => doSomething() },
 ]);
 ```
+
+## Workspaces
+
+Workspaces group multiple folders and individual files into a single view, like VS Code's multi-root workspaces.
+
+### `.dabarat-workspace` Schema
+
+```json
+{
+  "version": "1.0",
+  "name": "My Research",
+  "folders": [
+    { "path": "/Users/tom/Desktop/sources", "name": "Sources" },
+    { "path": "/Users/tom/.claude/plans", "name": "Plans" }
+  ],
+  "files": [
+    { "path": "/Users/tom/Desktop/README.md" },
+    { "path": "/Users/tom/.claude/CLAUDE.md" }
+  ]
+}
+```
+
+The file is readable JSON you can commit to git or share.
+
+### Creating a Workspace
+
+- **From CLI**: `dabarat --workspace research.dabarat-workspace`
+- **From palette**: `Cmd+K` → "New Workspace..." — opens a save dialog, creates the file, and activates it
+- **From sidebar**: click `[+]` → "New Workspace..." when on the home screen
+
+### Managing Folders and Files
+
+Once a workspace is active, the sidebar shows collapsible folder sections. Use the `[+]` button to add folders or pin individual files. Remove entries with the `[x]` button on any section header or file entry. All changes write back to the `.dabarat-workspace` file immediately.
+
+### Recent Workspaces
+
+Previously opened workspaces appear as cards on the home screen (max 10 tracked). Click any card to reopen that workspace.
 
 ## Finder Integration (macOS)
 
@@ -224,7 +275,7 @@ duti -s com.minoanmystery.md-preview .md all
 md_preview_and_annotate/
 ├── __init__.py          # Package metadata
 ├── __main__.py          # CLI entry point (serve, add, annotate)
-├── server.py            # HTTP server + 22 REST API endpoints
+├── server.py            # HTTP server + 35 REST API endpoints
 ├── template.py          # HTML shell assembly (concatenates 16 JS + 14 CSS modules)
 ├── annotations.py       # Sidecar JSON I/O + orphan cleanup + tag persistence
 ├── bookmarks.py         # Global ~/.claude/bookmarks/ persistence
@@ -232,6 +283,7 @@ md_preview_and_annotate/
 ├── diff.py              # Side-by-side markdown diff engine (SequenceMatcher)
 ├── history.py           # Git-backed version history (~/.dabarat/history/)
 ├── recent.py            # Recently opened files + metadata extraction
+├── workspace.py         # .dabarat-workspace CRUD + recent workspaces
 └── static/
     ├── js/              # 16 modules concatenated in dependency order
     │   ├── state.js     # Global state, config

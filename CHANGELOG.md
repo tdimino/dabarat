@@ -4,6 +4,18 @@ All notable changes to Markdown Dabarat.
 
 ## [Unreleased] — 2026-02-20
 
+### Workspace System
+- **`.dabarat-workspace` files** — JSON schema (`version`, `name`, `folders[]`, `files[]`) for VS Code-style multi-root workspaces; readable, git-committable
+- **Workspace CRUD** — `workspace.py` module with atomic writes, thread-safe mutations, recent tracking (`~/.dabarat/workspaces.json`, max 10)
+- **13 new API endpoints** — workspace GET/POST, open, add-folder, add-file, remove, rename, save-as, browse-folder, browse-file, recent workspaces, file-metadata
+- **Multi-root sidebar** — collapsible folder sections with per-entry file lists, pinned files section, `[+]` dropdown menu (Add Folder/File, New/Open Workspace), remove buttons on sections and entries
+- **Merged card grid** — fan-out `Promise.all` across folder roots + pinned files; sections with folder name headers, stats, and remove actions
+- **Recent workspaces bar** — horizontal card strip on home screen showing previously opened workspaces with folder/file counts and relative timestamps
+- **Command palette integration** — 5 workspace commands (New, Open, Add Folder, Add File, Close Workspace); workspace-specific commands hidden when no workspace active
+- **CLI `--workspace` flag** — `dabarat --workspace research.dabarat-workspace` loads workspace on startup; allows workspace-only launch (no file args required)
+- **macOS native dialogs** — `osascript` for folder picker, file picker, and save-as dialogs
+- **Empty state rotating quotes** — 30 curated quotes from Tom di Mino, classical sources (Plato, Heraclitus, Sappho, Thales), Harrison, Gordon, Astour, and Tamarru; cycles every 5 minutes with 300ms opacity crossfade; Cormorant Garamond italic typography
+
 ### Home Page Redesign
 - **Workspace-driven home page** — TOC sidebar transforms into a directory browser when home screen is active; selecting a folder populates the main area with file cards
 - **Enhanced `/api/browse-dir`** — returns rich metadata (word counts, summaries, preview images, annotation/version counts, frontmatter badges) with thread-safe caching
@@ -15,6 +27,17 @@ All notable changes to Markdown Dabarat.
 - **Card description field** — pulls from frontmatter `description` > frontmatter `summary` > server-extracted summary
 - **Workspace/Recent toggle** — switch between directory workspace view and recently opened files
 - **Focus-visible states** — keyboard accessibility for cards, buttons, sidebar entries
+
+### Home Page Polish
+- **Tab bar full-width** — `body.home-active` now clears `margin-right: 0` on both `#main-area` and `#tab-bar`, eliminating the 260px dead zone from the hidden annotations gutter
+- **True-center empty state** — `.home-screen` uses flex column layout; `.home-empty` fills remaining space with `flex: 1` + `justify-content: center` for genuine vertical centering
+- **Reduced empty state weight** — icon 48→36px, heading 22→18px, opacity 0.4→0.3 for quieter ambient UI
+- **Ghost button for empty CTA** — "Open File" in empty state uses transparent background with `--ctp-surface1` border instead of filled blue; hover fills to `--ctp-surface0`
+- **No duplicate buttons** — header "Open File" action suppressed in empty state; only the centered CTA appears
+- **Sidebar button labels** — Workspace/Recent icon-only buttons now show text labels ("Files", "Recent") for discoverability
+- **Segmented toggle** — Files/Recent buttons grouped in a `.ws-toggle` container with shared background, visually distinct from the "Open" action button
+- **Button sizing** — sidebar buttons bumped from 10px/4px-padding to 11px/5px-padding with 28px min-height (desktop target per Vercel WIG)
+- **Focus progressive pattern** — `.ws-btn` and `.home-open-btn` both follow `:focus` / `:focus-visible` / `:focus:not(:focus-visible)` convention
 
 ### Security Fixes
 - **XSS prevention** — replaced all inline `onclick` handlers with `data-*` attributes + event delegation (eliminated path injection via HTML entity decoding)

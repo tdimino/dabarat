@@ -14,12 +14,17 @@ from . import bookmarks
 from . import frontmatter
 from . import history
 from . import recent
+from . import workspace
 from .template import get_html
 
 
 _browse_cache = {}  # keyed by (dirpath, max_mtime, file_count) → response dict
 _browse_cache_lock = threading.Lock()
 _BROWSE_CACHE_MAX = 20
+
+_active_workspace_path = None  # Path to the active .dabarat-workspace file
+_active_workspace = None       # Parsed workspace dict (or None)
+_workspace_lock = threading.Lock()
 
 
 class PreviewHandler(http.server.BaseHTTPRequestHandler):
@@ -167,6 +172,94 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"entries": entries})
             except Exception as e:
                 self._json_response({"entries": [], "error": str(e)})
+
+        elif parsed.path == "/api/workspace":
+            with _workspace_lock:
+                if _active_workspace is not None:
+                    self._json_response({
+                        "workspace": _active_workspace,
+                        "path": _active_workspace_path,
+                    })
+                else:
+                    self._json_response({"workspace": None, "path": None})
+
+        elif parsed.path == "/api/workspaces/recent":
+            try:
+                entries = workspace.load_recent()
+                self._json_response({"workspaces": entries})
+            except Exception as e:
+                self._json_response({"workspaces": [], "error": str(e)})
+
+        elif parsed.path == "/api/file-metadata":
+            file_path = params.get("path", [None])[0]
+            if not file_path or not os.path.isfile(file_path):
+                self._json_response({"error": "file not found"}, 404)
+                return
+            file_path = os.path.abspath(file_path)
+            entry = {"path": file_path, "name": os.path.basename(file_path)}
+            try:
+                st = os.stat(file_path)
+                entry["size"] = st.st_size
+                entry["mtime"] = st.st_mtime
+            except Exception:
+                pass
+            try:
+                tags = annotations.read_tags(file_path)
+                if tags:
+                    entry["tags"] = tags
+            except Exception:
+                pass
+            try:
+                ann_data, _ = annotations.read(file_path)
+                ac = len(ann_data.get("annotations", []))
+                if ac:
+                    entry["annotationCount"] = ac
+            except Exception:
+                pass
+            try:
+                fm, _ = frontmatter.get_frontmatter(file_path)
+                if fm:
+                    badges = {}
+                    for k in ("type", "model", "version", "status", "description", "summary"):
+                        if k in fm:
+                            badges[k] = str(fm[k])
+                    if badges:
+                        entry["badges"] = badges
+            except Exception:
+                pass
+            file_small = entry.get("size", 0) < 1024 * 1024
+            if file_small:
+                try:
+                    wc = recent._extract_word_count(file_path)
+                    if wc:
+                        entry["wordCount"] = wc
+                except Exception:
+                    pass
+                try:
+                    s = recent._extract_summary(file_path)
+                    if s:
+                        entry["summary"] = s
+                except Exception:
+                    pass
+                try:
+                    p = recent._extract_preview(file_path)
+                    if p:
+                        entry["preview"] = p
+                except Exception:
+                    pass
+                try:
+                    img = recent._extract_preview_image(file_path)
+                    if img:
+                        entry["previewImage"] = img
+                except Exception:
+                    pass
+            try:
+                vc = recent._count_versions(file_path)
+                if vc:
+                    entry["versionCount"] = vc
+            except Exception:
+                pass
+            self._json_response(entry)
 
         elif parsed.path == "/api/browse-dir":
             dir_path = params.get("path", [None])[0]
@@ -474,6 +567,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(html.encode())
 
     def do_POST(self):
+        global _active_workspace, _active_workspace_path
         if not self._check_origin():
             return
         parsed = urlparse(self.path)
@@ -780,6 +874,207 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             else:
                 tags = annotations.add_tag(filepath, tag)
             self._json_response({"ok": True, "tags": tags})
+
+        # ── Workspace endpoints ───────────────────────────────────
+
+        elif parsed.path == "/api/workspace":
+            # Create or overwrite a .dabarat-workspace file
+            ws_path = body.get("path", "")
+            ws_data = body.get("data")
+            if not ws_path:
+                self._json_response({"error": "path required"}, 400)
+                return
+            ws_path = os.path.abspath(os.path.expanduser(ws_path))
+            if not ws_path.endswith(workspace.WORKSPACE_EXT):
+                ws_path += workspace.WORKSPACE_EXT
+            try:
+                if ws_data:
+                    workspace.write_workspace(ws_path, ws_data)
+                    result = workspace.read_workspace(ws_path)
+                else:
+                    name = body.get("name", "Untitled")
+                    folders = body.get("folders", [])
+                    files = body.get("files", [])
+                    result = workspace.create_workspace(ws_path, name, folders, files)
+                with _workspace_lock:
+                    _active_workspace_path = ws_path
+                    _active_workspace = result
+                self._json_response({"workspace": result, "path": ws_path})
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
+
+        elif parsed.path == "/api/workspace/open":
+            ws_path = body.get("path", "")
+            if not ws_path:
+                self._json_response({"error": "path required"}, 400)
+                return
+            ws_path = os.path.abspath(os.path.expanduser(ws_path))
+            data = workspace.read_workspace(ws_path)
+            if data is None:
+                self._json_response({"error": "invalid workspace file"}, 400)
+                return
+            workspace.add_recent(ws_path, data.get("name"))
+            with _workspace_lock:
+                _active_workspace_path = ws_path
+                _active_workspace = data
+            self._json_response({"workspace": data, "path": ws_path})
+
+        elif parsed.path == "/api/workspace/close":
+            with _workspace_lock:
+                _active_workspace_path = None
+                _active_workspace = None
+            self._json_response({"ok": True})
+
+        elif parsed.path == "/api/workspace/add-folder":
+            folder_path = body.get("path", "")
+            name = body.get("name")
+            if not folder_path:
+                self._json_response({"error": "path required"}, 400)
+                return
+            folder_path = os.path.abspath(os.path.expanduser(folder_path))
+            if not os.path.isdir(folder_path):
+                self._json_response({"error": "not a directory"}, 400)
+                return
+            with _workspace_lock:
+                if not _active_workspace_path:
+                    self._json_response({"error": "no active workspace"}, 400)
+                    return
+                data = workspace.add_folder(_active_workspace_path, folder_path, name)
+                if data is None:
+                    self._json_response({"error": "workspace file invalid"}, 500)
+                    return
+                _active_workspace = data
+            self._json_response({"workspace": data, "path": _active_workspace_path})
+
+        elif parsed.path == "/api/workspace/add-file":
+            file_path = body.get("path", "")
+            if not file_path:
+                self._json_response({"error": "path required"}, 400)
+                return
+            file_path = os.path.abspath(os.path.expanduser(file_path))
+            if not os.path.isfile(file_path):
+                self._json_response({"error": "file not found"}, 400)
+                return
+            with _workspace_lock:
+                if not _active_workspace_path:
+                    self._json_response({"error": "no active workspace"}, 400)
+                    return
+                data = workspace.add_file(_active_workspace_path, file_path)
+                if data is None:
+                    self._json_response({"error": "workspace file invalid"}, 500)
+                    return
+                _active_workspace = data
+            self._json_response({"workspace": data, "path": _active_workspace_path})
+
+        elif parsed.path == "/api/workspace/remove":
+            entry_path = body.get("path", "")
+            entry_type = body.get("type", "folder")
+            if not entry_path:
+                self._json_response({"error": "path required"}, 400)
+                return
+            entry_path = os.path.abspath(os.path.expanduser(entry_path))
+            with _workspace_lock:
+                if not _active_workspace_path:
+                    self._json_response({"error": "no active workspace"}, 400)
+                    return
+                data = workspace.remove_entry(_active_workspace_path, entry_path, entry_type)
+                if data is None:
+                    self._json_response({"error": "workspace file invalid"}, 500)
+                    return
+                _active_workspace = data
+            self._json_response({"workspace": data, "path": _active_workspace_path})
+
+        elif parsed.path == "/api/workspace/rename":
+            new_name = body.get("name", "").strip()
+            if not new_name:
+                self._json_response({"error": "name required"}, 400)
+                return
+            with _workspace_lock:
+                if not _active_workspace_path:
+                    self._json_response({"error": "no active workspace"}, 400)
+                    return
+                data = workspace.rename_workspace(_active_workspace_path, new_name)
+                if data is None:
+                    self._json_response({"error": "workspace file invalid"}, 500)
+                    return
+                _active_workspace = data
+                workspace.add_recent(_active_workspace_path, new_name)
+            self._json_response({"workspace": data, "path": _active_workspace_path})
+
+        elif parsed.path == "/api/browse-folder":
+            import platform
+            import subprocess as sp
+            if platform.system() != "Darwin":
+                self._json_response({"error": "folder browser only on macOS"}, 501)
+                return
+            script = (
+                'set f to choose folder with prompt "Add folder to workspace"\n'
+                'return POSIX path of f'
+            )
+            try:
+                result = sp.run(
+                    ["osascript", "-e", script],
+                    capture_output=True, text=True, timeout=60,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    folder = result.stdout.strip().rstrip("/")
+                    self._json_response({"folderpath": folder})
+                else:
+                    self._json_response({"cancelled": True})
+            except Exception:
+                self._json_response({"cancelled": True})
+
+        elif parsed.path == "/api/workspace/save-as":
+            import platform
+            import subprocess as sp
+            if platform.system() != "Darwin":
+                self._json_response({"error": "save dialog only on macOS"}, 501)
+                return
+            name = body.get("name", "Untitled")
+            # Sanitize: strip characters that could break AppleScript string literal
+            safe_name = name.replace('"', '').replace('\\', '').replace('\n', '')[:128]
+            script = (
+                'set f to choose file name with prompt '
+                '"Save workspace as" default name '
+                f'"{safe_name}{workspace.WORKSPACE_EXT}"\n'
+                'return POSIX path of f'
+            )
+            try:
+                result = sp.run(
+                    ["osascript", "-e", script],
+                    capture_output=True, text=True, timeout=60,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    filepath = result.stdout.strip()
+                    if not filepath.endswith(workspace.WORKSPACE_EXT):
+                        filepath += workspace.WORKSPACE_EXT
+                    self._json_response({"filepath": filepath})
+                else:
+                    self._json_response({"cancelled": True})
+            except Exception:
+                self._json_response({"cancelled": True})
+
+        elif parsed.path == "/api/browse-file":
+            import platform
+            import subprocess as sp
+            if platform.system() != "Darwin":
+                self._json_response({"error": "file browser only on macOS"}, 501)
+                return
+            script = (
+                'set f to choose file with prompt "Add file to workspace"\n'
+                'return POSIX path of f'
+            )
+            try:
+                result = sp.run(
+                    ["osascript", "-e", script],
+                    capture_output=True, text=True, timeout=60,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    self._json_response({"filepath": result.stdout.strip()})
+                else:
+                    self._json_response({"cancelled": True})
+            except Exception:
+                self._json_response({"cancelled": True})
 
         else:
             self.send_error(404)

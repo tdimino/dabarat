@@ -138,10 +138,11 @@ Self-contained module with state, DOM construction, keyboard handling, command r
 - `removeRecentFile(path, cardEl)` — `POST /api/recent/remove`, Motion One exit animation before DOM removal
 
 ### Workspace Sidebar (TOC repurposed)
-- `_renderWorkspaceSidebar(dirPath)` — builds sidebar HTML with path, stats, folder/file entries
+- `_renderWorkspaceSidebar(dirPath)` — builds sidebar HTML with path, stats, Open/Files/Recent buttons
 - `_loadWorkspaceSidebarEntries(dirPath)` — fetches `GET /api/browse-dir`, renders entries with Motion One cascade
 - Folder entries navigate into subdirectories; file entries show size badges
 - Uses `data-path` attributes + event delegation (no inline `onclick`) for XSS safety
+- **Button layout**: "Open" action button (`.ws-btn-action`) + segmented toggle (`.ws-toggle`) containing "Files" and "Recent" view mode buttons—all with visible text labels, 28px min-height, 11px font
 
 ### File Cards
 - `_renderHomeContent(data, mode)` — builds card grid from browse-dir or recent API response
@@ -151,6 +152,7 @@ Self-contained module with state, DOM construction, keyboard handling, command r
 - **Motion One**: staggered card entrance (`delay: Motion.stagger(0.06)`), guarded with `if (window.Motion)`
 - **Equal-height**: flexbox column layout with `flex: 1` on card body
 - **Responsive**: single-column default, 2-column at 900px+, 3-column at 1600px+
+- **Empty state**: flex-centered in viewport (`.home-empty` with `flex: 1; justify-content: center`), ghost button CTA; header "Open File" action button suppressed when `entries.length === 0` to avoid duplication
 
 ### State
 - `_fileBrowserPath` — current workspace directory (persisted to localStorage)

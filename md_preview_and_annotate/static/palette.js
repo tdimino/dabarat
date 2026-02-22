@@ -136,6 +136,19 @@ const CommandPalette = {
     this.register('Tags', [
       { id: 'add-tag', label: 'Add Tag\u2026', icon: 'ph-tag', action: () => this._enterTagMode() },
     ]);
+    this.register('Workspace', [
+      { id: 'new-workspace', label: 'New Workspace\u2026', icon: 'ph-plus-circle', action: () => { if (typeof createWorkspace === 'function') createWorkspace(); } },
+      { id: 'open-workspace', label: 'Open Workspace\u2026', icon: 'ph-folder-open', action: () => { if (typeof openWorkspace === 'function') openWorkspace(); } },
+      { id: 'add-folder-ws', label: 'Add Folder to Workspace', icon: 'ph-folder-plus',
+        hidden: () => typeof _activeWorkspace === 'undefined' || !_activeWorkspace,
+        action: () => { if (typeof addFolderToWorkspace === 'function') addFolderToWorkspace(); } },
+      { id: 'add-file-ws', label: 'Add File to Workspace', icon: 'ph-file-plus',
+        hidden: () => typeof _activeWorkspace === 'undefined' || !_activeWorkspace,
+        action: () => { if (typeof addFileToWorkspace === 'function') addFileToWorkspace(); } },
+      { id: 'close-workspace', label: 'Close Workspace', icon: 'ph-x-circle',
+        hidden: () => typeof _activeWorkspace === 'undefined' || !_activeWorkspace,
+        action: () => { if (typeof closeWorkspace === 'function') closeWorkspace(); } },
+    ]);
   },
 
   /* ── DOM Construction ──────────────────────────────── */

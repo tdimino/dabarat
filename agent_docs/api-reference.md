@@ -1,6 +1,6 @@
 # API Reference
 
-All endpoints served by `server.py:PreviewHandler`.
+All endpoints served by `server.py:PreviewHandler`. 35 endpoints total (14 GET, 21 POST).
 
 ## GET Endpoints
 
@@ -80,6 +80,45 @@ Returns enriched directory listing with rich metadata for workspace cards. Resul
 }
 ```
 Metadata extraction (word count, summary, preview, image) gated behind 1MB file size check.
+
+### `GET /api/workspace`
+Returns the active workspace JSON, or `null` if no workspace is active.
+```json
+{
+  "version": "1.0",
+  "name": "My Research",
+  "folders": [{ "path": "/abs/path", "name": "Sources" }],
+  "files": [{ "path": "/abs/path/README.md" }]
+}
+```
+
+### `GET /api/workspaces/recent`
+Returns recently opened workspaces (max 10).
+```json
+{
+  "workspaces": [
+    { "path": "/path/to/research.dabarat-workspace", "name": "Research", "lastOpened": "2026-02-20T..." }
+  ]
+}
+```
+
+### `GET /api/file-metadata?path={absolute_path}`
+Returns enriched metadata for a single file (used for pinned workspace files).
+```json
+{
+  "name": "README.md",
+  "path": "/abs/path/README.md",
+  "size": 3200,
+  "mtime": 1708099200.0,
+  "wordCount": 3200,
+  "summary": "Zero-dependency Python...",
+  "preview": "# Markdown Dabarat\n...",
+  "badges": { "type": "docs" },
+  "annotationCount": 4,
+  "tags": ["draft"]
+}
+```
+Metadata extraction gated behind 1MB file size check.
 
 ### `GET /api/preview-image?path={absolute_path}`
 Serves image files for workspace card previews. Restricted to directories of open tabs and directories in the browse cache.
@@ -197,4 +236,86 @@ Adds or removes a tag for a file.
 ```json
 { "tab": "abc123", "action": "add", "tag": "draft" }
 { "tab": "abc123", "action": "remove", "tag": "draft" }
+```
+
+## Workspace Endpoints
+
+### `POST /api/workspace`
+Creates or overwrites a `.dabarat-workspace` file. Sets active workspace server-side.
+```json
+// Request
+{ "path": "/abs/path/research.dabarat-workspace", "data": { "version": "1.0", "name": "Research", "folders": [], "files": [] } }
+// Response
+{ "ok": true }
+```
+
+### `POST /api/workspace/open`
+Reads, validates, and activates a workspace. Adds to recent list.
+```json
+// Request
+{ "path": "/abs/path/research.dabarat-workspace" }
+// Response — workspace JSON
+{ "version": "1.0", "name": "Research", "folders": [...], "files": [...] }
+```
+
+### `POST /api/workspace/close`
+Deactivates the current workspace. Clears server-side state.
+```json
+// Response
+{ "ok": true }
+```
+
+### `POST /api/workspace/add-folder`
+Appends a folder to the active workspace. Writes back to disk.
+```json
+// Request
+{ "path": "/abs/folder/path", "name": "Optional Label" }
+// Response — updated workspace JSON
+```
+
+### `POST /api/workspace/add-file`
+Appends a pinned file to the active workspace. Writes back to disk.
+```json
+// Request
+{ "path": "/abs/path/file.md" }
+// Response — updated workspace JSON
+```
+
+### `POST /api/workspace/remove`
+Removes a folder or file entry from the active workspace. Writes back to disk.
+```json
+// Request
+{ "path": "/abs/path", "type": "folder" }  // or "file"
+// Response — updated workspace JSON
+```
+
+### `POST /api/workspace/rename`
+Renames the active workspace. Writes back to disk.
+```json
+// Request
+{ "name": "New Name" }
+// Response — updated workspace JSON
+```
+
+### `POST /api/workspace/save-as`
+Opens macOS native save dialog, creates a new `.dabarat-workspace` file. Activates it.
+```json
+// Request
+{ "name": "Research" }
+// Response
+{ "filepath": "/chosen/path/Research.dabarat-workspace" }
+```
+
+### `POST /api/browse-folder`
+Opens macOS native folder picker dialog.
+```json
+// Response
+{ "folderpath": "/Users/tom/Documents/sources" }
+```
+
+### `POST /api/browse-file`
+Opens macOS native file picker dialog (restricted to markdown files).
+```json
+// Response
+{ "filepath": "/Users/tom/Documents/README.md" }
 ```

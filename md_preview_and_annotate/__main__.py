@@ -3,6 +3,7 @@
 
 Usage:
   python3 md_preview_and_annotate <file.md> [file2.md ...] [--port PORT] [--author NAME]
+  python3 md_preview_and_annotate --workspace <path.dabarat-workspace>
   python3 md_preview_and_annotate --add <file.md> [--port PORT]
   python3 md_preview_and_annotate --annotate <file.md> --text "..." --comment "..." [--author NAME]
   --max-instances N   Limit concurrent server instances (default 5)
@@ -18,6 +19,7 @@ import uuid
 
 from . import annotations
 from . import bookmarks
+from . import workspace
 from .server import PreviewHandler, start
 
 DEFAULT_PORT = 3031
@@ -331,6 +333,7 @@ def cmd_serve(argv):
     port = int(_flag_value(argv, "--port", str(DEFAULT_PORT)))
     default_author = _flag_value(argv, "--author", "Tom")
     max_inst = int(_flag_value(argv, "--max-instances", str(MAX_INSTANCES)))
+    ws_path = _flag_value(argv, "--workspace", "")
 
     # Collect file paths
     files = []
@@ -340,12 +343,25 @@ def cmd_serve(argv):
             skip_next = False
             continue
         if arg.startswith("--"):
-            if arg in ("--port", "--author", "--max-instances"):
+            if arg in ("--port", "--author", "--max-instances", "--workspace"):
                 skip_next = True
             continue
         files.append(os.path.abspath(arg))
 
-    if not files:
+    # Load workspace if specified
+    if ws_path:
+        ws_path = os.path.abspath(ws_path)
+        ws_data = workspace.read_workspace(ws_path)
+        if ws_data is None:
+            print(f"\033[38;2;243;139;168m\u2717\033[0m Invalid workspace: {ws_path}")
+            sys.exit(1)
+        # Set server-side workspace state
+        import md_preview_and_annotate.server as _srv
+        _srv._active_workspace_path = ws_path
+        _srv._active_workspace = ws_data
+        workspace.add_recent(ws_path, ws_data.get("name"))
+
+    if not files and not ws_path:
         print("Error: no files specified")
         sys.exit(1)
 
@@ -385,18 +401,26 @@ def cmd_serve(argv):
         else:
             print(f"Warning: {fp} not found, skipping")
 
-    if not PreviewHandler._tabs:
+    if not PreviewHandler._tabs and not ws_path:
         print("Error: no valid files to open")
         sys.exit(1)
 
     server = start(port)
     _register_instance(port, server)
 
-    filenames = [os.path.basename(t["filepath"]) for t in PreviewHandler._tabs.values()]
-    print(f"\033[38;2;137;180;250m\U0001f4c4 {', '.join(filenames)}\033[0m")
+    if PreviewHandler._tabs:
+        filenames = [os.path.basename(t["filepath"]) for t in PreviewHandler._tabs.values()]
+        print(f"\033[38;2;137;180;250m\U0001f4c4 {', '.join(filenames)}\033[0m")
+    elif ws_path:
+        ws_name = ws_data.get("name", os.path.basename(ws_path))
+        n_folders = len(ws_data.get("folders", []))
+        n_files = len(ws_data.get("files", []))
+        print(f"\033[38;2;137;180;250m\U0001f4c1 {ws_name} ({n_folders} folders, {n_files} files)\033[0m")
     print(f"\033[38;2;166;227;161m\U0001f310 http://127.0.0.1:{port}\033[0m")
     inst_count = len(_live_instances())
     features = "Live reload \u00b7 Catppuccin \u00b7 Tabs \u00b7 Annotations"
+    if ws_path:
+        features += " \u00b7 Workspace"
     print(f"\033[38;2;88;91;112m\u26a1 {features} \u00b7 Instance {inst_count}/{max_inst}\033[0m")
     print("\nCtrl+C to stop")
 
@@ -436,6 +460,7 @@ def main():
     if len(sys.argv) < 2:
         print("Usage:")
         print("  dabarat <file.md> [file2.md ...] [--port PORT] [--author NAME]")
+        print("  dabarat --workspace <path.dabarat-workspace> [--port PORT]")
         print("  dabarat --add <file.md> [--port PORT]")
         print('  dabarat --annotate <file.md> --text "..." --comment "..." [--author NAME]')
         print(f"  --max-instances N  (default {MAX_INSTANCES})")

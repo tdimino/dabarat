@@ -85,6 +85,11 @@ code {
   font-family: 'Victor Mono', 'Fira Code', monospace;
   font-size: 0.88em;
 }
+/* Inline code inside headings — scale down to body-relative size */
+h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
+  font-size: 0.65em;
+  padding: 0.1em 0.35em;
+}
 pre {
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);

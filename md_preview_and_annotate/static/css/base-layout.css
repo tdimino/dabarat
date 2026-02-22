@@ -331,6 +331,8 @@ body.home-active #toc-resize-handle {
    Main Area Layout
    ══════════════════════════════════════════════════════════ */
 #main-area {
+  flex: 1;
+  min-width: 0;
   margin-left: var(--toc-width, 260px);
   margin-right: 260px;
   min-height: 100vh;

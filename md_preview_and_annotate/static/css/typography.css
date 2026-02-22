@@ -79,7 +79,7 @@ li::marker { color: var(--ctp-overlay1); }
 
 code {
   background: var(--ctp-surface0);
-  color: var(--ctp-red);
+  color: var(--ctp-sapphire);
   padding: 0.15em 0.45em;
   border-radius: 4px;
   font-family: 'Victor Mono', 'Fira Code', monospace;

@@ -28,6 +28,9 @@ All notable changes to Markdown Dabarat.
 - **Workspace/Recent toggle** — switch between directory workspace view and recently opened files
 - **Focus-visible states** — keyboard accessibility for cards, buttons, sidebar entries
 
+### Typography
+- **Inline code color** — changed from `--ctp-red` (pink-red, reads as "error") to `--ctp-sapphire` (cool medium blue, #74c7ec in Mocha); 8.8:1 contrast, universally color-blind safe, zero semantic conflicts with existing palette usage
+
 ### Home Page Polish
 - **Simplified home cards** — removed redundant `home-card-desc` description line, stripped leading H1 from markdown preview (avoids filename duplication), reduced preview height 120→80px, increased grid gap 16→20px
 - **Tab overflow handling** — tabs shrink with `flex-shrink:1` (min-width 60px, max-width 160px) and filename ellipsis; edge fade gradient indicators appear when tabs overflow; auto-scroll to active tab on switch; tab bar wrapped in `#tab-bar-wrapper` for fade positioning

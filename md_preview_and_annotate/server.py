@@ -574,7 +574,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         body = self._read_body()
 
         if parsed.path == "/api/add":
-            filepath = body.get("filepath", "")
+            filepath = os.path.expanduser(body.get("filepath", ""))
             if not filepath:
                 self._json_response({"error": "filepath required"}, 400)
                 return

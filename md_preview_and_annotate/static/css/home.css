@@ -588,15 +588,15 @@ body.home-active #content {
   text-align: left;
   max-width: 640px;
   border: none;
-  border-inline-start: 1px solid rgba(var(--ctp-lavender-rgb), 0.25);
+  border-inline-start: 1px solid rgba(var(--ctp-lavender-rgb), 0.35);
   margin: 0;
   padding: 32px 48px 28px 40px;
   transition: opacity 0.3s ease;
   position: relative;
   /* Soft radial glow — atmosphere, not containment */
   background: radial-gradient(ellipse at 20% 40%,
-    rgba(var(--ctp-surface0-rgb), 0.22) 0%,
-    rgba(var(--ctp-surface0-rgb), 0.05) 65%,
+    rgba(var(--ctp-surface0-rgb), 0.30) 0%,
+    rgba(var(--ctp-surface0-rgb), 0.08) 65%,
     transparent 100%);
   border-radius: 0 24px 24px 0;
 }
@@ -608,7 +608,7 @@ body.home-active #content {
   left: -1px;
   width: 32px;
   height: 1px;
-  background: rgba(var(--ctp-lavender-rgb), 0.25);
+  background: rgba(var(--ctp-lavender-rgb), 0.35);
   transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .home-quote:hover::before { width: 64px; }
@@ -619,7 +619,7 @@ body.home-active #content {
   width: 40px;
   height: 1px;
   background: var(--ctp-overlay0);
-  opacity: 0.18;
+  opacity: 0.28;
   margin: 20px 0 14px;
 }
 .home-quote-text {
@@ -627,7 +627,7 @@ body.home-active #content {
   font-size: 24px;
   font-style: italic;
   font-weight: 400;
-  color: var(--ctp-subtext0);
+  color: var(--ctp-subtext1);
   line-height: 1.65;
   margin: 0;
   white-space: pre-line;
@@ -641,7 +641,7 @@ body.home-active #content {
   font-style: normal;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--ctp-overlay0);
+  color: var(--ctp-subtext0);
 }
 .home-quote-refresh {
   position: absolute;

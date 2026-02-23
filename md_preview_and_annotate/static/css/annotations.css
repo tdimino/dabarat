@@ -70,6 +70,14 @@
   border-left: 3px solid transparent;
   animation: annSlideIn 0.2s ease both;
 }
+
+/* Light themes: surface0 is too heavy — use mantle with subtle shadow */
+[data-theme="latte"] .ann-bubble,
+[data-theme="rose-pine-dawn"] .ann-bubble,
+[data-theme="tokyo-light"] .ann-bubble {
+  background: var(--ctp-mantle);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
 .ann-bubble:hover {
   border-left-color: var(--ctp-blue);
   box-shadow: 0 2px 8px rgba(var(--ctp-mantle-rgb), 0.12);

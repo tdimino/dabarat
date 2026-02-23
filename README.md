@@ -19,7 +19,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Resolve/archive workflow** — resolved annotations move to a separate archive file
 - **Global bookmark index** — bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
 - **Auto-cleanup of orphaned annotations** — when anchor text is deleted, its annotations are removed on next load
-- **Catppuccin dark/light themes** — Mocha (dark) and Latte (light), toggled in the status bar
+- **6 Catppuccin themes** — 3 dark (Mocha, Rosé Pine, Tokyo Storm) + 3 light (Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel
 - **Resizable TOC sidebar** — drag the right edge to adjust width (persisted across sessions)
 - **Adjustable font size** — persisted in `localStorage`
 - **Switchable emoji styles** — Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji; selectable via command palette Settings or `Cmd+K` → Cycle Emoji Style
@@ -77,33 +77,21 @@ python3 -m md_preview_and_annotate --annotate document.md \
 
 ### Annotation Panel
 
-![Annotation panel open with comment on highlighted text](screenshots/03-annotations.png)
+![Light theme with TOC sidebar, annotations panel, and background image](screenshots/03-annotations.png)
 
-*Select any text, leave a note. The NOTES panel shows all annotations for the current document—each one anchored to a specific passage with author, timestamp, and type badge.*
+*Catppuccin Latte with background image, TOC sidebar, and annotation panel. Select any text to leave a note—each annotation is anchored to a specific passage with author, timestamp, and type badge.*
 
-### Dark Theme (Catppuccin Mocha)
+### Light Theme — Workspace with Smart Badges
 
-![Dark theme with TOC, syntax highlighting, and annotation highlights](screenshots/01-dark-full.png)
+![Light theme workspace showing Recent Files with smart badges and directory browser](screenshots/02-light-workspace.png)
 
-*TOC sidebar auto-generated from headings. Annotated passages glow with highlight markers. Status bar shows file path, word count, and read time.*
+*Workspace home in Catppuccin Latte. Recent Files view with smart badges (plan, readme, changelog, agent config), markdown previews, word counts, and directory browser sidebar.*
 
-### Light Theme (Catppuccin Latte)
+### Workspace Home with Quotes
 
-![Light theme with the same layout](screenshots/02-light-full.png)
+![Workspace home screen with empty state quote and background image](screenshots/05-workspace-home.png)
 
-*Toggle between Mocha and Latte with one click. All annotations, highlights, and layout carry over seamlessly.*
-
-### Real-World: Demand Letter in Dark
-
-![Legal demand letter being reviewed in dark theme](screenshots/04-real-world-dark.png)
-
-*A habitability demand letter drafted and annotated in a Claude Code session. This is the workflow the tool was built for—reviewing real documents with AI, not toy demos.*
-
-### Real-World: Demand Letter in Light
-
-![Same demand letter in light theme](screenshots/05-real-world-light.png)
-
-*The same 15-page letter in Catppuccin Latte. Full TOC navigation, every section and subsection linked.*
+*Empty workspace home with curated quotes cycling every 5 minutes. Background image visible through semi-transparent surfaces. Directory browser in the sidebar.*
 
 ## How It's Different
 
@@ -111,7 +99,7 @@ python3 -m md_preview_and_annotate --annotate document.md \
 |---------|---------|---------------------------|-----------|----------|
 | Dependencies | **0** (Python stdlib) | Svelte + npm ecosystem | Node.js + npm | Web service |
 | Annotation types | 5 (comment, question, suggestion, flag, bookmark) | Comments only | Inline comments | AI feedback |
-| Themes | Catppuccin Mocha + Latte | Basic | Terminal | Web UI |
+| Themes | 6 Catppuccin (3 dark + 3 light) | Basic | Terminal | Web UI |
 | Live reload | Yes (500ms) | No | No | N/A |
 | Multi-tab | Yes | No | Yes | No |
 | Threaded replies | Yes | No | No | No |

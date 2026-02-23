@@ -59,6 +59,7 @@ blockquote {
   margin: 1.2em 0;
   background: var(--blockquote-bg);
   border-radius: 0 6px 6px 0;
+  font-style: italic;
 }
 blockquote em, blockquote code {
   font-style: normal;

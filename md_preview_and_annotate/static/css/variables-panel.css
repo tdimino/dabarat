@@ -47,6 +47,17 @@
   background: var(--ctp-surface1);
   color: var(--ctp-subtext0);
 }
+/* Light themes: match lighter annotation bubble background */
+[data-theme="latte"] .gutter-tab-count,
+[data-theme="rose-pine-dawn"] .gutter-tab-count,
+[data-theme="tokyo-light"] .gutter-tab-count {
+  background: var(--ctp-mantle);
+}
+[data-theme="latte"] .gutter-tab.active .gutter-tab-count,
+[data-theme="rose-pine-dawn"] .gutter-tab.active .gutter-tab-count,
+[data-theme="tokyo-light"] .gutter-tab.active .gutter-tab-count {
+  background: var(--ctp-surface0);
+}
 
 /* ── Variable Cards ──────────────────────────────────── */
 .var-card {

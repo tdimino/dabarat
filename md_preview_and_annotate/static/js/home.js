@@ -61,9 +61,11 @@ async function showHomeScreen() {
   const gutter = document.getElementById('annotations-gutter');
   const toggle = document.getElementById('annotations-toggle');
   const status = document.getElementById('status');
+  const fmIndicator = document.getElementById('frontmatter-indicator');
   if (gutter) gutter.style.display = 'none';
   if (toggle) toggle.style.display = 'none';
   if (status) status.style.display = 'none';
+  if (fmIndicator) fmIndicator.remove();
 
   /* Update TOC label and window title */
   if (tocLabel) tocLabel.textContent = _activeWorkspace ? _activeWorkspace.name || 'Workspace' : 'Workspace';

@@ -72,6 +72,15 @@ function render(md) {
     h.id = slugify(h.textContent) + '-' + i;
   });
 
+  /* Wrap tables in scroll containers for horizontal overflow */
+  content.querySelectorAll('table').forEach(table => {
+    if (table.parentElement.classList.contains('table-scroll')) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-scroll';
+    table.parentNode.insertBefore(wrapper, table);
+    wrapper.appendChild(table);
+  });
+
   /* Syntax highlighting */
   if (typeof hljs !== 'undefined') {
     content.querySelectorAll('pre code').forEach(el => {

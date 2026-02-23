@@ -221,10 +221,21 @@ def add_entry(filepath, content=None, tags=None):
         except Exception:
             pass
 
+        # File timestamps for card display (created + last modified)
+        try:
+            st = os.stat(path)
+            file_mtime = st.st_mtime
+            file_birthtime = getattr(st, "st_birthtime", st.st_mtime)
+        except Exception:
+            file_mtime = None
+            file_birthtime = None
+
         entry = {
             "path": path,
             "filename": os.path.basename(path),
             "lastOpened": datetime.now(timezone.utc).isoformat(),
+            "mtime": file_mtime,
+            "birthtime": file_birthtime,
             "wordCount": len((content or "").split()),
             "annotationCount": _count_annotations(path),
             "versionCount": _count_versions(path),

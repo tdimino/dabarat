@@ -63,6 +63,9 @@
   --code-fg: var(--ctp-sapphire);
   --card-bg: var(--ctp-surface0);
   --card-bg-rgb: var(--ctp-surface0-rgb);
+  --card-border: rgba(var(--ctp-surface1-rgb), 0.5);
+  --interactive-hover-bg: var(--ctp-surface1);
+  --interactive-muted-bg: rgba(var(--ctp-surface1-rgb), 0.85);
 
   /* Elevation tokens — shadows use black with theme-tuned alpha.
      Intentional exception to palette-only convention: shadows are
@@ -146,14 +149,17 @@
   --code-fg: #085570;  /* darkened sapphire — 5.35:1 on Latte surface0 */
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
+  --card-border: rgba(var(--ctp-surface1-rgb), 0.8);
+  --interactive-hover-bg: var(--ctp-crust);
+  --interactive-muted-bg: rgba(0, 0, 0, 0.06);
 
   --elevation-1:
-    0 2px 4px -1px rgba(0, 0, 0, 0.08),
-    0 1px 2px -1px rgba(0, 0, 0, 0.06);
+    0 2px 6px -1px rgba(0, 0, 0, 0.10),
+    0 1px 3px -1px rgba(0, 0, 0, 0.08);
   --elevation-2:
-    0 12px 24px -8px rgba(0, 0, 0, 0.14),
-    0 6px 12px -4px rgba(0, 0, 0, 0.08),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    0 12px 28px -8px rgba(0, 0, 0, 0.16),
+    0 6px 14px -4px rgba(0, 0, 0, 0.10),
+    0 2px 6px -1px rgba(0, 0, 0, 0.08);
 
   color-scheme: light;
 }
@@ -221,6 +227,9 @@
   --code-fg: #5aacca;  /* brightened pine — 6.43:1 on RP surface0 */
   --card-bg: var(--ctp-surface0);
   --card-bg-rgb: var(--ctp-surface0-rgb);
+  --card-border: rgba(var(--ctp-surface1-rgb), 0.5);
+  --interactive-hover-bg: var(--ctp-surface1);
+  --interactive-muted-bg: rgba(var(--ctp-surface1-rgb), 0.85);
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.18),
@@ -296,14 +305,17 @@
   --code-fg: #085570;  /* darkened sapphire — 5.96:1 on RP Dawn surface0 */
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
+  --card-border: rgba(var(--ctp-surface1-rgb), 0.8);
+  --interactive-hover-bg: var(--ctp-crust);
+  --interactive-muted-bg: rgba(0, 0, 0, 0.06);
 
   --elevation-1:
-    0 2px 4px -1px rgba(0, 0, 0, 0.08),
-    0 1px 2px -1px rgba(0, 0, 0, 0.06);
+    0 2px 6px -1px rgba(0, 0, 0, 0.10),
+    0 1px 3px -1px rgba(0, 0, 0, 0.08);
   --elevation-2:
-    0 12px 24px -8px rgba(0, 0, 0, 0.14),
-    0 6px 12px -4px rgba(0, 0, 0, 0.08),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    0 12px 28px -8px rgba(0, 0, 0, 0.16),
+    0 6px 14px -4px rgba(0, 0, 0, 0.10),
+    0 2px 6px -1px rgba(0, 0, 0, 0.08);
 
   color-scheme: light;
 }
@@ -371,6 +383,9 @@
   --code-fg: var(--ctp-sapphire);
   --card-bg: var(--ctp-surface0);
   --card-bg-rgb: var(--ctp-surface0-rgb);
+  --card-border: rgba(var(--ctp-surface1-rgb), 0.5);
+  --interactive-hover-bg: var(--ctp-surface1);
+  --interactive-muted-bg: rgba(var(--ctp-surface1-rgb), 0.85);
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.18),
@@ -446,14 +461,17 @@
   --code-fg: #085570;  /* darkened sapphire — 4.64:1 on Tokyo Light surface0 */
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
+  --card-border: rgba(var(--ctp-surface1-rgb), 0.8);
+  --interactive-hover-bg: var(--ctp-crust);
+  --interactive-muted-bg: rgba(0, 0, 0, 0.06);
 
   --elevation-1:
-    0 2px 4px -1px rgba(0, 0, 0, 0.08),
-    0 1px 2px -1px rgba(0, 0, 0, 0.06);
+    0 2px 6px -1px rgba(0, 0, 0, 0.10),
+    0 1px 3px -1px rgba(0, 0, 0, 0.08);
   --elevation-2:
-    0 12px 24px -8px rgba(0, 0, 0, 0.14),
-    0 6px 12px -4px rgba(0, 0, 0, 0.08),
-    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    0 12px 28px -8px rgba(0, 0, 0, 0.16),
+    0 6px 14px -4px rgba(0, 0, 0, 0.10),
+    0 2px 6px -1px rgba(0, 0, 0, 0.08);
 
   color-scheme: light;
 }

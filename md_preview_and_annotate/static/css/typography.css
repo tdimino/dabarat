@@ -109,10 +109,15 @@ pre code {
   word-wrap: break-word;
 }
 
+.table-scroll {
+  overflow-x: auto;
+  margin: 1.2em 0;
+  border-radius: 6px;
+}
 table {
   border-collapse: collapse;
   width: 100%;
-  margin: 1.2em 0;
+  margin: 0;    /* wrapper handles spacing */
   font-size: 13px;
 }
 thead { position: sticky; top: 0; }
@@ -142,10 +147,8 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
   max-width: 100%;
   border-radius: 10px;
   margin: 1.5em 0;
-  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
-  box-shadow:
-    0 2px 8px rgba(var(--ctp-mantle-rgb), 0.25),
-    0 0 0 1px rgba(var(--ctp-surface0-rgb), 0.3);
+  border: none;
+  box-shadow: none;
   transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   cursor: zoom-in;
 }
@@ -159,9 +162,7 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
 }
 /* Latte (light) theme — softer shadows */
 [data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img) {
-  box-shadow:
-    0 2px 8px rgba(var(--ctp-mantle-rgb), 0.15),
-    0 0 0 1px rgba(var(--ctp-surface1-rgb), 0.4);
+  box-shadow: none;
 }
 [data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img):hover {
   box-shadow:

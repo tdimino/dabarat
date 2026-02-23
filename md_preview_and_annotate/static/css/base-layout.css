@@ -2,7 +2,7 @@
    Base
    ══════════════════════════════════════════════════════════ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; }
 
 body {
   background: var(--body-bg, var(--ctp-base));
@@ -427,17 +427,20 @@ body.home-active #toc-resize-handle {
   flex: 0 0 auto;  /* JS sets explicit width via _recalcTabWidths() */
 }
 .tab > span:first-child {
+  flex: 1;          /* fill remaining space → pushes close to right */
+  min-width: 0;     /* allow shrinking past intrinsic width */
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .tab:hover { color: var(--ctp-text); background: var(--ctp-mantle); }
 .tab.active {
   color: var(--ctp-text);
-  background: var(--ctp-base);
+  background: var(--body-bg, var(--ctp-base));
   border-bottom-color: transparent;
 }
 .tab-close {
   display: none;
+  flex-shrink: 0;   /* never collapse the close button */
   font-size: 14px;
   color: var(--ctp-overlay0);
   line-height: 1;
@@ -494,9 +497,10 @@ body.home-active #toc-resize-handle {
   font-size: 13px;
   transition: color 0.15s;
   flex-shrink: 0;
-  display: flex;
+  display: none;          /* hidden by default; JS adds .visible on overflow */
   align-items: center;
 }
+#tab-overflow.visible { display: flex; }
 #tab-overflow:hover { color: var(--ctp-text); }
 
 .tab-add-input {
@@ -599,4 +603,85 @@ body.home-active #toc-resize-handle {
 }
 ::view-transition-new(root) {
   z-index: 9999;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Background Image — set via Settings > Appearance
+   ::after pseudo-element with independent opacity.
+   Content stays fully opaque; image fades behind it.
+   ══════════════════════════════════════════════════════════ */
+body.has-bg-image #main-area {
+  position: relative;
+}
+
+body.has-bg-image #main-area::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--bg-image-url, none);
+  background-size: var(--bg-image-size, cover);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  opacity: var(--bg-image-opacity, 0);
+  pointer-events: none;
+  filter: blur(var(--bg-image-blur, 0px));
+  transition: opacity 0.3s ease;
+}
+
+/* Ensure content sits above the background image */
+body.has-bg-image #tab-bar-wrapper {
+  position: relative;
+  z-index: 5;
+}
+
+body.has-bg-image #content {
+  position: relative;
+  z-index: 1;
+}
+
+body.has-bg-image #diff-view {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.has-bg-image #main-area::after {
+    transition: none;
+  }
+}
+
+/* ── Background Image Settings Controls ──────────────── */
+.settings-bg-preview {
+  width: 48px;
+  height: 32px;
+  border-radius: 4px;
+  background-size: cover;
+  background-position: center;
+  border: 1px solid var(--ctp-surface1);
+  box-shadow: 0 0 0 2px var(--ctp-sapphire);  /* ring = image is active; sapphire passes WCAG 3:1 on all themes */
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.settings-bg-preview:hover {
+  border-color: var(--ctp-red);
+}
+.settings-bg-btn {
+  background: var(--ctp-surface0);
+  border: 1px solid var(--ctp-surface1);
+  color: var(--ctp-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.15s;
+}
+.settings-bg-btn:hover {
+  background: var(--ctp-surface1);
 }

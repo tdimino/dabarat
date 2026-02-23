@@ -124,6 +124,59 @@ const SURFACE_COLORS = {
   'tokyo-light':    { base: [230,231,237], mantle: [220,222,227], crust: [203,205,212] },
 };
 
+/* ── Background Image ────────────────────────────────── */
+let bgImageData = localStorage.getItem('dabarat-bg-image') || '';
+let bgImageSize = localStorage.getItem('dabarat-bg-size') || 'cover';
+let bgImageBlur = parseInt(localStorage.getItem('dabarat-bg-blur') || '0');
+
+function applyBgImage() {
+  const root = document.documentElement;
+  if (bgImageData) {
+    root.style.setProperty('--bg-image-url', 'url(' + bgImageData + ')');
+    document.body.classList.add('has-bg-image');
+  } else {
+    root.style.setProperty('--bg-image-url', 'none');
+    document.body.classList.remove('has-bg-image');
+  }
+  root.style.setProperty('--bg-image-size', bgImageSize);
+  root.style.setProperty('--bg-image-blur', bgImageBlur + 'px');
+}
+
+function setBgImage(dataUrl) {
+  bgImageData = dataUrl || '';
+  localStorage.setItem('dabarat-bg-image', bgImageData);
+  applyBgImage();
+  /* Auto-reduce surface opacity so the image is visible immediately */
+  if (bgImageData && opacityIndex === 0) {
+    opacityIndex = 3;  /* step 3 = 85% opaque surfaces, 25% image opacity */
+  }
+  applyOpacity();
+}
+
+function clearBgImage() {
+  bgImageData = '';
+  localStorage.removeItem('dabarat-bg-image');
+  applyBgImage();
+  applyOpacity();
+}
+
+function setBgImageSize(size) {
+  bgImageSize = size;
+  localStorage.setItem('dabarat-bg-size', bgImageSize);
+  applyBgImage();
+}
+
+function setBgImageBlur(px) {
+  bgImageBlur = Math.max(0, Math.min(30, px));
+  localStorage.setItem('dabarat-bg-blur', bgImageBlur);
+  applyBgImage();
+}
+
+applyBgImage();
+
+/* Background image opacity steps — always visible when image is set */
+const BG_IMAGE_OPACITY = [0.12, 0.15, 0.20, 0.25, 0.30, 0.40];
+
 function applyOpacity() {
   const alpha = OPACITY_STEPS[opacityIndex];
   const theme = currentTheme || 'mocha';
@@ -132,6 +185,13 @@ function applyOpacity() {
   document.documentElement.style.setProperty('--body-bg', rgba(colors.base, alpha));
   document.documentElement.style.setProperty('--toc-bg', rgba(colors.mantle, alpha));
   document.documentElement.style.setProperty('--crust-bg', rgba(colors.crust, alpha));
+
+  /* Background image opacity keyed to same opacity step */
+  document.documentElement.style.setProperty(
+    '--bg-image-opacity',
+    bgImageData ? BG_IMAGE_OPACITY[opacityIndex] : 0
+  );
+
   localStorage.setItem('dabarat-opacity-idx', opacityIndex);
 }
 

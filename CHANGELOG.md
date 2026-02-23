@@ -37,14 +37,26 @@ All notable changes to Markdown Dabarat.
 - **6 home.css surfaces updated** — `.home-card`, `.home-action-btn`, card preview fade gradients, `.ws-btn`, `.home-ws-card` all use `var(--card-bg)` instead of `var(--ctp-surface0)`
 
 ### Tab Bar
-- **Dynamic tab widths** — JS-calculated `clamp(60px, availableWidth/tabCount, 240px)` with Motion animation on grow/shrink; tabs visibly expand when siblings are closed and compress when new tabs are added (browser-like behavior); `flex: 0 0 auto` with explicit pixel widths replaces CSS-only `flex: 1 1 0` which couldn't overcome `overflow-x: auto` on the scroll container; `_recalcTabWidths()` measures fixed children (home/add/overflow buttons), distributes remaining space equally, animates via Motion with `data-closing` guard to prevent resize events from stomping close animations; `window.resize` listener for responsive behavior; double-rAF on initial render for accurate icon font measurement
+- **Dynamic tab widths** — JS-calculated `clamp(60px, availableWidth/tabCount, 160px)` with Motion animation on grow/shrink; tabs visibly expand when siblings are closed and compress when new tabs are added (browser-like behavior); `flex: 0 0 auto` with explicit pixel widths replaces CSS-only `flex: 1 1 0` which couldn't overcome `overflow-x: auto` on the scroll container; `_recalcTabWidths()` measures fixed children (home/add/overflow buttons), distributes remaining space equally, animates via Motion with `data-closing` guard to prevent resize events from stomping close animations; `window.resize` listener for responsive behavior; double-rAF on initial render for accurate icon font measurement
+- **Close button pinned to right edge** — `.tab > span:first-child` gets `flex: 1; min-width: 0` to fill remaining tab width, pushing `.tab-close` (`flex-shrink: 0`) to the right edge—matches Chrome/VS Code behavior where the close [x] is always at the far right regardless of filename length
+- **Scroll reset + tighter dead zone** — when all tabs fit after closing/resizing, `_recalcTabWidths()` resets `bar.scrollLeft = 0` so scroll position doesn't get stuck; overflow dead zone reduced from 4px to 1px for more responsive scroll arrow appearance
 - **Scroll arrow buttons** — left/right chevron buttons appear at tab bar edges when tabs overflow; click to scroll by 120px; positioned absolute on wrapper at z-index 4; `.visible` class toggle for proper flex centering
-- **Overflow dropdown** — caret-down button appears at 6+ tabs; lists all open tabs with active tab highlighted in lavender; click to switch; Escape or click-outside to dismiss; reuses `tab-context-menu` visual pattern with `--card-bg` background for light theme legibility
+- **Dynamic overflow dropdown** — overflow button always rendered in DOM but `display: none` by default; `_updateTabOverflow()` toggles `.visible` class based on actual scroll overflow (`scrollWidth > clientWidth + 1`) rather than hardcoded tab count; when visibility changes, a guarded `requestAnimationFrame` recalc prevents the hidden-element-measurement bug (hidden buttons have `offsetWidth: 0`, inflating available width)
 - **Dynamic window title** — `document.title` updates to `filename — dabarat` on tab switch, resets to `dabarat` on home screen
+
+### Background Image
+- **Custom background image** — set a background image behind the content area via Settings > Appearance or `Cmd+K` → "Set Background Image"; image renders as a `::after` pseudo-element on `#main-area` with independent opacity so text stays fully legible
+- **Auto-opacity on image select** — when selecting a background image at default surface opacity (step 0, alpha 1.0), `setBgImage()` auto-bumps `opacityIndex` to 3 (85% opaque surfaces, 25% image opacity) so the image is immediately visible; previously the image was invisible because fully-opaque surfaces covered the `::after` pseudo at `z-index: 0`; the bumped index persists via `applyOpacity()` → `localStorage`
+- **Settings preview indicator** — `.settings-bg-preview` thumbnail gets a sapphire `box-shadow` ring (2px, `var(--ctp-sapphire)`) when an image is active; sapphire chosen over blue for WCAG 3:1 compliance on all themes including Rosé Pine Dawn
+- **Opacity integration** — `Cmd+U` cycles background image opacity from 12% to 40% in 6 steps (`BG_IMAGE_OPACITY = [0.12, 0.15, 0.20, 0.25, 0.30, 0.40]`); when no image is set, `Cmd+U` still adjusts background color opacity as before
+- **Image controls** — background size (cover/contain/auto), optional blur (0–30px), and a thumbnail preview in settings; click preview to remove
+- **Scoped to content area** — TOC sidebar, tab bar, and annotations gutter are unaffected; only `#main-area` gets the background image
+- **Reduced motion** — opacity transition disabled when `prefers-reduced-motion` is active
+- **Annotations gutter opacity** — `#annotations-gutter` background uses `var(--body-bg)` fallback so it participates in the opacity system
 
 ### Home Page Polish
 - **Simplified home cards** — removed redundant `home-card-desc` description line, stripped leading H1 from markdown preview (avoids filename duplication), reduced preview height 120→80px, increased grid gap 16→20px
-- **Tab overflow handling** — tabs sized dynamically via JS `_recalcTabWidths()` (60–240px) with filename ellipsis; edge fade gradient indicators appear when tabs overflow; auto-scroll to active tab on switch; tab bar wrapped in `#tab-bar-wrapper` for fade positioning
+- **Tab overflow handling** — tabs sized dynamically via JS `_recalcTabWidths()` (60–160px) with filename ellipsis; edge fade gradient indicators appear when tabs overflow; auto-scroll to active tab on switch; tab bar wrapped in `#tab-bar-wrapper` for fade positioning
 - **Tab bar full-width** — `body.home-active` now clears `margin-right: 0` on both `#main-area` and `#tab-bar`, eliminating the 260px dead zone from the hidden annotations gutter
 - **True-center empty state** — `.home-screen` uses flex column layout; `.home-empty` fills remaining space with `flex: 1` + `justify-content: center` for genuine vertical centering
 - **Reduced empty state weight** — icon 48→36px, heading 22→18px, opacity 0.4→0.3 for quieter ambient UI
@@ -73,6 +85,13 @@ All notable changes to Markdown Dabarat.
 - **Stale TOC cache** — `_cachedTocContent` cleared unconditionally in `hideHomeScreen()`
 - **Motion One selector fix** — animate DOM NodeList references instead of CSS selector strings
 - **Cache deletion detection** — `dir_entry_count` added to cache key tuple
+
+### Table Horizontal Scroll
+- **`.table-scroll` wrapper** — `render.js` post-processes `content.innerHTML` to wrap every `<table>` in a `<div class="table-scroll">` container (`overflow-x: auto; margin: 1.2em 0; border-radius: 6px`); table's own margin set to 0 so the wrapper controls spacing; skip guard prevents double-wrapping on re-render
+
+### Light Theme Hover Colors
+- **`--interactive-hover-bg` / `--interactive-muted-bg` semantic tokens** — dark themes (Mocha, Rosé Pine, Tokyo Storm) map to `var(--ctp-surface1)` / `rgba(var(--ctp-surface1-rgb), 0.85)`; light themes (Latte, Rosé Pine Dawn, Tokyo Light) map to `var(--ctp-crust)` / `rgba(0, 0, 0, 0.06)` so hover states are visible on white `--card-bg` backgrounds
+- **4 home.css selectors updated** — `.home-action-btn:hover`, `.home-card-remove`, `.ws-btn:hover`, `.ws-btn:focus` all use new interactive tokens instead of `var(--ctp-surface1)`
 
 ### CSS Cleanup
 - **Zero hardcoded rgba** — eliminated all `rgba(0,0,0,...)` and `rgba(255,255,255,...)` values across 9 CSS files; all now use `rgba(var(--ctp-*-rgb), alpha)` pattern

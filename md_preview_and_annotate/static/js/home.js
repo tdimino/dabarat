@@ -81,11 +81,12 @@ async function showHomeScreen() {
   /* Build workspace sidebar in TOC */
   _renderWorkspaceSidebar();
 
-  /* Load view */
+  /* Load view + sidebar entries */
   if (_activeWorkspace) {
     await _loadWorkspaceMultiRoot();
   } else if (_homeViewMode === 'recent' || !_fileBrowserPath) {
     await _loadRecentView();
+    _loadRecentSidebarEntries();
   } else {
     await _loadWorkspaceView(_fileBrowserPath);
   }
@@ -413,6 +414,56 @@ async function _loadWorkspaceSidebarEntries(dirPath, targetId) {
   }
 }
 
+/* ── Recent Sidebar Entries ───────────────────────────── */
+async function _loadRecentSidebarEntries() {
+  const list = document.getElementById('ws-file-list');
+  if (!list) return;
+
+  list.innerHTML = '<div class="ws-empty"><i class="ph ph-spinner"></i></div>';
+
+  try {
+    const res = await fetch('/api/recent');
+    const data = await res.json();
+    const entries = data.entries || [];
+
+    if (entries.length === 0) {
+      list.innerHTML = '<div class="ws-empty"><i class="ph ph-clock-counter-clockwise"></i><span>No recent files</span></div>';
+      return;
+    }
+
+    let html = '';
+    entries.forEach(entry => {
+      const filename = entry.filename || entry.name || '';
+      const badge = _detectFileBadge(filename, entry.path || '');
+      const timeAgo = entry.lastOpened ? _homeTimeAgo(entry.lastOpened) : '';
+      html += `<div class="ws-entry ws-file ws-recent-entry" data-path="${escapeHtml(entry.path)}">
+        <i class="ph ph-file-md"></i>
+        <span class="ws-entry-name">${escapeHtml(filename)}</span>
+        ${badge ? `<span class="ws-entry-badge">${badge}</span>` : ''}
+        ${timeAgo ? `<span class="ws-entry-size">${timeAgo}</span>` : ''}
+      </div>`;
+    });
+
+    list.innerHTML = html;
+
+    list.querySelectorAll('.ws-file').forEach(el => {
+      el.addEventListener('click', () => openRecentFile(el.dataset.path));
+    });
+
+    if (window.Motion && !_prefersReducedMotion) {
+      const wsEntries = list.querySelectorAll('.ws-entry');
+      if (wsEntries.length) {
+        Motion.animate(wsEntries,
+          { opacity: [0, 1], x: [-12, 0] },
+          { delay: Motion.stagger(0.03), duration: 0.25 }
+        );
+      }
+    }
+  } catch (e) {
+    list.innerHTML = '<div class="ws-empty"><span>Failed to load</span></div>';
+  }
+}
+
 /* ── View Modes ──────────────────────────────────────── */
 async function setHomeView(mode) {
   _homeViewMode = mode;
@@ -426,10 +477,12 @@ async function setHomeView(mode) {
 
   if (mode === 'recent') {
     await _loadRecentView();
+    _loadRecentSidebarEntries();
   } else if (_activeWorkspace) {
     await _loadWorkspaceMultiRoot();
   } else if (_fileBrowserPath) {
     await _loadWorkspaceView(_fileBrowserPath);
+    _loadWorkspaceSidebarEntries(_fileBrowserPath);
   } else {
     /* No workspace set yet — prompt user to pick a folder */
     await browsePickDir();
@@ -656,8 +709,16 @@ function _buildCard(e, i) {
   const fileBadge = _detectFileBadge(filename, e.path || '');
   if (fileBadge) fmBadges = fileBadge + fmBadges;
 
-  const timestamp = e.lastOpened || (e.mtime ? new Date(e.mtime * 1000).toISOString() : '');
-  const timeDisplay = timestamp ? _homeTimeAgo(timestamp) : '';
+  /* Dual timestamps: birthtime → created date, mtime → "updated X ago" */
+  const mtimeTs = e.mtime ? new Date(e.mtime * 1000).toISOString()
+    : (e.lastOpened || '');
+  const timeDisplay = mtimeTs ? _homeTimeAgo(mtimeTs) : '';
+  const created = e.birthtime
+    ? new Date(e.birthtime * 1000)
+    : (e.lastOpened ? new Date(e.lastOpened) : null);
+  const dateCreated = created
+    ? created.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+    : '';
 
   return `<article class="home-card" style="animation-delay:${i * 40}ms" data-filepath="${escapeHtml(e.path)}">
     <div class="home-card-accent" style="--accent: ${accentColor}"></div>
@@ -669,17 +730,18 @@ function _buildCard(e, i) {
         <div class="home-card-title-row">
           <i class="ph ph-file-md home-card-icon"></i>
           <h3 class="home-card-filename">${escapeHtml(filename)}</h3>
-          ${timeDisplay ? `<span class="home-card-time" data-timestamp="${escapeHtml(timestamp)}">${timeDisplay}</span>` : ''}
         </div>
         <p class="home-card-path">${escapeHtml((e.path || '').replace(os_home, '~'))}</p>
+        ${timeDisplay ? `<p class="home-card-updated" data-timestamp="${escapeHtml(mtimeTs)}"><i class="ph ph-clock"></i> ${timeDisplay}</p>` : ''}
       </div>
       ${fmBadges ? `<div class="home-card-badges">${fmBadges}</div>` : ''}
       ${previewHtml}
       <div class="home-card-footer">
-        ${e.wordCount ? `<span><i class="ph ph-text-aa"></i> ${e.wordCount.toLocaleString()}</span>` : ''}
+        ${e.wordCount ? `<span class="home-card-wordcount"><i class="ph ph-article"></i> ${e.wordCount.toLocaleString()}</span>` : ''}
         ${e.annotationCount ? `<span><i class="ph ph-chat-dots"></i> ${e.annotationCount}</span>` : ''}
         ${e.versionCount ? `<span><i class="ph ph-clock-counter-clockwise"></i> ${e.versionCount}</span>` : ''}
         ${tagPills ? `<div class="home-card-tags">${tagPills}</div>` : ''}
+        ${dateCreated ? `<span class="home-card-created"><i class="ph ph-calendar-blank"></i> ${dateCreated}</span>` : ''}
       </div>
     </div>
   </article>`;

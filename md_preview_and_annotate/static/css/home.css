@@ -67,7 +67,7 @@ body.home-active #content {
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .home-action-btn:hover {
-  background: var(--ctp-surface1);
+  background: var(--interactive-hover-bg);
   color: var(--ctp-text);
   border-color: var(--ctp-surface2);
 }
@@ -80,17 +80,17 @@ body.home-active #content {
 /* ── Card Grid — RAM pattern (Repeat, Auto, Minmax) ──────── */
 .home-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
-  align-items: stretch;
+  align-items: start;
 }
 
 /* ── Card ────────────────────────────────────────────────── */
 .home-card {
   position: relative;
   background: var(--card-bg);
-  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
-  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
   overflow: hidden;
   box-shadow: var(--elevation-1);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
@@ -103,14 +103,14 @@ body.home-active #content {
 
 /* Accent strip — colored top border based on file type */
 .home-card-accent {
-  height: 3px;
+  height: 2px;
   background: var(--accent, var(--ctp-blue));
 }
 
 .home-card:hover {
-  border-color: rgba(var(--ctp-lavender-rgb), 0.3);
+  border-color: rgba(var(--ctp-lavender-rgb), 0.35);
   transform: translateY(-2px);
-  box-shadow: var(--elevation-2);
+  box-shadow: var(--elevation-2), 0 0 0 1px rgba(var(--ctp-lavender-rgb), 0.08);
 }
 .home-card:active {
   transform: translateY(0);
@@ -122,10 +122,10 @@ body.home-active #content {
 .home-card-remove {
   position: absolute;
   top: 12px;
-  right: 12px;
+  right: 10px;
   width: 22px;
   height: 22px;
-  background: rgba(var(--ctp-surface1-rgb), 0.85);
+  background: var(--interactive-muted-bg);
   border: none;
   border-radius: 4px;
   color: var(--ctp-overlay0);
@@ -153,21 +153,21 @@ body.home-active #content {
 
 /* ── Card Body ──────────────────────────────────────────── */
 .home-card-body {
-  padding: 20px 24px 18px;
+  padding: 12px 18px 0;
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
 .home-card-header {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .home-card-title-row {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  padding-right: 32px;
+  gap: 6px;
+  padding-right: 28px;  /* clear the absolutely-positioned remove button */
   line-height: 1;
 }
 .home-card-icon {
@@ -190,16 +190,38 @@ body.home-active #content {
   text-overflow: ellipsis;
   min-width: 0;
   flex: 1;
+  margin: 0;
 }
+/* .home-card-time retained for browse-dir cards that may still use it */
 .home-card-time {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
   color: var(--ctp-overlay0);
   flex-shrink: 0;
   margin-left: auto;
-  /* Align timestamp with filename baseline */
-  position: relative;
-  top: -1px;
+  white-space: nowrap;
+}
+.home-card-date {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  color: var(--ctp-overlay1);
+  margin-top: 1px;
+}
+.home-card-updated {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay1);
+  margin: 6px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.home-card-updated i {
+  font-size: 11px;
+  color: var(--ctp-overlay0);
+}
+.home-card-created {
+  margin-left: auto;
 }
 .home-card-path {
   font-family: 'Victor Mono', monospace;
@@ -208,6 +230,7 @@ body.home-active #content {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin: 6px 0 0;  /* shadcn space-y-1.5 (6px) between metadata lines */
 }
 
 /* ── Card Badges (frontmatter) ──────────────────────────── */
@@ -217,7 +240,7 @@ body.home-active #content {
   flex-wrap: nowrap;
   overflow: hidden;
   max-height: 24px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 .home-badge {
   font-family: 'Victor Mono', monospace;
@@ -250,7 +273,7 @@ body.home-active #content {
 
 /* ── Card Preview ───────────────────────────────────────── */
 .home-card-preview {
-  margin: 0 -24px 12px;
+  margin: 0 -18px 10px;
   overflow: hidden;
 }
 .home-card-preview-img {
@@ -279,14 +302,14 @@ body.home-active #content {
 }
 
 .home-card-preview-md {
-  height: 80px;
+  height: 96px;
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
   line-height: 1.55;
   color: var(--ctp-subtext0);
   overflow: hidden;
   position: relative;
-  padding: 12px 24px 0;
+  padding: 10px 18px 0;
   background: rgba(var(--ctp-mantle-rgb), 0.5);
   border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
 }
@@ -355,7 +378,8 @@ body.home-active #content {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
-  padding-top: 4px;
+  /* Fixed height with centered content — equal space above/below the text */
+  height: 36px;
   border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.3);
   margin-top: auto;
 }
@@ -363,18 +387,17 @@ body.home-active #content {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
   color: var(--ctp-overlay1);
+  /* Vertical alignment: all spans share same height for perfect centering */
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  line-height: 1;
+  height: 100%;
 }
 .home-card-footer i {
-  font-size: 12px;
-  display: inline-flex;
-  align-items: center;
+  font-size: 13px;
+  /* Icon inherits height from span; align-items: center handles vertical */
 }
 .home-card-tags {
-  margin-left: auto;
   display: flex;
   gap: 5px;
 }
@@ -391,7 +414,7 @@ body.home-active #content {
 /* ── TOC Sidebar as Workspace Browser ───────────────────── */
 /* Workspace sidebar header in TOC */
 .ws-header {
-  padding: 8px 14px 0;
+  padding: 8px 14px 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -442,7 +465,7 @@ body.home-active #content {
 .ws-btn {
   background: var(--card-bg);
   color: var(--ctp-subtext0);
-  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
+  border: 1px solid var(--card-border);
   font-family: 'DM Sans', sans-serif;
   font-size: 11px;
   padding: 5px 10px;
@@ -455,7 +478,7 @@ body.home-active #content {
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .ws-btn:hover {
-  background: var(--ctp-surface1);
+  background: var(--interactive-hover-bg);
   color: var(--ctp-text);
 }
 .ws-btn.active {
@@ -464,7 +487,7 @@ body.home-active #content {
   border-color: rgba(var(--ctp-blue-rgb), 0.3);
 }
 .ws-btn:focus {
-  background: var(--ctp-surface1);
+  background: var(--interactive-hover-bg);
 }
 .ws-btn:focus:not(:focus-visible) {
   outline: none;
@@ -474,6 +497,7 @@ body.home-active #content {
   font-size: 9px;
   color: var(--ctp-overlay0);
   padding: 6px 14px 0;
+  margin-bottom: 8px;
   border-top: 1px solid rgba(var(--ctp-surface0-rgb), 0.8);
 }
 
@@ -513,6 +537,19 @@ body.home-active #content {
   font-size: 9px;
   color: var(--ctp-overlay0);
   flex-shrink: 0;
+}
+/* Badge inside sidebar recent entries */
+.ws-entry-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.ws-entry-badge .home-badge {
+  font-size: 8px;
+  padding: 1px 5px;
+}
+.ws-entry-badge .home-badge i {
+  font-size: 9px;
+  color: inherit;
 }
 .ws-separator {
   border: none;
@@ -910,7 +947,7 @@ body.home-active #content {
 }
 .home-ws-card {
   background: var(--card-bg);
-  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.5);
+  border: 1px solid var(--card-border);
   border-radius: 8px;
   padding: 10px 16px;
   display: flex;
@@ -998,9 +1035,14 @@ body.home-active #content {
     padding: 16px 12px;
   }
   .home-card-body {
-    padding: 16px 16px 12px;
+    padding: 12px 14px 0;
   }
   .home-card-preview {
-    margin: 0 -16px 10px;
+    margin: 0 -14px 8px;
+  }
+  .home-card-preview-md {
+    padding: 8px 14px 0;
   }
 }
+
+

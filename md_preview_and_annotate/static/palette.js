@@ -125,6 +125,25 @@ const CommandPalette = {
         switchGutterTab('variables');
       }},
       { id: 'toggle-twemoji', label: 'Cycle Emoji Style', icon: 'ph-smiley', action: () => cycleEmojiStyle() },
+      { id: 'set-bg-image', label: 'Set Background Image\u2026', icon: 'ph-image',
+        action: () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*';
+          input.addEventListener('change', () => {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => setBgImage(reader.result);
+            reader.readAsDataURL(file);
+          });
+          input.click();
+        }
+      },
+      { id: 'clear-bg-image', label: 'Clear Background Image', icon: 'ph-x-circle',
+        hidden: () => !bgImageData,
+        action: () => clearBgImage()
+      },
     ]);
     this.register('View', [
       { id: 'show-frontmatter', label: 'Show Frontmatter', icon: 'ph-file-code',
@@ -439,6 +458,23 @@ const CommandPalette = {
         get: () => opacityIndex,
         set: (v) => { opacityIndex = Math.max(0, Math.min(5, parseInt(v))); applyOpacity(); }
       },
+      { key: 'bgimage', label: 'Background Image', type: 'bg-image-picker',
+        get: () => bgImageData,
+        set: (v) => setBgImage(v),
+        clear: () => clearBgImage()
+      },
+      { key: 'bgsize', label: 'Background Size', type: 'toggle',
+        options: ['cover', 'contain', 'auto'],
+        icons: ['ph-arrows-out', 'ph-frame-corners', 'ph-image'],
+        hidden: () => !bgImageData,
+        get: () => bgImageSize,
+        set: (v) => setBgImageSize(v)
+      },
+      { key: 'bgblur', label: 'Background Blur', type: 'slider', min: 0, max: 30, step: 2, unit: 'px',
+        hidden: () => !bgImageData,
+        get: () => bgImageBlur,
+        set: (v) => setBgImageBlur(parseInt(v))
+      },
       { key: 'emoji', label: 'Emoji Style', type: 'toggle', options: ['twitter', 'openmoji', 'noto', 'native'],
         icons: ['ph-twitter-logo', 'ph-smiley-sticker', 'ph-google-logo', 'ph-device-mobile'],
         get: () => emojiStyle,
@@ -495,7 +531,8 @@ const CommandPalette = {
 
     this.SETTINGS_SCHEMA.forEach(group => {
       const filtered = group.items.filter(item =>
-        !q || item.label.toLowerCase().includes(q) || item.key.includes(q) || group.category.toLowerCase().includes(q)
+        (!item.hidden || !item.hidden()) &&
+        (!q || item.label.toLowerCase().includes(q) || item.key.includes(q) || group.category.toLowerCase().includes(q))
       );
       if (filtered.length === 0) return;
 
@@ -597,6 +634,42 @@ const CommandPalette = {
         e.stopPropagation();
       });
       wrap.appendChild(input);
+    }
+    else if (item.type === 'bg-image-picker') {
+      if (item.get()) {
+        const preview = document.createElement('div');
+        preview.className = 'settings-bg-preview';
+        preview.style.backgroundImage = 'url(' + item.get() + ')';
+        preview.title = 'Click to remove';
+        preview.addEventListener('click', () => {
+          item.clear();
+          this._renderSettingsPanel(this.els.input.value);
+        });
+        wrap.appendChild(preview);
+      }
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = 'image/*';
+      fileInput.style.display = 'none';
+      fileInput.addEventListener('change', () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          item.set(reader.result);
+          this._renderSettingsPanel(this.els.input.value);
+        };
+        reader.readAsDataURL(file);
+      });
+      wrap.appendChild(fileInput);
+
+      const btn = document.createElement('button');
+      btn.className = 'settings-bg-btn';
+      btn.innerHTML = item.get()
+        ? '<i class="ph ph-swap"></i> Change'
+        : '<i class="ph ph-image"></i> Choose Image';
+      btn.addEventListener('click', () => fileInput.click());
+      wrap.appendChild(btn);
     }
 
     return wrap;

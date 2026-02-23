@@ -12,7 +12,7 @@
   z-index: 5;
   scrollbar-width: none;
   border-left: 1px solid var(--ctp-surface0);
-  background: var(--ctp-base);
+  background: var(--body-bg, var(--ctp-base));
 }
 #annotations-gutter::-webkit-scrollbar { width: 0; }
 
@@ -20,7 +20,7 @@
 .ann-gutter-header {
   position: sticky;
   top: 0;
-  background: var(--ctp-base);
+  background: var(--body-bg, var(--ctp-base));
   padding: 20px 0 10px;
   display: flex;
   align-items: center;
@@ -472,3 +472,4 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   transition: color 0.15s;
 }
 .ann-btn-ghost:hover { color: var(--ctp-text); }
+

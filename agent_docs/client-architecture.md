@@ -28,6 +28,7 @@
    - Calls `applyVariableHighlights()` — wraps `{{var}}` and `${var}` in colored pills (BEFORE annotations)
    - Calls `applyEmojiStyle(content)` — renders emoji as SVGs via twemoji (or openmoji/noto CDN based on `emojiStyle`)
    - Calls `applyAnnotationHighlights()` to wrap annotated text in `<mark>` elements
+   - Wraps every `<table>` in a `<div class="table-scroll">` container (`overflow-x: auto`) for horizontal scrolling of wide tables; skip guard prevents double-wrapping
    - Calls `attachLightboxToContent()` — attaches click handlers to content images (excludes `.emoji` and `.tpl-var-img`), rebuilds `_lightboxImages` array
 3. Scroll spy updates active heading in TOC (throttled via `requestAnimationFrame`)
 
@@ -48,8 +49,12 @@
 
 ### Tab System
 - Tab bar rendered by `renderTabBar()` inside `#tab-bar-wrapper` — click to switch, X to close, + to add
-- **Dynamic tab widths**: `_recalcTabWidths()` computes `clamp(60px, availableWidth/tabCount, 240px)`, sets explicit pixel widths on each `.tab` element (`flex: 0 0 auto`); tabs grow when siblings are closed, shrink when new tabs are added; animated via Motion with `data-closing` guard; fires on `renderTabBar()` (via rAF), `window.resize`, double-rAF on initial render for icon font measurement accuracy
+- **Dynamic tab widths**: `_recalcTabWidths()` computes `clamp(60px, availableWidth/tabCount, 160px)`, sets explicit pixel widths on each `.tab` element (`flex: 0 0 auto`); tabs grow when siblings are closed, shrink when new tabs are added; animated via Motion with `data-closing` guard; fires on `renderTabBar()` (via rAF), `window.resize`, double-rAF on initial render for icon font measurement accuracy
+- **Close button pinned to right edge**: `.tab > span:first-child` gets `flex: 1; min-width: 0` to fill remaining tab width, pushing `.tab-close` (`flex-shrink: 0`) to the right edge—matches Chrome/VS Code behavior
+- **Scroll reset**: when all tabs fit after closing/resizing, `_recalcTabWidths()` resets `bar.scrollLeft = 0` so scroll position doesn't get stuck; overflow dead zone is 1px
+- **Dynamic overflow dropdown**: overflow button always rendered in DOM but `display: none` by default; `_updateTabOverflow()` toggles `.visible` class based on actual scroll overflow (`scrollWidth > clientWidth + 1`) rather than hardcoded tab count; when visibility changes, a guarded `requestAnimationFrame` recalc prevents the hidden-element-measurement bug (hidden buttons have `offsetWidth: 0`, inflating available width); `_overflowRecalcPending` flag prevents infinite recursion
 - Edge fade gradients on `#tab-bar-wrapper` indicate overflow when tabs exceed available width
+- Scroll arrow buttons: left/right chevrons appear at tab bar edges on overflow; click to scroll 120px
 - Auto-scroll to active tab on `switchTab()` via `scrollIntoView({ inline: 'nearest' })`
 - `switchTab()` saves scroll position, resets render caches, fetches content
 - Tab reuse: server-side `--add` flag sends POST to running instance
@@ -61,11 +66,14 @@
 - Tag colors shared with `CommandPalette.TAG_COLORS` (uses CSS variable references for theme-aware rendering)
 
 ### Theme & Preferences
-- Theme: `localStorage('dabarat-theme')` — `mocha` or `latte`, applied via `data-theme` attribute
+- Theme: `localStorage('dabarat-theme')` — 6 themes (`mocha`, `latte`, `rose-pine`, `rose-pine-dawn`, `tokyo-storm`, `tokyo-light`), applied via `data-theme` attribute; 3 dark + 3 light
 - Font size: `localStorage('dabarat-fontsize')` — 11–22px range, applied via CSS `--base-size`
 - TOC width: `localStorage('dabarat-toc-width')` — 180–500px, draggable resize handle
 - Active tab: `localStorage('dabarat-active-tab')` — restored on reload
 - Emoji style: `localStorage('dabarat-emoji-style')` — `twitter` (default), `openmoji`, `noto`, `native`; twemoji's parser detects emoji, `EMOJI_CDNS` callbacks swap the CDN URL per set
+- Opacity: `localStorage('dabarat-opacity-idx')` — `Cmd+U` cycles through `OPACITY_STEPS = [1.0, 0.95, 0.90, 0.85, 0.80, 0.70]`; `applyOpacity()` sets `--body-bg`, `--toc-bg`, `--crust-bg` as rgba; when a background image is set, also sets `--bg-image-opacity` from `BG_IMAGE_OPACITY = [0.12, 0.15, 0.20, 0.25, 0.30, 0.40]`
+- Background Image: `localStorage('dabarat-bg-image')` (data URL), `dabarat-bg-size` (cover/contain/auto), `dabarat-bg-blur` (0–30px) — `body.has-bg-image` class activates `#main-area::after` pseudo-element with `background-image`, `opacity`, and optional `filter: blur()`; scoped to content area only (not TOC); children (`#content`, `#tab-bar-wrapper`, `#diff-view`) use `position: relative; z-index: 1+` to sit above the image; set via Settings panel `bg-image-picker` control type or "Set Background Image" command; **auto-opacity**: when selecting an image at default surface opacity (step 0, alpha 1.0), `setBgImage()` auto-bumps `opacityIndex` to 3 (85% opaque surfaces, 25% image opacity) so the image is immediately visible; `.settings-bg-preview` thumbnail gets a sapphire ring when active
+- Interactive tokens: `--interactive-hover-bg` (dark: `var(--ctp-surface1)`, light: `var(--ctp-crust)`) and `--interactive-muted-bg` (dark: `rgba(surface1, 0.85)`, light: `rgba(0,0,0,0.06)`) — used by home.css for hover states on white `--card-bg` backgrounds in light themes
 
 ## palette.js (~1191 lines)
 

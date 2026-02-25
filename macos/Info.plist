@@ -3,25 +3,25 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleIdentifier</key>
-    <string>com.minoanmystery.md-preview</string>
+    <string>com.minoanmystery.dabarat</string>
 
     <key>CFBundleExecutable</key>
-    <string>md-preview</string>
+    <string>droplet</string>
 
     <key>CFBundleName</key>
-    <string>Markdown Preview</string>
+    <string>Dabarat</string>
 
     <key>CFBundleDisplayName</key>
-    <string>Markdown Preview</string>
+    <string>Dabarat</string>
 
     <key>CFBundlePackageType</key>
     <string>APPL</string>
 
     <key>CFBundleVersion</key>
-    <string>1.0</string>
+    <string>1.2</string>
 
     <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
+    <string>1.2</string>
 
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
@@ -39,12 +39,16 @@
                 <string>mdown</string>
                 <string>mkd</string>
             </array>
+            <key>LSItemContentTypes</key>
+            <array>
+                <string>net.daringfireball.markdown</string>
+            </array>
             <key>CFBundleTypeRole</key>
             <string>Editor</string>
             <key>CFBundleTypeName</key>
             <string>Markdown Document</string>
             <key>LSHandlerRank</key>
-            <string>Alternate</string>
+            <string>Owner</string>
         </dict>
     </array>
 

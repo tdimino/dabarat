@@ -4,6 +4,11 @@ const TAB_MAX_WIDTH = 160;
 let _prevTabWidth = 0;
 let _lastTabIds = new Set();
 
+function _getTabBarVisibleWidth() {
+  const mainArea = document.getElementById('main-area');
+  return mainArea ? mainArea.clientWidth : document.getElementById('tab-bar').clientWidth;
+}
+
 function renderTabBar() {
   const bar = document.getElementById('tab-bar');
   bar.innerHTML = '';
@@ -121,7 +126,9 @@ function _updateTabOverflow() {
   const bar = document.getElementById('tab-bar');
   const wrapper = document.getElementById('tab-bar-wrapper');
   if (!bar || !wrapper) return;
+  const visibleWidth = _getTabBarVisibleWidth();
   const hasLeft = bar.scrollLeft > 1;
+  /* Scroll indicators use bar's own coordinate space (scrollLeft/scrollWidth/clientWidth) */
   const hasRight = bar.scrollLeft < bar.scrollWidth - bar.clientWidth - 1;
   wrapper.classList.toggle('has-overflow-left', hasLeft);
   wrapper.classList.toggle('has-overflow-right', hasRight);
@@ -135,7 +142,7 @@ function _updateTabOverflow() {
   /* Show overflow dropdown only when tabs actually overflow */
   const overflowBtn = document.getElementById('tab-overflow');
   if (overflowBtn) {
-    const hasOverflow = bar.scrollWidth > bar.clientWidth + 1;
+    const hasOverflow = bar.scrollWidth > visibleWidth + 1;
     const wasVisible = overflowBtn.classList.contains('visible');
     overflowBtn.classList.toggle('visible', hasOverflow);
     /* If visibility changed, recalc tab widths to account for button's space */
@@ -166,8 +173,8 @@ function _recalcTabWidths() {
   const tabCount = tabEls.length;
   if (tabCount === 0) { _prevTabWidth = 0; _updateTabOverflow(); return; }
 
-  /* Available width = bar's visible width minus all non-tab children */
-  const barWidth = bar.clientWidth;
+  /* Available width = main-area's visible width minus all non-tab children */
+  const barWidth = _getTabBarVisibleWidth();
   let fixedWidth = 0;
   for (const child of bar.children) {
     if (!child.classList.contains('tab')) {
@@ -204,15 +211,31 @@ function _recalcTabWidths() {
 
   /* Reset scroll when all tabs fit — prevents stuck scroll position */
   const totalTabWidth = tabWidths.reduce((s, w) => s + w, 0) + fixedWidth;
-  if (totalTabWidth <= barWidth) {
+  if (totalTabWidth <= _getTabBarVisibleWidth()) {
     bar.scrollLeft = 0;
   }
 
   _updateTabOverflow();
 }
 
-/* Recalc on window resize */
-window.addEventListener('resize', _recalcTabWidths);
+/* Recalc on container resize (catches window resize, TOC collapse, gutter toggle) */
+if (typeof ResizeObserver !== 'undefined') {
+  let _resizeRecalcPending = false;
+  const _mainArea = document.getElementById('main-area');
+  if (_mainArea) {
+    new ResizeObserver(() => {
+      if (!_resizeRecalcPending) {
+        _resizeRecalcPending = true;
+        requestAnimationFrame(() => {
+          _resizeRecalcPending = false;
+          _recalcTabWidths();
+        });
+      }
+    }).observe(_mainArea);
+  }
+} else {
+  window.addEventListener('resize', _recalcTabWidths);
+}
 
 function switchTab(id) {
   if (!tabs[id]) return;

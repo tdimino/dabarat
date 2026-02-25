@@ -105,6 +105,9 @@ function render(md) {
   /* Render frontmatter indicator bar (click to open popup) */
   renderFrontmatterIndicator(currentFrontmatter);
 
+  /* Semantic styles — frontmatter-driven custom coloring */
+  applySemanticStyles(currentFrontmatter);
+
   /* Variable highlighting — must run BEFORE annotation highlights
      to avoid corrupting annotation text range offsets */
   applyVariableHighlights(currentFrontmatter);

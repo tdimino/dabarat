@@ -14,25 +14,44 @@ CLI (__main__.py)
   │            ├─ GET / → template.py assembles HTML shell
   │            │           (inlines 16 JS modules + palette.js + 14 CSS modules)
   │            │
+  │            ├─ GET /api/tabs → list open tabs
   │            ├─ GET /api/content → reads .md file, returns content + mtime + frontmatter
-  │            │                    (frontmatter.py parses YAML, strips from content)
   │            ├─ GET /api/annotations → annotations.py loads sidecar JSON, runs orphan cleanup
+  │            ├─ GET /api/tags → tag array for a tab
   │            ├─ GET /api/recent → recent.py returns recently opened files
   │            ├─ GET /api/browse-dir → enriched directory listing (word counts, summaries,
   │            │                        preview images, annotation/version counts, badges)
-  │            │                        with thread-safe caching (_browse_cache + Lock)
   │            ├─ GET /api/preview-image → serves image files from tab/browse directories
   │            ├─ GET /api/versions → history.py lists git-backed version history
   │            ├─ GET /api/version → history.py retrieves content at a specific commit
   │            ├─ GET /api/diff → diff.py compares two markdown files
+  │            ├─ GET /api/workspace → active workspace JSON
+  │            ├─ GET /api/workspaces/recent → recently opened workspaces
+  │            ├─ GET /api/file-metadata → enriched metadata for a single file
+  │            ├─ POST /api/add → open file as new tab
+  │            ├─ POST /api/close → close a tab
   │            ├─ POST /api/annotate → annotations.py writes sidecar JSON
   │            │                       (bookmark type also → bookmarks.py → ~/.claude/bookmarks/)
-  │            ├─ POST /api/save → writes content + auto-commits to history.py
+  │            ├─ POST /api/resolve → toggle resolved state, archive to .resolved.json
+  │            ├─ POST /api/reply → threaded reply to annotation
+  │            ├─ POST /api/delete-annotation → permanently delete annotation
+  │            ├─ POST /api/save → atomic write + auto-commit to history.py
   │            ├─ POST /api/restore → history.py restores file to a previous version
   │            ├─ POST /api/rename → renames file + sidecar files on disk
   │            ├─ POST /api/browse → macOS file picker (osascript)
+  │            ├─ POST /api/browse-folder → macOS folder picker
+  │            ├─ POST /api/browse-file → macOS file picker (markdown only)
   │            ├─ POST /api/recent/remove → removes a file from recent list
-  │            └─ POST /api/tags → annotations.py reads/writes "tags" array in sidecar JSON
+  │            ├─ POST /api/tags → add/remove tags in sidecar JSON
+  │            ├─ POST /api/workspace → create/overwrite workspace file
+  │            ├─ POST /api/workspace/open → activate a workspace
+  │            ├─ POST /api/workspace/close → deactivate workspace
+  │            ├─ POST /api/workspace/add-folder → append folder to workspace
+  │            ├─ POST /api/workspace/add-file → pin file to workspace
+  │            ├─ POST /api/workspace/remove → remove folder/file from workspace
+  │            ├─ POST /api/workspace/rename → rename workspace
+  │            ├─ POST /api/workspace/save-as → save dialog + create workspace
+  │            └─ POST /api/export-pdf → pdf_export.py via headless Chrome CDP
   │
   ├─ --add → HTTP POST to running server's /api/add (tab reuse)
   └─ --annotate → annotations.py direct write (no server needed)
@@ -49,7 +68,7 @@ CLI (__main__.py)
 
 ### `server.py` (~791 lines)
 - `PreviewHandler(BaseHTTPRequestHandler)` — single handler class
-- 22 REST API endpoints (10 GET, 12 POST)
+- 36 REST API endpoints (14 GET, 22 POST)
 - Tab management via module-level dicts: `_tabs`, `_tab_files`, `_tab_order` (protected by `_tabs_lock`)
 - Tab IDs are SHA-256 hashes of absolute file paths
 - Content polling: client fetches `/api/content` every 500ms, server returns file mtime for change detection
@@ -88,6 +107,14 @@ CLI (__main__.py)
 - Falls back to `pyyaml` (`yaml.safe_load`) if installed
 - Mtime-keyed cache: `(filepath, mtime)` → `(frontmatter_dict, body_str)`
 - Called by `server.py` in `/api/content` — returns `frontmatter` field alongside `content`
+
+### `pdf_export.py` (~294 lines)
+- CDP-based PDF export using headless Chrome and a raw stdlib WebSocket client (`socket` + `struct` + `base64`, no library)
+- Discovers Chrome binary on macOS/Linux/Windows
+- Launches `--headless --print-to-pdf` with `--remote-debugging-port`
+- WebSocket connection to CDP endpoint for page load detection + `Page.printToPDF`
+- Theme preservation: passes `?theme=X&export=1` query params to server URL
+- Called by `__main__.py` via `--export-pdf` flag, or from browser via `Cmd+K` → "Export PDF..."
 
 ### `diff.py` (108 lines)
 - Side-by-side markdown diff engine using `difflib.SequenceMatcher`

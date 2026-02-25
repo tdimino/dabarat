@@ -61,6 +61,7 @@ function renderFrontmatterIndicator(fm) {
   if (Array.isArray(vars) && vars.length > 0) chips.push('<span class="fm-ind-detail">{{' + vars.length + '}}</span>');
   const deps = fm.depends_on || [];
   if (deps.length > 0) chips.push('<span class="fm-ind-detail">' + deps.length + 'd</span>');
+  if (fm.semantic_styles && fm.semantic_styles.rules) chips.push('<span class="fm-ind-detail semantic"><i class="ph ph-palette"></i></span>');
 
   /* Lineage chips */
   const lineageChips = [];
@@ -299,9 +300,48 @@ function showFrontmatterPopup(fm) {
     body.appendChild(sec);
   }
 
+  /* Semantic styles — render as color palette swatches */
+  if (fm.semantic_styles && typeof fm.semantic_styles === 'object') {
+    const ss = fm.semantic_styles;
+    const sec = document.createElement('div');
+    sec.className = 'fm-popup-section';
+    sec.innerHTML = '<div class="fm-popup-key"><i class="ph ph-palette" style="margin-right:4px"></i>semantic styles</div>';
+    const grid = document.createElement('div');
+    grid.className = 'fm-ss-grid';
+    for (const [name, def] of Object.entries(ss)) {
+      if (name === 'rules' || typeof def !== 'object') continue;
+      const swatch = document.createElement('div');
+      swatch.className = 'fm-ss-swatch';
+      const dot = document.createElement('span');
+      dot.className = 'fm-ss-dot';
+      if (def.color) { const c = _ssValidateValue(def.color); if (c) dot.style.background = c; }
+      if (def['border-bottom']) { const b = _ssValidateValue(def['border-bottom']); if (b) dot.style.borderBottom = b; }
+      swatch.appendChild(dot);
+      const label = document.createElement('span');
+      label.className = 'fm-ss-label';
+      label.textContent = name;
+      swatch.appendChild(label);
+      grid.appendChild(swatch);
+    }
+    /* Rules summary */
+    if (Array.isArray(ss.rules) && ss.rules.length > 0) {
+      const rulesDiv = document.createElement('div');
+      rulesDiv.className = 'fm-ss-rules';
+      ss.rules.forEach(r => {
+        const row = document.createElement('span');
+        row.className = 'fm-ss-rule';
+        row.innerHTML = '<code>' + escapeHtml(r.match) + '</code> <span class="fm-ss-arrow">\u2192</span> ' + escapeHtml(r.style);
+        rulesDiv.appendChild(row);
+      });
+      grid.appendChild(rulesDiv);
+    }
+    sec.appendChild(grid);
+    body.appendChild(sec);
+  }
+
   /* Raw YAML fallback: show any other keys not already rendered */
   const shownKeys = new Set(['name', 'slug', 'version', 'type', 'model', 'temperature',
-    'author', 'created', 'labels', 'tags', 'variables', 'depends_on', 'parent']);
+    'author', 'created', 'labels', 'tags', 'variables', 'depends_on', 'parent', 'semantic_styles']);
   const extraKeys = Object.keys(fm).filter(k => !shownKeys.has(k));
   if (extraKeys.length > 0) {
     const sec = document.createElement('div');
@@ -343,4 +383,118 @@ function showFrontmatterPopup(fm) {
     }
   };
   document.addEventListener('keydown', escHandler);
+}
+
+/* ── Semantic Styles (frontmatter-driven custom coloring) ── */
+const _SS_ALLOWED_PROPS = new Set([
+  'color', 'background-color', 'background',
+  'border-bottom', 'border-left', 'border',
+  'font-weight', 'font-style', 'font-variant',
+  'text-decoration', 'text-decoration-color', 'text-decoration-style',
+  'letter-spacing', 'opacity',
+]);
+const _SS_ALLOWED_ELEMENTS = new Set([
+  'em', 'strong', 'code', 'blockquote', 'cite', 'a', 'li', 'p', 'td', 'th',
+  'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+]);
+const _SS_SAFE_VALUE_RE = /^(var\(--ctp-[\w-]+\)|rgba\(var\(--ctp-[\w-]+-rgb\)\s*,\s*[\d.]+\)|#[0-9a-fA-F]{3,8}|[\w\s.%-]+)$/;
+
+function _ssValidateSelector(match) {
+  /* Parse a simplified selector like "strong > em", "blockquote em",
+     or class-based selectors like ".akk", "em.grc", ".uga" */
+  const tokens = match.trim().split(/\s+/);
+  if (tokens.length === 0) return null;
+  const parts = [];
+  let lastWasCombinator = true; /* reject leading > */
+  for (const tok of tokens) {
+    if (tok === '>') {
+      if (lastWasCombinator) return null;
+      parts.push('>');
+      lastWasCombinator = true;
+      continue;
+    }
+    /* Support element.class, .class, or bare element */
+    const classMatch = tok.match(/^([a-z1-6]*)(\.([a-z][\w-]*))?$/);
+    if (!classMatch) return null;
+    const elem = classMatch[1];
+    const cls = classMatch[3];
+    if (elem && !_SS_ALLOWED_ELEMENTS.has(elem)) return null;
+    if (!elem && !cls) return null;
+    parts.push(tok);
+    lastWasCombinator = false;
+  }
+  if (lastWasCombinator) return null; /* reject trailing > */
+  return '#content ' + parts.join(' ');
+}
+
+function _ssValidateValue(val) {
+  /* Allow compound values like "1px dotted rgba(...)" by splitting on spaces
+     and validating each CSS value token or the whole string */
+  if (typeof val !== 'string') return null;
+  const v = val.trim();
+  /* Allow compound border shorthand: size style color */
+  if (_SS_SAFE_VALUE_RE.test(v)) return v;
+  /* Try splitting on the first color function — common pattern: "1px dotted rgba(...)" */
+  const rgbaIdx = v.indexOf('rgba(');
+  const varIdx = v.indexOf('var(');
+  const funcIdx = rgbaIdx >= 0 ? rgbaIdx : varIdx;
+  if (funcIdx > 0) {
+    const prefix = v.slice(0, funcIdx).trim();
+    const suffix = v.slice(funcIdx).trim();
+    if (/^[\w\s.%-]+$/.test(prefix) && /^(rgba\(var\(--ctp-[\w-]+-rgb\)\s*,\s*[\d.]+\)|var\(--ctp-[\w-]+\))$/.test(suffix)) {
+      return v;
+    }
+  }
+  return null;
+}
+
+function applySemanticStyles(fm) {
+  const existing = document.getElementById('semantic-styles');
+  if (!fm || !fm.semantic_styles) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  const ss = fm.semantic_styles;
+  const rules = ss.rules;
+  if (!Array.isArray(rules) || rules.length === 0) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  /* Build CSS rules */
+  const cssRules = [];
+  for (const rule of rules) {
+    if (!rule.match || !rule.style) continue;
+    const selector = _ssValidateSelector(rule.match);
+    if (!selector) continue;
+    const styleDef = ss[rule.style];
+    if (!styleDef || typeof styleDef !== 'object') continue;
+
+    const declarations = [];
+    for (const [prop, val] of Object.entries(styleDef)) {
+      if (prop === 'rules') continue;
+      if (!_SS_ALLOWED_PROPS.has(prop)) continue;
+      const safe = _ssValidateValue(String(val));
+      if (safe) declarations.push(prop + ': ' + safe);
+    }
+    if (declarations.length > 0) {
+      cssRules.push(selector + ' { ' + declarations.join('; ') + '; }');
+    }
+  }
+
+  if (cssRules.length === 0) {
+    if (existing) existing.remove();
+    return;
+  }
+
+  const css = '/* Frontmatter semantic_styles */\n' + cssRules.join('\n');
+  if (existing) {
+    existing.textContent = css;
+  } else {
+    const style = document.createElement('style');
+    style.id = 'semantic-styles';
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
 }

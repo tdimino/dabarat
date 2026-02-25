@@ -51,6 +51,7 @@ h5 {
 p { margin: 0.75em 0; }
 strong { color: var(--bold-color); font-weight: 600; }
 em { color: var(--italic-color); font-style: italic; }
+cite { font-style: italic; }
 
 blockquote {
   color: var(--blockquote-color);
@@ -133,6 +134,8 @@ th {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+th[align="center"] { text-align: center; }
+th[align="right"] { text-align: right; }
 td {
   padding: 8px 14px;
   border: 1px solid var(--ctp-surface0);

@@ -321,9 +321,9 @@ function initEditor() {
   });
 }
 
-/* Cmd+E toggle edit mode */
+/* Cmd+Shift+E toggle edit mode (Cmd+E is stolen by Chrome --app mode) */
 document.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'e') {
     /* Don't intercept if palette is open */
     const backdrop = document.querySelector('.palette-backdrop');
     if (backdrop && backdrop.classList.contains('visible')) return;
@@ -333,5 +333,14 @@ document.addEventListener('keydown', (e) => {
     } else {
       enterEditMode();
     }
+  }
+});
+
+/* Cmd+P print */
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'p') {
+    e.preventDefault();
+    if (editState.active) exitEditMode(true);
+    requestAnimationFrame(() => window.print());
   }
 });

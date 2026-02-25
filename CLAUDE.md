@@ -14,7 +14,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 ## Structure
 
 ### Python
-- `server.py` — HTTP server + 35 REST API endpoints
+- `server.py` — HTTP server + 36 REST API endpoints
 - `template.py` — HTML shell assembly (concatenates JS/CSS modules, inlines into single doc)
 - `annotations.py` — Sidecar JSON I/O + orphan cleanup
 - `bookmarks.py` — Global `~/.claude/bookmarks/` persistence
@@ -23,6 +23,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `history.py` — Git-based file version history
 - `recent.py` — Recently opened files tracking
 - `workspace.py` — `.dabarat-workspace` CRUD, recent workspaces tracking
+- `pdf_export.py` — CDP-based PDF export (headless Chrome, stdlib WebSocket, zero deps)
 - `__main__.py` — CLI entry point (serve, add, annotate, export-pdf, workspace)
 
 ### JavaScript (`static/js/` — 16 modules, concatenated in order)
@@ -62,6 +63,11 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 ### Standalone
 - `static/palette.js` — Command palette + tag mode (Cmd+K) — loaded separately
 
+### macOS (`macos/`)
+- `build.sh` — Builds `Dabarat.app` AppleScript droplet → `~/Applications/`
+- `Info.plist` — UTI declarations, bundle metadata (`com.minoanmystery.dabarat`)
+- `INDEX.md` — Build and usage documentation
+
 ## Install
 - `pip install -e .` from project root — installs `dabarat`, `dbrt`, `mdpreview`, and `mdp` globally
 
@@ -82,18 +88,17 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `.prompt.md` files auto-detect YAML frontmatter → indicator bar + click-to-open metadata popup
 - `{{variable}}` and `${variable}` template slots highlighted as colored pills with schema tooltips
 - Blockquotes: no italic (matches GitHub/VS Code/Typora convention) — `em` and `code` inside blockquotes reset to `font-style: normal` to prevent Victor Mono cursive rendering
-- Emoji style switchable via `Cmd+K` → Settings → Emoji Style: Twitter (Twemoji), OpenMoji, Noto Color Emoji, or Native. Uses twemoji's parser as universal emoji detector with swappable CDN URLs (`EMOJI_CDNS` in `theme.js`). `applyEmojiStyle()` runs after `marked.parse()` in `render.js`; `img.emoji` CSS rule sizes inline. Preference persisted in `localStorage('dabarat-emoji-style')`
+- Emoji style: 4 options (Twemoji, OpenMoji, Noto, Native) via `EMOJI_CDNS` in `theme.js`. `applyEmojiStyle()` runs after `marked.parse()`
 - **Config dir**: `~/.dabarat/` (history, instances, recent.json). Auto-migrates from `~/.mdpreview/` on first run.
 - **localStorage prefix**: `dabarat-*` keys. Migration IIFE in `state.js` copies `mdpreview-*` → `dabarat-*` on first load.
 - **Color convention**: Never use hardcoded rgba channel values—use `rgba(var(--ctp-*-rgb), alpha)` from `theme-variables.css`. RGB companions (`--ctp-yellow-rgb`, `--ctp-blue-rgb`, etc.) auto-switch per theme. Latte overrides only needed when alpha values differ from Mocha defaults. TAG_COLORS in `palette.js` also uses CSS variable references for theme-awareness.
 - **Interactive token convention**: For hover/focus states on surfaces that use `--card-bg` (white in light themes), use `var(--interactive-hover-bg)` (dark: `--ctp-surface1`, light: `--ctp-crust`) and `var(--interactive-muted-bg)` (dark: `rgba(surface1, 0.85)`, light: `rgba(0,0,0,0.06)`) instead of raw `var(--ctp-surface1)` which is invisible on white.
 - **Event delegation**: Never use inline `onclick` handlers in dynamically-built HTML—use `data-*` attributes + `addEventListener` event delegation. This prevents XSS via HTML entity decoding in path strings.
 - **Motion One**: Optional animation CDN loaded as ES module (`@motionone/dom`). Assigns `window.Motion` with `animate`, `stagger`, `spring`. All call sites MUST guard with `if (window.Motion && !_prefersReducedMotion)` for progressive enhancement + accessibility. `_prefersReducedMotion` is a `const` in `state.js`. Falls back to CSS `@keyframes` animations. See `@agent_docs/motion-one.md` for full call site reference.
-- **Image lightbox**: Content images (excluding `.emoji` and `.tpl-var-img`) get `cursor: zoom-in` and open a lightbox overlay on click. Lightbox supports keyboard navigation (arrows, Escape), blur backdrop, and zoom.
-- **Workspace home page**: When home screen is active, TOC sidebar repurposes as directory browser. `_cachedTocContent` saves/restores TOC innerHTML during transitions. `buildToc()` in `render()` always overwrites restored cache immediately after tab activation.
-- **Workspace system**: `.dabarat-workspace` JSON files store multi-root folder + pinned file configurations. Recent workspaces tracked in `~/.dabarat/workspaces.json` (max 10). Server-side state: `_active_workspace` and `_active_workspace_path`. Client state: `_activeWorkspace` and `_activeWorkspacePath` in `state.js`. Sidebar renders multi-root sections with collapsible folders. macOS native dialogs for folder/file picking via `osascript`. Command palette: New/Open/Add Folder/Add File/Close Workspace.
-- **Empty state quotes**: 30 curated quotes from Tom di Mino, classical sources (Plato, Heraclitus, Sappho), Harrison, Gordon, Astour, and Tamarru. Cycles every 5 minutes with 300ms opacity crossfade. Cormorant Garamond italic + DM Sans small-caps attribution.
-- **PDF export**: CLI (`--export-pdf file.md [-o out.pdf] [--theme mocha]`) or browser (`Cmd+K` → "Export PDF..."). Uses headless Chrome `--print-to-pdf` against the running server with `?theme=X&export=1` query params. `init.js` skips polling and emits a render-complete sentinel in export mode. `print-color-adjust: exact` in `@media print` preserves dark theme backgrounds. Status bar has a `ph-file-pdf` icon button. Valid themes: mocha, latte, rose-pine, rose-pine-dawn, tokyo-storm, tokyo-light.
+- **Image lightbox**: Content images (excluding `.emoji` and `.tpl-var-img`) get `cursor: zoom-in` and open lightbox on click
+- **Workspace system**: See `@agent_docs/workspace-system.md` for full internals. Key state: server-side `_active_workspace`/`_active_workspace_path`, client-side in `state.js`
+- **PDF export**: `pdf_export.py` uses headless Chrome CDP. Export mode: `?theme=X&export=1` skips polling + emits render-complete sentinel. `print-color-adjust: exact` preserves dark backgrounds
+- **Finder integration (macOS)**: `Dabarat.app` droplet at `~/Applications/`. Bundle ID: `com.minoanmystery.dabarat`. Rebuild after Python upgrade: `bash macos/build.sh`. Default handler: `duti -s com.minoanmystery.dabarat .md all`
 - **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.
 

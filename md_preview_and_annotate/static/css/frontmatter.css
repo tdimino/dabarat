@@ -99,6 +99,13 @@
   color: var(--ctp-peach);
   border-color: rgba(var(--ctp-peach-rgb), 0.18);
 }
+.fm-ind-detail.semantic {
+  background: rgba(var(--ctp-flamingo-rgb), 0.10);
+  color: var(--ctp-flamingo);
+  border-color: rgba(var(--ctp-flamingo-rgb), 0.18);
+  padding: 2px 5px;
+}
+.fm-ind-detail.semantic i { font-size: 11px; }
 
 /* Lineage link chips — navigable parent/child */
 .fm-ind-link {
@@ -194,6 +201,11 @@
   background: rgba(var(--ctp-peach-rgb), 0.08);
   color: var(--ctp-peach);
   border-color: rgba(var(--ctp-peach-rgb), 0.15);
+}
+[data-theme="latte"] .fm-ind-detail.semantic {
+  background: rgba(var(--ctp-flamingo-rgb), 0.08);
+  color: var(--ctp-flamingo);
+  border-color: rgba(var(--ctp-flamingo-rgb), 0.15);
 }
 
 /* ── Frontmatter Popup ─────────────────────────────── */
@@ -348,6 +360,59 @@
   font-size: 10.5px;
   max-width: 200px;
 }
+/* ── Semantic Styles Palette (in popup) ──────────── */
+.fm-ss-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.fm-ss-swatch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.fm-ss-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.fm-ss-label {
+  font-family: 'Victor Mono', monospace;
+  font-size: 11px;
+  color: var(--ctp-subtext0);
+  letter-spacing: 0.2px;
+}
+.fm-ss-rules {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ctp-surface0);
+}
+.fm-ss-rule {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay1);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.fm-ss-rule code {
+  font-size: 10px;
+  padding: 1px 5px;
+  background: rgba(var(--ctp-surface0-rgb), 0.5);
+  border-radius: 3px;
+  color: var(--ctp-text);
+}
+.fm-ss-arrow {
+  color: var(--ctp-overlay0);
+  font-size: 9px;
+}
+
 .fm-popup-raw {
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);

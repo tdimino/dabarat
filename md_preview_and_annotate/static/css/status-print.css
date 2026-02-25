@@ -137,6 +137,13 @@
     width: 100%;
   }
 
+  /* ── Light themes: white background for print ── */
+  [data-theme="latte"] body,
+  [data-theme="rose-pine-dawn"] body,
+  [data-theme="tokyo-light"] body {
+    background: #fff !important;
+  }
+
   /* ── No animations, no hover effects ── */
   * {
     animation: none !important;

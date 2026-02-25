@@ -50,7 +50,8 @@ const THEME_PAIRS = {
   'tokyo-storm': 'tokyo-light', 'tokyo-light': 'tokyo-storm',
 };
 
-let currentTheme = localStorage.getItem('dabarat-theme') || 'mocha';
+let currentTheme = (new URLSearchParams(window.location.search)).get('theme')
+  || localStorage.getItem('dabarat-theme') || 'mocha';
 if (!THEME_META[currentTheme] && currentTheme !== '_custom') currentTheme = 'mocha';
 
 function applyTheme() {

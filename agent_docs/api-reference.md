@@ -1,6 +1,6 @@
 # API Reference
 
-All endpoints served by `server.py:PreviewHandler`. 35 endpoints total (14 GET, 21 POST).
+All endpoints served by `server.py:PreviewHandler`. 36 endpoints total (14 GET, 22 POST).
 
 ## GET Endpoints
 
@@ -319,3 +319,20 @@ Opens macOS native file picker dialog (restricted to markdown files).
 // Response
 { "filepath": "/Users/tom/Documents/README.md" }
 ```
+
+### `POST /api/export-pdf`
+Exports the active tab as a PDF via headless Chrome. Opens macOS save dialog for output path. Preserves the active Catppuccin theme (dark themes produce dark PDFs).
+```json
+// Request (all fields optional)
+{ "tab": "abc123", "theme": "mocha" }
+
+// Response (success)
+{ "ok": true, "path": "/Users/tom/Documents/README.pdf", "filename": "README.pdf" }
+
+// Response (cancelled by user)
+{ "cancelled": true }
+
+// Response (error)
+{ "error": "Chrome not found" }
+```
+Requires Chrome/Chromium installed. Uses `--headless=new --print-to-pdf` with `--virtual-time-budget=5000` for JS rendering. Timeout: 30s.

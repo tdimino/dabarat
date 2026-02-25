@@ -58,22 +58,88 @@
   padding: 0 6px;
   cursor: default;
 }
+#status-export-pdf {
+  background: none;
+  border: none;
+  color: var(--ctp-overlay0);
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+#status-export-pdf:hover {
+  color: var(--ctp-blue);
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
 }
 
 /* ══════════════════════════════════════════════════════════
-   Print
+   Print — WYSIWYG theme-preserving
    ══════════════════════════════════════════════════════════ */
+
+/* ── Page layout (top-level for reliable parsing) ── */
+@page {
+  size: letter;
+}
+
 @media print {
-  #toc, #status, #toc-restore, #tab-bar, #annotations-gutter, #annotate-carousel { display: none !important; }
-  #main-area { margin: 0 !important; }
-  #content { max-width: 100%; padding: 0; }
-  body { background: white; color: black; }
-  h1, h2 { color: #1a1a2e; border-bottom-color: #ddd; }
-  h3 { color: #2d6a4f; }
-  a { color: #1a73e8; }
-  table, th, td { border-color: #ccc; }
-  th { background: #f5f5f5; color: #333; }
+  /* ── Preserve theme backgrounds (critical for dark themes) ── */
+  * { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
+
+  /* ── Hide chrome ── */
+  #toc, #status, #status-export-pdf, #toc-restore, #toc-resize-handle,
+  #tab-bar-wrapper, #annotations-gutter, #annotate-carousel,
+  #annotations-toggle, .palette-backdrop, .palette-hint,
+  #edit-view, #diff-view, #version-panel,
+  .ann-gutter-close, .gutter-tabs { display: none !important; }
+
+  /* ── Full-width content ── */
+  #main-area {
+    margin: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  #content {
+    max-width: 100%;
+    padding: 0 0.4in;
+  }
+
+  /* ── Page breaks ── */
+  h1, h2, h3, h4, h5 { break-after: avoid; }
+  h1 + *, h2 + *, h3 + *, h4 + * { break-before: avoid; }
+  pre, table, blockquote, figure, img { break-inside: avoid; }
+  li { break-inside: avoid; }
+  tr { break-inside: avoid; }
+  thead { display: table-header-group; }
+  p, li { orphans: 3; widows: 3; }
+
+  /* ── Links: clickable in PDF, no URL display ── */
+  #content a[href]::after { content: none; }
+
+  /* ── Code: prevent overflow ── */
+  pre, code { overflow-wrap: break-word; white-space: pre-wrap; }
+
+  /* ── Images: constrain to page ── */
+  #content img {
+    max-width: 100% !important;
+    max-height: 7in;
+    box-shadow: none !important;
+  }
+
+  /* ── Tables: keep readable ── */
+  #content table {
+    font-size: 11px;
+    width: 100%;
+  }
+
+  /* ── No animations, no hover effects ── */
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }

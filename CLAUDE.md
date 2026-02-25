@@ -23,7 +23,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `history.py` — Git-based file version history
 - `recent.py` — Recently opened files tracking
 - `workspace.py` — `.dabarat-workspace` CRUD, recent workspaces tracking
-- `__main__.py` — CLI entry point (serve, add, annotate, workspace)
+- `__main__.py` — CLI entry point (serve, add, annotate, export-pdf, workspace)
 
 ### JavaScript (`static/js/` — 16 modules, concatenated in order)
 - `state.js` — Global vars, config
@@ -69,6 +69,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - Run: `dabarat document.md` (or `dbrt`, `mdpreview`, `mdp`, `python3 -m md_preview_and_annotate`)
 - Workspace: `dabarat --workspace research.dabarat-workspace`
 - Add tab: `dabarat --add another.md`
+- Export PDF: `dabarat --export-pdf file.md [-o output.pdf] [--theme mocha]`
 - CLI annotate: `dabarat --annotate file.md --text "passage" --comment "note" --type suggestion`
 
 ## Conventions
@@ -92,6 +93,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **Workspace home page**: When home screen is active, TOC sidebar repurposes as directory browser. `_cachedTocContent` saves/restores TOC innerHTML during transitions. `buildToc()` in `render()` always overwrites restored cache immediately after tab activation.
 - **Workspace system**: `.dabarat-workspace` JSON files store multi-root folder + pinned file configurations. Recent workspaces tracked in `~/.dabarat/workspaces.json` (max 10). Server-side state: `_active_workspace` and `_active_workspace_path`. Client state: `_activeWorkspace` and `_activeWorkspacePath` in `state.js`. Sidebar renders multi-root sections with collapsible folders. macOS native dialogs for folder/file picking via `osascript`. Command palette: New/Open/Add Folder/Add File/Close Workspace.
 - **Empty state quotes**: 30 curated quotes from Tom di Mino, classical sources (Plato, Heraclitus, Sappho), Harrison, Gordon, Astour, and Tamarru. Cycles every 5 minutes with 300ms opacity crossfade. Cormorant Garamond italic + DM Sans small-caps attribution.
+- **PDF export**: CLI (`--export-pdf file.md [-o out.pdf] [--theme mocha]`) or browser (`Cmd+K` → "Export PDF..."). Uses headless Chrome `--print-to-pdf` against the running server with `?theme=X&export=1` query params. `init.js` skips polling and emits a render-complete sentinel in export mode. `print-color-adjust: exact` in `@media print` preserves dark theme backgrounds. Status bar has a `ph-file-pdf` icon button. Valid themes: mocha, latte, rose-pine, rose-pine-dawn, tokyo-storm, tokyo-light.
 - **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.
 
@@ -100,7 +102,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 Read these when relevant to the current task:
 
 - `agent_docs/architecture.md` — Data flow, component roles, design decisions
-- `agent_docs/api-reference.md` — All 35 REST API endpoints with JSON schemas
+- `agent_docs/api-reference.md` — All 36 REST API endpoints with JSON schemas
 - `agent_docs/client-architecture.md` — 16 JS modules: state, rendering pipeline, annotation system
 - `agent_docs/workspace-system.md` — Workspace CRUD, multi-root sidebar, CLI flag, quotes system
 - `agent_docs/motion-one.md` — Motion One call sites, guard pattern, animation principles

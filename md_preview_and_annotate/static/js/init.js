@@ -46,7 +46,15 @@ async function init() {
   renderTagPills();
 
   initEditor();
-  poll();
+
+  /* Signal render-complete for headless PDF export */
+  if (document.documentElement.dataset.export === '1') {
+    const sentinel = document.createElement('div');
+    sentinel.id = 'dabarat-render-complete';
+    document.body.appendChild(sentinel);
+  } else {
+    poll();
+  }
 }
 
 init();

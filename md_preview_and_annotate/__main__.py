@@ -196,6 +196,20 @@ def cmd_add(argv):
         sys.exit(1)
 
 
+_CHROME_PATHS = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+]
+
+_VALID_THEMES = ["mocha", "latte", "rose-pine", "rose-pine-dawn", "tokyo-storm", "tokyo-light"]
+
+
+def _find_chrome():
+    """Return the first available Chrome-family binary path, or None."""
+    return next((p for p in _CHROME_PATHS if os.path.exists(p)), None)
+
+
 def _clear_pyc():
     """Remove stale .pyc files so template/static changes take effect."""
     cache_dir = os.path.join(os.path.dirname(__file__), "__pycache__")
@@ -323,6 +337,104 @@ def _add_to_running(port, files):
     return added
 
 
+def cmd_export_pdf(argv):
+    """Export a markdown file to PDF via headless Chrome."""
+    import socket
+    import subprocess
+    import threading
+    import time
+    import urllib.request
+
+    _migrate_config_dir()
+
+    idx = argv.index("--export-pdf")
+    if idx + 1 >= len(argv) or argv[idx + 1].startswith("--"):
+        print("Error: --export-pdf requires a filepath")
+        sys.exit(1)
+    filepath = os.path.abspath(argv[idx + 1])
+    if not os.path.isfile(filepath):
+        print(f"\033[38;2;243;139;168m\u2717\033[0m File not found: {filepath}")
+        sys.exit(1)
+
+    # Parse options
+    output = _flag_value(argv, "-o") or _flag_value(argv, "--output")
+    theme = _flag_value(argv, "--theme", "mocha")
+    if theme not in _VALID_THEMES:
+        print(f"\033[38;2;243;139;168m\u2717\033[0m Invalid theme: {theme}")
+        print(f"  Valid themes: {', '.join(_VALID_THEMES)}")
+        sys.exit(1)
+
+    if not output:
+        stem = os.path.splitext(filepath)[0]
+        output = stem + ".pdf"
+    output = os.path.abspath(output)
+
+    # Find Chrome
+    chrome = _find_chrome()
+    if not chrome:
+        print("\033[38;2;243;139;168m\u2717\033[0m Chrome/Chromium not found")
+        sys.exit(1)
+
+    # Find a free port
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+
+    _clear_pyc()
+
+    # Start ephemeral server in background thread
+    PreviewHandler.add_tab(filepath)
+    server = start(port)
+
+    server_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    server_thread.start()
+
+    # Wait for server to be ready
+    for _ in range(50):
+        if not server_thread.is_alive():
+            print("\033[38;2;243;139;168m\u2717\033[0m Server thread terminated unexpectedly")
+            sys.exit(1)
+        try:
+            req = urllib.request.Request(f"http://127.0.0.1:{port}/api/tabs")
+            urllib.request.urlopen(req, timeout=1)
+            break
+        except Exception:
+            time.sleep(0.1)
+    else:
+        print("\033[38;2;243;139;168m\u2717\033[0m Server failed to start")
+        server.shutdown()
+        sys.exit(1)
+
+    # Export via CDP (Chrome DevTools Protocol) for reliable margin control
+    from .pdf_export import print_to_pdf
+
+    url = f"http://127.0.0.1:{port}?theme={theme}&export=1"
+
+    try:
+        print_to_pdf(
+            page_url=url,
+            output_path=output,
+            chrome_path=chrome,
+            margin_top=0.5,
+            margin_bottom=0.5,
+            margin_left=0.6,
+            margin_right=0.6,
+        )
+        size_kb = os.path.getsize(output) / 1024
+        print(f"\033[38;2;166;227;161m\u2713\033[0m {os.path.basename(output)} ({size_kb:.0f} KB)")
+        print(f"\033[38;2;88;91;112m  Theme: {theme} \u00b7 {output}\033[0m")
+    except Exception as e:
+        if os.path.isfile(output):
+            try:
+                os.remove(output)
+            except OSError:
+                pass
+        print(f"\033[38;2;243;139;168m\u2717\033[0m PDF export failed: {e}")
+        sys.exit(1)
+    finally:
+        server.shutdown()
+
+
 def cmd_serve(argv):
     """Start the preview server with one or more files."""
     import subprocess
@@ -426,12 +538,7 @@ def cmd_serve(argv):
 
     # Launch in Chrome --app mode
     url = f"http://127.0.0.1:{port}"
-    chrome_paths = [
-        "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-        "/Applications/Chromium.app/Contents/MacOS/Chromium",
-        "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
-    ]
-    chrome = next((p for p in chrome_paths if os.path.exists(p)), None)
+    chrome = _find_chrome()
     if chrome:
         subprocess.Popen(
             [chrome, f"--app={url}"],
@@ -457,11 +564,16 @@ def main():
         cmd_add(sys.argv)
         sys.exit(0)
 
+    if "--export-pdf" in sys.argv:
+        cmd_export_pdf(sys.argv)
+        sys.exit(0)
+
     if len(sys.argv) < 2:
         print("Usage:")
         print("  dabarat <file.md> [file2.md ...] [--port PORT] [--author NAME]")
         print("  dabarat --workspace <path.dabarat-workspace> [--port PORT]")
         print("  dabarat --add <file.md> [--port PORT]")
+        print("  dabarat --export-pdf <file.md> [-o output.pdf] [--theme mocha]")
         print('  dabarat --annotate <file.md> --text "..." --comment "..." [--author NAME]')
         print(f"  --max-instances N  (default {MAX_INSTANCES})")
         sys.exit(1)

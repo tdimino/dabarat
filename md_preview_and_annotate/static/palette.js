@@ -108,6 +108,43 @@ const CommandPalette = {
     this.register('File', [
       { id: 'open-file', label: 'Open File\u2026', icon: 'ph-folder-open', action: () => this._openFilePicker() },
       { id: 'compare-with', label: 'Compare with\u2026', icon: 'ph-git-diff', action: () => this._openDiffPicker() },
+      { id: 'toggle-edit', label: 'Edit Mode', icon: 'ph-pencil-simple', shortcut: '\u21e7\u2318E', action: () => {
+        if (typeof editState !== 'undefined' && editState.active) { exitEditMode(false); } else { enterEditMode(); }
+      }},
+      { id: 'print', label: 'Print\u2026', icon: 'ph-printer', shortcut: '\u2318P', action: () => {
+        if (typeof editState !== 'undefined' && editState.active) exitEditMode(true);
+        requestAnimationFrame(() => window.print());
+      }},
+      { id: 'export-pdf', label: 'Export PDF\u2026', icon: 'ph-file-pdf', action: async () => {
+        if (typeof editState !== 'undefined' && editState.active) exitEditMode(true);
+        const el = document.getElementById('last-updated');
+        if (el) { var _old = el.textContent; el.textContent = 'Exporting PDF\u2026'; }
+        try {
+          const resp = await fetch('/api/export-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Origin': location.origin },
+            body: JSON.stringify({ tab: activeTabId || '', theme: document.documentElement.getAttribute('data-theme') || 'mocha' }),
+          });
+          const data = await resp.json();
+          if (data.cancelled) {
+            if (el) el.textContent = _old;
+            return;
+          }
+          if (data.ok) {
+            if (el) { el.textContent = 'PDF saved: ' + data.filename; setTimeout(() => { el.textContent = _old; }, 4000); }
+          } else {
+            const msg = data.error === 'Chrome not found' ? 'Chrome not installed'
+              : data.error === 'Chrome timed out' ? 'Chrome timed out'
+              : 'PDF export failed';
+            if (el) { el.textContent = msg; setTimeout(() => { el.textContent = _old; }, 5000); }
+            console.error('PDF export failed:', data.error, data.stderr || '');
+          }
+        } catch (e) {
+          const msg = e instanceof TypeError ? 'Server unreachable' : 'PDF export failed';
+          if (el) { el.textContent = msg; setTimeout(() => { el.textContent = _old; }, 4000); }
+          console.error('PDF export error:', e);
+        }
+      }},
     ]);
     this.register('View', [
       { id: 'toggle-theme', label: 'Toggle Dark/Light', icon: 'ph-moon', action: () => toggleTheme() },
@@ -1212,6 +1249,15 @@ const CommandPalette = {
       console.error('palette: add file failed:', err);
     } finally {
       this._pendingOpen = false;
+    }
+  },
+
+  /* ── Run command by ID (for external triggers) ────── */
+  _runById(id) {
+    const cmd = this._registered.find(c => c.id === id);
+    if (cmd && cmd.action) {
+      this.close();
+      cmd.action();
     }
   },
 

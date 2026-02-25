@@ -1076,6 +1076,90 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             except Exception:
                 self._json_response({"cancelled": True})
 
+        elif parsed.path == "/api/export-pdf":
+            import platform
+            import subprocess as sp
+            _valid_themes = {"mocha", "latte", "rose-pine", "rose-pine-dawn", "tokyo-storm", "tokyo-light"}
+
+            tab_id = body.get("tab", "")
+            theme = body.get("theme", "")
+            if theme and theme not in _valid_themes:
+                self._json_response({"error": "invalid theme"}, 400)
+                return
+
+            with self._tabs_lock:
+                if tab_id and tab_id in self._tabs:
+                    target_id = tab_id
+                elif self._tabs:
+                    target_id = next(iter(self._tabs))
+                else:
+                    self._json_response({"error": "no tabs open"}, 400)
+                    return
+                tab = self._tabs[target_id]
+
+            md_path = tab["filepath"]
+            base_name = os.path.splitext(os.path.basename(md_path))[0]
+            safe_name = base_name.replace('"', '_').replace('\\', '_')
+
+            # macOS save dialog for output path
+            output_path = ""
+            if platform.system() == "Darwin":
+                script = (
+                    f'set f to choose file name default name "{safe_name}.pdf" '
+                    f'with prompt "Export PDF"\n'
+                    f'return POSIX path of f'
+                )
+                try:
+                    result = sp.run(
+                        ["osascript", "-e", script],
+                        capture_output=True, text=True, timeout=60,
+                    )
+                    if result.returncode == 0 and result.stdout.strip():
+                        output_path = result.stdout.strip()
+                        if not output_path.endswith(".pdf"):
+                            output_path += ".pdf"
+                    else:
+                        self._json_response({"cancelled": True})
+                        return
+                except Exception as e:
+                    self._json_response({"error": f"Save dialog failed: {e}"}, 500)
+                    return
+
+            if not output_path:
+                output_path = os.path.join(
+                    os.path.dirname(md_path),
+                    f"{base_name}.pdf",
+                )
+
+            # Find Chrome
+            from .pdf_export import print_to_pdf
+
+            port = self._server_port
+            theme_param = f"&theme={theme}" if theme else ""
+            url = f"http://127.0.0.1:{port}?export=1{theme_param}"
+
+            try:
+                print_to_pdf(
+                    page_url=url,
+                    output_path=output_path,
+                    margin_top=0.5,
+                    margin_bottom=0.5,
+                    margin_left=0.6,
+                    margin_right=0.6,
+                )
+                self._json_response({
+                    "ok": True,
+                    "path": output_path,
+                    "filename": os.path.basename(output_path),
+                })
+            except Exception as e:
+                if os.path.isfile(output_path):
+                    try:
+                        os.remove(output_path)
+                    except OSError:
+                        pass
+                self._json_response({"error": str(e)}, 500)
+
         else:
             self.send_error(404)
 

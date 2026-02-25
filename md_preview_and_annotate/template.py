@@ -62,7 +62,7 @@ def get_html(title="dabarat", default_author="Tom"):
     window.Motion = {{ animate, stagger, spring }};
   }} catch (e) {{ /* Motion One unavailable — CSS fallback animations remain */ }}
 </script>
-<script>(function(){{var v=['mocha','latte','rose-pine','rose-pine-dawn','tokyo-storm','tokyo-light','_custom'];var t=localStorage.getItem('dabarat-theme')||localStorage.getItem('mdpreview-theme')||'mocha';if(v.indexOf(t)===-1)t='mocha';document.documentElement.setAttribute('data-theme',t);if(t==='_custom'){{try{{var a=localStorage.getItem('dabarat-custom-active')||localStorage.getItem('mdpreview-custom-active');if(a){{var th=JSON.parse(localStorage.getItem('dabarat-custom-themes')||localStorage.getItem('mdpreview-custom-themes')||'[]');for(var i=0;i<th.length;i++){{if(th[i].id===a&&th[i].variables){{var s=document.createElement('style');s.id='custom-theme-style';var r='';var vr=th[i].variables;for(var k in vr){{if(vr.hasOwnProperty(k))r+=k+':'+vr[k]+';'}}s.textContent='[data-theme="_custom"]{{'+r+'}}';document.head.appendChild(s);break}}}}}}}}catch(e){{document.documentElement.setAttribute('data-theme','mocha')}}}}}})()</script>
+<script>(function(){{var v=['mocha','latte','rose-pine','rose-pine-dawn','tokyo-storm','tokyo-light','_custom'];var p=new URLSearchParams(window.location.search);var qt=p.get('theme');var t=(qt&&v.indexOf(qt)!==-1)?qt:localStorage.getItem('dabarat-theme')||localStorage.getItem('mdpreview-theme')||'mocha';if(v.indexOf(t)===-1)t='mocha';document.documentElement.setAttribute('data-theme',t);if(p.get('export')==='1')document.documentElement.dataset.export='1';if(t==='_custom'){{try{{var a=localStorage.getItem('dabarat-custom-active')||localStorage.getItem('mdpreview-custom-active');if(a){{var th=JSON.parse(localStorage.getItem('dabarat-custom-themes')||localStorage.getItem('mdpreview-custom-themes')||'[]');for(var i=0;i<th.length;i++){{if(th[i].id===a&&th[i].variables){{var s=document.createElement('style');s.id='custom-theme-style';var r='';var vr=th[i].variables;for(var k in vr){{if(vr.hasOwnProperty(k))r+=k+':'+vr[k]+';'}}s.textContent='[data-theme="_custom"]{{'+r+'}}';document.head.appendChild(s);break}}}}}}}}catch(e){{document.documentElement.setAttribute('data-theme','mocha')}}}}}})()</script>
 <style>
 {css}
 </style>
@@ -130,7 +130,7 @@ def get_html(title="dabarat", default_author="Tom"):
         <span class="spacer"></span>
         <span id="edit-status">Saved</span>
         <button id="edit-save-btn" title="Save (Cmd+S)"><i class="ph ph-floppy-disk"></i> Save</button>
-        <button id="edit-discard-btn" title="Discard & Exit (Cmd+E)"><i class="ph ph-x"></i> Close</button>
+        <button id="edit-discard-btn" title="Discard & Exit (Cmd+Shift+E)"><i class="ph ph-x"></i> Close</button>
       </div>
       <div class="edit-body">
         <div class="edit-gutter"><canvas id="edit-gutter-canvas" width="4" height="0"></canvas></div>
@@ -212,6 +212,7 @@ def get_html(title="dabarat", default_author="Tom"):
 
   <div id="status">
     <span class="filepath" id="status-filepath"></span>
+    <button id="status-export-pdf" title="Export PDF" onclick="CommandPalette._runById('export-pdf')"><i class="ph ph-file-pdf"></i></button>
     <span id="word-count"></span>
     <span id="status-tags"></span>
     <span class="updated"><span class="dot"></span><span id="last-updated">connecting...</span></span>

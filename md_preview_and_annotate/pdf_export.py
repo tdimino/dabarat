@@ -33,7 +33,6 @@ def _find_free_port():
 
 def _cdp_request(debug_port, method, params=None):
     """Send a CDP command via HTTP JSON API and return the result."""
-    # Get the WebSocket debugger URL for the first target
     conn = http.client.HTTPConnection("127.0.0.1", debug_port, timeout=10)
     conn.request("GET", "/json")
     resp = conn.getresponse()
@@ -52,22 +51,20 @@ def _cdp_request(debug_port, method, params=None):
     if not page_target:
         page_target = targets[0]
 
-    # Use the CDP HTTP endpoint to send commands (no WebSocket needed)
-    # Chrome's /json/protocol endpoint doesn't support direct command execution,
-    # but we can use the built-in fetch endpoint for simple one-shot commands
     ws_url = page_target.get("webSocketDebuggerUrl", "")
-    target_id = page_target["id"]
+    if not ws_url or not ws_url.startswith("ws://"):
+        raise RuntimeError(
+            f"Chrome target has no WebSocket debugger URL "
+            f"(another DevTools client may be connected). "
+            f"Target: {page_target.get('url', 'unknown')}"
+        )
 
-    # Use CDP via HTTP POST to /json/protocol — this doesn't work for commands.
-    # Instead, use a minimal WebSocket implementation for the CDP command.
     return _cdp_ws_command(ws_url, method, params or {})
 
 
 def _cdp_ws_command(ws_url, method, params):
     """Minimal WebSocket CDP command using stdlib socket + struct."""
-    import hashlib
     import socket
-    import struct
 
     # Parse ws://host:port/path
     url_body = ws_url.replace("ws://", "")
@@ -77,61 +74,69 @@ def _cdp_ws_command(ws_url, method, params):
 
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.settimeout(60)
-    sock.connect((host, port))
+    try:
+        sock.connect((host, port))
 
-    # WebSocket handshake
-    key = base64.b64encode(os.urandom(16)).decode()
-    handshake = (
-        f"GET /{path} HTTP/1.1\r\n"
-        f"Host: {host}:{port}\r\n"
-        f"Upgrade: websocket\r\n"
-        f"Connection: Upgrade\r\n"
-        f"Sec-WebSocket-Key: {key}\r\n"
-        f"Sec-WebSocket-Version: 13\r\n"
-        f"\r\n"
-    )
-    sock.sendall(handshake.encode())
+        # WebSocket handshake
+        key = base64.b64encode(os.urandom(16)).decode()
+        handshake = (
+            f"GET /{path} HTTP/1.1\r\n"
+            f"Host: {host}:{port}\r\n"
+            f"Upgrade: websocket\r\n"
+            f"Connection: Upgrade\r\n"
+            f"Sec-WebSocket-Key: {key}\r\n"
+            f"Sec-WebSocket-Version: 13\r\n"
+            f"\r\n"
+        )
+        sock.sendall(handshake.encode())
 
-    # Read handshake response
-    response = b""
-    while b"\r\n\r\n" not in response:
-        chunk = sock.recv(4096)
-        if not chunk:
-            raise RuntimeError("WebSocket handshake failed")
-        response += chunk
+        # Read handshake response
+        response = b""
+        while b"\r\n\r\n" not in response:
+            chunk = sock.recv(4096)
+            if not chunk:
+                raise RuntimeError("WebSocket handshake failed")
+            response += chunk
 
-    if b"101" not in response.split(b"\r\n")[0]:
-        raise RuntimeError(f"WebSocket handshake rejected: {response[:200]}")
+        if b"101" not in response.split(b"\r\n")[0]:
+            raise RuntimeError(f"WebSocket handshake rejected: {response[:200]}")
 
-    # Send CDP command as WebSocket text frame
-    msg = json.dumps({"id": 1, "method": method, "params": params}).encode()
-    _ws_send(sock, msg)
+        # Send CDP command as WebSocket text frame
+        msg = json.dumps({"id": 1, "method": method, "params": params}).encode()
+        _ws_send(sock, msg)
 
-    # Read response frames until we get our command result
-    result_data = b""
-    while True:
-        frame_data = _ws_recv(sock)
-        if frame_data is None:
-            continue
-        try:
-            parsed = json.loads(frame_data)
-            if parsed.get("id") == 1:
-                sock.close()
-                if "error" in parsed:
-                    raise RuntimeError(f"CDP error: {parsed['error']}")
-                return parsed.get("result", {})
-        except json.JSONDecodeError:
-            continue
+        # Read response frames until we get our command result
+        deadline = time.monotonic() + 60
+        while time.monotonic() < deadline:
+            frame_data = _ws_recv(sock)
+            if frame_data is None:
+                continue
+            try:
+                parsed = json.loads(frame_data)
+                if parsed.get("id") == 1:
+                    sock.close()
+                    if "error" in parsed:
+                        raise RuntimeError(f"CDP error: {parsed['error']}")
+                    return parsed.get("result", {})
+            except json.JSONDecodeError:
+                continue
+
+        sock.close()
+        raise RuntimeError("CDP command timed out waiting for Chrome response")
+
+    except Exception:
+        sock.close()
+        raise
 
 
-def _ws_send(sock, data):
-    """Send a WebSocket text frame (masked, as required by client)."""
+def _ws_send(sock, data, opcode=0x81):
+    """Send a WebSocket frame (masked, as required by client)."""
     import struct
     mask_key = os.urandom(4)
     masked = bytes(b ^ mask_key[i % 4] for i, b in enumerate(data))
 
     header = bytearray()
-    header.append(0x81)  # FIN + text opcode
+    header.append(0x80 | (opcode & 0x0F))  # FIN + opcode
     length = len(data)
     if length < 126:
         header.append(0x80 | length)  # MASK bit set
@@ -175,9 +180,9 @@ def _ws_recv(sock):
         payload = bytes(b ^ mask_key[i % 4] for i, b in enumerate(payload))
 
     if opcode == 0x8:  # close
-        return None
+        raise RuntimeError("WebSocket closed by remote")
     if opcode == 0x9:  # ping — send pong
-        _ws_send(sock, payload)
+        _ws_send(sock, payload, opcode=0x0A)
         return None
 
     return payload
@@ -207,6 +212,7 @@ def print_to_pdf(page_url, output_path, chrome_path=None,
     debug_port = _find_free_port()
 
     # Launch headless Chrome with remote debugging
+    # stderr→DEVNULL to prevent pipe buffer deadlock
     proc = subprocess.Popen(
         [
             chrome,
@@ -220,7 +226,7 @@ def print_to_pdf(page_url, output_path, chrome_path=None,
             page_url,
         ],
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
     )
 
     try:
@@ -241,7 +247,7 @@ def print_to_pdf(page_url, output_path, chrome_path=None,
                         break
                 if ready:
                     break
-            except Exception:
+            except (ConnectionError, OSError, http.client.HTTPException):
                 pass
             time.sleep(0.3)
 
@@ -266,6 +272,10 @@ def print_to_pdf(page_url, output_path, chrome_path=None,
         })
 
         # Write the PDF
+        if "data" not in result:
+            raise RuntimeError(
+                f"Chrome did not return PDF data. CDP result keys: {list(result.keys())}"
+            )
         pdf_data = base64.b64decode(result["data"])
         if len(pdf_data) == 0:
             raise RuntimeError("Chrome produced an empty PDF")

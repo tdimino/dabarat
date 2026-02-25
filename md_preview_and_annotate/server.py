@@ -1099,7 +1099,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
             md_path = tab["filepath"]
             base_name = os.path.splitext(os.path.basename(md_path))[0]
-            safe_name = base_name.replace('"', '_').replace('\\', '_')
+            safe_name = base_name.replace('"', '_').replace('\\', '_').replace('\n', '').replace('\r', '')[:128]
 
             # macOS save dialog for output path
             output_path = ""

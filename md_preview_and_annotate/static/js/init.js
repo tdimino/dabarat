@@ -7,9 +7,12 @@ async function init() {
     tabs[t.id] = { filepath: t.filepath, filename: t.filename, content: '', mtime: 0, scrollY: 0 };
   });
 
-  /* Restore active tab from localStorage, or use first */
+  /* Restore active tab: URL param (PDF export) > localStorage > first */
+  const urlTab = new URLSearchParams(window.location.search).get('tab');
   const stored = localStorage.getItem('dabarat-active-tab');
-  if (stored && tabs[stored]) {
+  if (urlTab && tabs[urlTab]) {
+    activeTabId = urlTab;
+  } else if (stored && tabs[stored]) {
     activeTabId = stored;
   } else if (tabList.length > 0) {
     activeTabId = tabList[0].id;

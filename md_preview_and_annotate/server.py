@@ -1136,7 +1136,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
             port = self._server_port
             theme_param = f"&theme={theme}" if theme else ""
-            url = f"http://127.0.0.1:{port}?export=1{theme_param}"
+            url = f"http://127.0.0.1:{port}?export=1&tab={target_id}{theme_param}"
 
             try:
                 print_to_pdf(

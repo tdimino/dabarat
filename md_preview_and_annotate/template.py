@@ -126,7 +126,7 @@ def get_html(title="dabarat", default_author="Tom"):
     </div>
     <div id="edit-view" style="display:none">
       <div class="edit-toolbar">
-        <span class="edit-toolbar-label">Edit</span>
+        <span class="edit-mode-badge"><i class="ph ph-pencil-simple"></i> Editing</span>
         <span class="spacer"></span>
         <span id="edit-status">Saved</span>
         <button id="edit-save-btn" title="Save (Cmd+S)"><i class="ph ph-floppy-disk"></i> Save</button>
@@ -134,7 +134,10 @@ def get_html(title="dabarat", default_author="Tom"):
       </div>
       <div class="edit-body">
         <div class="edit-gutter"><canvas id="edit-gutter-canvas" width="4" height="0"></canvas></div>
-        <textarea id="edit-textarea" spellcheck="true" placeholder="Start writing..."></textarea>
+        <div class="edit-textarea-wrapper">
+          <pre id="edit-mirror" aria-hidden="true"></pre>
+          <textarea id="edit-textarea" spellcheck="true" placeholder="Start writing..."></textarea>
+        </div>
       </div>
     </div>
   </div>

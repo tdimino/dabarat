@@ -1085,7 +1085,8 @@ const CommandPalette = {
       this.filtered = this.commands.filter(c =>
         c.label.toLowerCase().includes(q) ||
         c.category.toLowerCase().includes(q) ||
-        (c.sublabel && c.sublabel.toLowerCase().includes(q))
+        (c.sublabel && c.sublabel.toLowerCase().includes(q)) ||
+        (c.shortcut && c.shortcut.toLowerCase().includes(q))
       );
     }
     this._render();
@@ -1137,6 +1138,13 @@ const CommandPalette = {
           sub.className = 'palette-sublabel';
           sub.textContent = cmd.sublabel;
           item.appendChild(sub);
+        }
+
+        if (cmd.shortcut) {
+          const sc = document.createElement('span');
+          sc.className = 'palette-shortcut';
+          sc.textContent = cmd.shortcut;
+          item.appendChild(sc);
         }
 
         item.addEventListener('click', (e) => {

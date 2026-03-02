@@ -84,6 +84,20 @@
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 
+.palette-shortcut {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay0);
+  margin-left: auto;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.palette-item:hover .palette-shortcut,
+.palette-item.selected .palette-shortcut {
+  color: var(--ctp-overlay1);
+}
+
 .palette-empty {
   padding: 24px 18px;
   text-align: center;

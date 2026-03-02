@@ -37,7 +37,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `tabs.js` — Tab bar (dynamic widths, close pinned right, scroll reset, overflow dropdown), switching, cross-file links
 - `annotations.js` — Highlights, bubbles, CRUD, carousel, gutter overlay
 - `diff.js` — Diff mode, scroll sync, resize
-- `editor.js` — Inline editing, change tracking
+- `editor.js` — Inline editing, word/char-level change tracking (Myers line diff → greedy word diff → char diff), transparent textarea + mirror overlay, ghost text deletion markers
 - `history-ui.js` — Version history panel
 - `lightbox.js` — Image lightbox (zoom, keyboard nav, blur backdrop)
 - `home.js` — Workspace-driven home page, directory browser, file cards, Motion One animations
@@ -51,17 +51,17 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `annotations.css` — Gutter, bubbles, carousel, form
 - `status-print.css` — Status bar, print media
 - `responsive.css` — Responsive breakpoints (1400px gutter, 900px TOC, 600px compact)
-- `palette.css` — Command palette, tag pills, hint badge
+- `palette.css` — Command palette, tag pills, hint badge, shortcut labels
 - `frontmatter.css` — Indicator bar, popup, variable pills
 - `variables-panel.css` — Gutter tabs, cards, preview overlay
 - `diff.css` — Diff header, panels, blocks
-- `editor.css` — Inline editor, change highlights
+- `editor.css` — Inline editor, mirror overlay, change highlights (`.hl-add`/`.hl-mod`/`.hl-line-add`/`.hl-del-mark`), ghost text deletion annotations, edit-mode atmosphere (yellow caret, dirty state deepening), light theme overrides
 - `history-ui.css` — Version history panel
 - `lightbox.css` — Image lightbox overlay, backdrop blur, navigation
 - `home.css` — Workspace cards, directory browser, smart badges, Motion One keyframes, `.ws-toggle` segmented control, `.home-empty` flex-centered empty state with ghost button
 
 ### Standalone
-- `static/palette.js` — Command palette + tag mode (Cmd+K) — loaded separately
+- `static/palette.js` — Command palette + tag mode (Cmd+K), shortcut display — loaded separately
 
 ### macOS (`macos/`)
 - `build.sh` — Builds `Dabarat.app` AppleScript droplet → `~/Applications/`
@@ -101,6 +101,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **Finder integration (macOS)**: `Dabarat.app` droplet at `~/Applications/`. Bundle ID: `com.minoanmystery.dabarat`. Rebuild after Python upgrade: `bash macos/build.sh`. Default handler: `duti -s com.minoanmystery.dabarat .md all`
 - **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.
+- **Edit mode change tracking**: Three-tier diff (Myers line → greedy word → char) rendered via transparent textarea + `<pre>` mirror overlay. Mirror text must be character-for-character identical to textarea value (the alignment invariant). Highlight classes: `.hl-add` (green, new), `.hl-mod` (yellow, modified char), `.hl-line-add` (green wash, new line), `.hl-del-mark` (ghost text via `::after` + `data-del` attribute, red strikethrough above deletion point). `body.edit-mode` and `body.edit-dirty` classes control atmosphere (yellow caret, background wash deepening). `_splitWords()` regex `/(\s*\S+)/g` attaches leading whitespace to tokens—do not change without verifying diff accuracy.
 
 ## On-Demand References
 

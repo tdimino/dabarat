@@ -22,14 +22,24 @@
   min-height: 36px;
 }
 
-.edit-toolbar-label {
+.edit-mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-family: 'Victor Mono', monospace;
   font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2px;
-  color: var(--ctp-overlay0);
+  color: var(--ctp-yellow);
+  background: rgba(var(--ctp-yellow-rgb), 0.1);
+  border: 1px solid rgba(var(--ctp-yellow-rgb), 0.25);
+  border-radius: 10px;
+  padding: 2px 10px 2px 7px;
   user-select: none;
+}
+.edit-mode-badge i {
+  font-size: 12px;
 }
 
 .edit-toolbar .spacer { flex: 1; }
@@ -76,13 +86,23 @@
   color: var(--ctp-red);
 }
 
-/* ── Body (gutter + textarea) ────────────────────────────── */
+/* ── Body (gutter + textarea wrapper) ────────────────────── */
 .edit-body {
   flex: 1;
   display: flex;
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
+}
+
+body.edit-mode .edit-body {
+  background: rgba(var(--ctp-yellow-rgb), 0.02);
+  transition: background 0.3s ease;
+}
+
+/* Dirty state: deepen the yellow wash when document is modified */
+body.edit-mode.edit-dirty .edit-body {
+  background: rgba(var(--ctp-yellow-rgb), 0.04);
 }
 
 /* Canvas diff gutter — thin strip on the left */
@@ -98,13 +118,49 @@
   top: 0;
   left: 0;
   width: 4px;
+  will-change: transform;
 }
 
-/* ── Textarea ────────────────────────────────────────────── */
-#edit-textarea {
+/* ── Textarea Wrapper (mirror + textarea stacked) ────────── */
+.edit-textarea-wrapper {
   flex: 1;
-  background: var(--body-bg, var(--ctp-base));
+  position: relative;
+  overflow: visible;
+}
+
+/* ── Mirror Overlay ──────────────────────────────────────── */
+#edit-mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+  margin: 0;
+  will-change: transform;
+  /* Must match textarea typography exactly */
+  padding: 16px 24px;
+  font-family: 'Victor Mono', monospace;
+  font-size: 13px;
+  line-height: 24px;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  white-space: pre-wrap;
+  word-wrap: break-word;
   color: var(--ctp-text);
+  background: transparent;
+}
+
+/* ── Textarea (transparent text, visible caret) ──────────── */
+#edit-textarea {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  caret-color: var(--ctp-yellow);
   border: none;
   outline: none;
   resize: none;
@@ -117,10 +173,13 @@
   white-space: pre-wrap;
   word-wrap: break-word;
   overflow: visible; /* scroll handled by .edit-body */
+  position: relative;
+  z-index: 2;
 }
 
 #edit-textarea::placeholder {
   color: var(--ctp-overlay0);
+  -webkit-text-fill-color: var(--ctp-overlay0);
 }
 
 #edit-textarea::selection {
@@ -132,6 +191,101 @@
 
 /* Hide default scrollbar on textarea — .edit-body scrolls */
 #edit-textarea::-webkit-scrollbar { width: 0; height: 0; }
+
+/* ── Word-Level Change Highlights ────────────────────────── */
+.hl-add { color: var(--ctp-green); }
+.hl-mod { color: var(--ctp-yellow); }
+.hl-line-add {
+  color: var(--ctp-green);
+  background: rgba(var(--ctp-green-rgb), 0.06);
+  border-radius: 1px;
+}
+
+/* Highlight entrance — subtle fade so changes feel alive */
+@keyframes hl-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.hl-add, .hl-mod, .hl-line-add {
+  animation: hl-appear 150ms ease-out;
+}
+
+/* Deletion ghost text — red strikethrough annotation above the deletion point.
+   data-del attribute carries the deleted text; ::after renders it absolutely
+   positioned so it takes zero space in the mirror's text flow. */
+.hl-del-mark {
+  position: relative;
+  display: inline;
+}
+/* Ghost text entrance — float up from the deletion point */
+@keyframes ghost-appear {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 0.7; transform: translateY(0); }
+}
+.hl-del-mark::after {
+  content: attr(data-del);
+  position: absolute;
+  bottom: calc(100% - 2px);
+  left: -2px;
+  white-space: nowrap;
+  max-width: min(220px, 60vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--ctp-red);
+  text-decoration: line-through;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  opacity: 0.7;
+  padding: 1px 4px;
+  background: rgba(var(--ctp-red-rgb), 0.08);
+  border-radius: 2px;
+  pointer-events: none;
+  animation: ghost-appear 200ms ease-out both;
+}
+
+/* ── Light theme adjustments ─────────────────────────────── */
+
+/* Body tint */
+[data-theme="latte"] body.edit-mode .edit-body,
+[data-theme="rose-pine-dawn"] body.edit-mode .edit-body,
+[data-theme="tokyo-light"] body.edit-mode .edit-body {
+  background: rgba(var(--ctp-yellow-rgb), 0.03);
+}
+[data-theme="latte"] body.edit-mode.edit-dirty .edit-body,
+[data-theme="rose-pine-dawn"] body.edit-mode.edit-dirty .edit-body,
+[data-theme="tokyo-light"] body.edit-mode.edit-dirty .edit-body {
+  background: rgba(var(--ctp-yellow-rgb), 0.06);
+}
+
+/* Badge — stronger alpha on light backgrounds */
+[data-theme="latte"] .edit-mode-badge,
+[data-theme="rose-pine-dawn"] .edit-mode-badge,
+[data-theme="tokyo-light"] .edit-mode-badge {
+  background: rgba(var(--ctp-yellow-rgb), 0.12);
+  border-color: rgba(var(--ctp-yellow-rgb), 0.3);
+}
+
+/* Selection */
+[data-theme="rose-pine-dawn"] #edit-textarea::selection,
+[data-theme="tokyo-light"] #edit-textarea::selection {
+  background: rgba(var(--ctp-blue-rgb), 0.15);
+}
+
+/* Ghost text — more opaque and stronger tint on light backgrounds */
+[data-theme="latte"] .hl-del-mark::after,
+[data-theme="rose-pine-dawn"] .hl-del-mark::after,
+[data-theme="tokyo-light"] .hl-del-mark::after {
+  opacity: 0.8;
+  background: rgba(var(--ctp-red-rgb), 0.12);
+}
+
+/* Line-add wash — stronger on light */
+[data-theme="latte"] .hl-line-add,
+[data-theme="rose-pine-dawn"] .hl-line-add,
+[data-theme="tokyo-light"] .hl-line-add {
+  background: rgba(var(--ctp-green-rgb), 0.08);
+}
 
 /* ── Transition ──────────────────────────────────────────── */
 body.edit-mode #tab-bar {

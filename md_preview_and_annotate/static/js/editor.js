@@ -54,9 +54,13 @@ function exitEditMode(force) {
   }
   editState.active = false;
   editState.dirty = false;
-  document.body.classList.remove('edit-mode');
+  document.body.classList.remove('edit-mode', 'edit-dirty');
   const editView = document.getElementById('edit-view');
   const contentEl = document.getElementById('content');
+
+  /* Clear mirror */
+  const mirror = document.getElementById('edit-mirror');
+  if (mirror) mirror.innerHTML = '';
 
   const doRestore = () => {
     editView.style.display = 'none';
@@ -100,6 +104,7 @@ async function saveEdit() {
       editState.baseContent = content;
       editState.savedLines = content.split('\n');
       editState.dirty = false;
+      document.body.classList.remove('edit-dirty');
       updateEditGutter();
       updateEditStatus('Saved');
     } else {
@@ -128,6 +133,7 @@ function updateEditGutter() {
   const current = textarea.value.split('\n');
   const opcodes = myersDiff(editState.savedLines, current);
   renderGutterCanvas(opcodes);
+  renderMirror(opcodes, editState.savedLines, current);
 }
 
 function renderGutterCanvas(opcodes) {
@@ -160,19 +166,249 @@ function renderGutterCanvas(opcodes) {
   }
 }
 
-/* ── Myers Diff ─────────────────────────────────────── */
+/* ── Mirror Overlay Rendering ───────────────────────── */
+function renderMirror(opcodes, oldLines, newLines) {
+  const mirror = document.getElementById('edit-mirror');
+  if (!mirror) return;
+
+  /*
+   * The mirror must have exactly the same number of \n-delimited lines
+   * as the textarea for the overlay to align. Only 'equal', 'insert',
+   * and 'replace' opcodes produce lines in the current (new) content.
+   * 'delete' opcodes have j1===j2 (zero new lines) — the gutter canvas
+   * already shows red marks for these; the mirror skips them entirely.
+   */
+  const parts = [];
+
+  for (const [tag, i1, i2, j1, j2] of opcodes) {
+    if (tag === 'equal') {
+      for (let j = j1; j < j2; j++) {
+        parts.push(escapeHtml(newLines[j]));
+      }
+    } else if (tag === 'insert') {
+      for (let j = j1; j < j2; j++) {
+        parts.push('<span class="hl-line-add">' + escapeHtml(newLines[j]) + '</span>');
+      }
+    } else if (tag === 'delete') {
+      /* No new lines exist for this range — nothing to render in the mirror.
+         The 4px gutter canvas already shows a red bar for deleted lines. */
+    } else if (tag === 'replace') {
+      const oldChunk = oldLines.slice(i1, i2);
+      const newChunk = newLines.slice(j1, j2);
+      const wordResult = _renderReplacedLines(oldChunk, newChunk);
+      parts.push(wordResult);
+    }
+  }
+
+  mirror.innerHTML = parts.join('\n');
+}
+
+function _renderReplacedLines(oldChunk, newChunk) {
+  const lineParts = [];
+
+  for (let i = 0; i < newChunk.length; i++) {
+    const newLine = newChunk[i];
+    const oldLine = i < oldChunk.length ? oldChunk[i] : '';
+
+    if (oldLine === newLine) {
+      lineParts.push(escapeHtml(newLine));
+    } else if (oldLine === '') {
+      lineParts.push('<span class="hl-line-add">' + escapeHtml(newLine) + '</span>');
+    } else {
+      lineParts.push(_renderWordDiffLine(oldLine, newLine));
+    }
+  }
+
+  /* Extra old lines (more old than new) are pure deletions.
+     They have no corresponding textarea line, so we skip them
+     to keep the mirror line count aligned. The gutter shows red. */
+
+  return lineParts.join('\n');
+}
+
+function _renderWordDiffLine(oldLine, newLine) {
+  const oldWords = _splitWords(oldLine);
+  const newWords = _splitWords(newLine);
+  const ops = wordDiff(oldWords, newWords);
+  const html = [];
+
+  /*
+   * The mirror must contain exactly the same characters as the textarea.
+   * Only render NEW words (which exist in the textarea), colored by change type.
+   * Old/deleted words are NOT rendered inline — they appear as ghost text
+   * via absolutely-positioned ::after pseudo-elements (zero layout impact).
+   */
+  for (const [tag, oi1, oi2, ni1, ni2] of ops) {
+    if (tag === 'equal') {
+      for (let k = ni1; k < ni2; k++) html.push(escapeHtml(newWords[k]));
+    } else if (tag === 'insert') {
+      for (let k = ni1; k < ni2; k++) html.push('<span class="hl-add">' + escapeHtml(newWords[k]) + '</span>');
+    } else if (tag === 'delete') {
+      /* Ghost text: the deleted words appear as red strikethrough annotation
+         above the deletion point via CSS ::after + data-del attribute.
+         The span itself is zero-width — no mirror desync. */
+      const delText = oldWords.slice(oi1, oi2).map(function(w) { return w.trim(); }).join(' ');
+      const attrSafe = escapeHtml(delText).replace(/"/g, '&quot;');
+      html.push('<span class="hl-del-mark" data-del="' + attrSafe + '"></span>');
+    } else if (tag === 'replace') {
+      /* Char-level diff: pair old/new words, diff characters within each pair.
+         Unchanged chars → normal, inserted chars → green, replaced chars → amber. */
+      const numOld = oi2 - oi1, numNew = ni2 - ni1;
+      const pairs = Math.min(numOld, numNew);
+      for (let k = 0; k < pairs; k++) {
+        html.push(_charDiffRender(oldWords[oi1 + k], newWords[ni1 + k]));
+      }
+      /* Remaining new words beyond old range — pure insertions */
+      for (let k = pairs; k < numNew; k++) {
+        html.push('<span class="hl-add">' + escapeHtml(newWords[ni1 + k]) + '</span>');
+      }
+      /* Remaining old words beyond new range — ghost deletion marker */
+      if (numOld > pairs) {
+        const delText = oldWords.slice(oi1 + pairs, oi2).map(function(w) { return w.trim(); }).join(' ');
+        const attrSafe = escapeHtml(delText).replace(/"/g, '&quot;');
+        html.push('<span class="hl-del-mark" data-del="' + attrSafe + '"></span>');
+      }
+    }
+  }
+
+  return html.join('');
+}
+
+/* ── Char-Level Diff Rendering (within a single word token) ── */
+function _charDiffRender(oldToken, newToken) {
+  if (oldToken === '') return escapeHtml(newToken);
+  if (newToken === '') return '';
+
+  /* Separate leading whitespace (must match textarea exactly) */
+  const newWS = newToken.match(/^(\s*)/)[1];
+  const oldWS = oldToken.match(/^(\s*)/)[1];
+  const oldWord = oldToken.substring(oldWS.length);
+  const newWord = newToken.substring(newWS.length);
+
+  let result = escapeHtml(newWS);
+
+  if (oldWord === newWord) return result + escapeHtml(newWord);
+
+  /* Reuse wordDiff on character arrays — works identically on single chars */
+  const ops = wordDiff(oldWord.split(''), newWord.split(''));
+  for (const [ctag, , , cj1, cj2] of ops) {
+    const chars = newWord.substring(cj1, cj2);
+    if (ctag === 'equal') {
+      result += escapeHtml(chars);
+    } else if (ctag === 'insert') {
+      result += '<span class="hl-add">' + escapeHtml(chars) + '</span>';
+    } else if (ctag === 'replace') {
+      result += '<span class="hl-mod">' + escapeHtml(chars) + '</span>';
+    }
+    /* delete: old chars gone from textarea — skip */
+  }
+  return result;
+}
+
+/* ── Word Splitting ─────────────────────────────────── */
+function _splitWords(line) {
+  /* Attach leading whitespace to each word so tokens are unique
+     and the greedy diff doesn't sync on ambiguous bare whitespace.
+     "hello world  foo" → ["hello", " world", "  foo"] */
+  const tokens = [];
+  const re = /(\s*\S+)/g;
+  let m, lastEnd = 0;
+  while ((m = re.exec(line)) !== null) {
+    tokens.push(m[0]);
+    lastEnd = m.index + m[0].length;
+  }
+  /* Trailing whitespace: attach to last token or keep as sole token */
+  if (lastEnd < line.length) {
+    if (tokens.length > 0) tokens[tokens.length - 1] += line.substring(lastEnd);
+    else tokens.push(line.substring(lastEnd));
+  }
+  if (tokens.length === 0 && line.length > 0) tokens.push(line);
+  return tokens;
+}
+
+/* ── Word-Level Diff ────────────────────────────────── */
+function wordDiff(oldWords, newWords) {
+  const N = oldWords.length, M = newWords.length;
+
+  if (N === 0 && M === 0) return [['equal', 0, 0, 0, 0]];
+  if (N === 0) return [['insert', 0, 0, 0, M]];
+  if (M === 0) return [['delete', 0, N, 0, 0]];
+
+  if (N === M && oldWords.every((w, i) => w === newWords[i])) {
+    return [['equal', 0, N, 0, M]];
+  }
+
+  /* Greedy sequential matching with lookahead (same approach as myersDiff) */
+  const blocks = [];
+  let oi = 0, ni = 0;
+  while (oi < N && ni < M) {
+    if (oldWords[oi] === newWords[ni]) {
+      const startO = oi, startN = ni;
+      while (oi < N && ni < M && oldWords[oi] === newWords[ni]) { oi++; ni++; }
+      blocks.push([startO, startN, oi - startO]);
+    } else {
+      let foundO = -1, foundN = -1;
+      const searchLimit = Math.min(50, Math.max(N - oi, M - ni));
+      for (let d = 1; d < searchLimit; d++) {
+        if (oi + d < N && newWords[ni] !== undefined && oldWords[oi + d] === newWords[ni]) {
+          foundO = oi + d; foundN = ni; break;
+        }
+        if (ni + d < M && oldWords[oi] !== undefined && oldWords[oi] === newWords[ni + d]) {
+          foundO = oi; foundN = ni + d; break;
+        }
+        if (oi + d < N && ni + d < M && oldWords[oi + d] === newWords[ni + d]) {
+          foundO = oi + d; foundN = ni + d; break;
+        }
+      }
+      if (foundO >= 0) {
+        oi = foundO; ni = foundN;
+      } else {
+        oi++; ni++;
+      }
+    }
+  }
+
+  const opcodes = [];
+  let lastO = 0, lastN = 0;
+  for (const [bO, bN, size] of blocks) {
+    if (bO > lastO || bN > lastN) {
+      if (bO > lastO && bN > lastN) {
+        opcodes.push(['replace', lastO, bO, lastN, bN]);
+      } else if (bO > lastO) {
+        opcodes.push(['delete', lastO, bO, lastN, lastN]);
+      } else {
+        opcodes.push(['insert', lastO, lastO, lastN, bN]);
+      }
+    }
+    if (size > 0) {
+      opcodes.push(['equal', bO, bO + size, bN, bN + size]);
+    }
+    lastO = bO + size;
+    lastN = bN + size;
+  }
+  if (lastO < N || lastN < M) {
+    if (lastO < N && lastN < M) {
+      opcodes.push(['replace', lastO, N, lastN, M]);
+    } else if (lastO < N) {
+      opcodes.push(['delete', lastO, N, lastN, lastN]);
+    } else {
+      opcodes.push(['insert', lastO, lastO, lastN, M]);
+    }
+  }
+
+  return opcodes.length > 0 ? opcodes : [['equal', 0, N, 0, M]];
+}
+
+/* ── Myers Diff (line-level) ────────────────────────── */
 function myersDiff(oldLines, newLines) {
-  /* Returns opcodes: [['equal',i1,i2,j1,j2], ['insert',...], ...] */
   const N = oldLines.length, M = newLines.length;
 
-  /* Fast path: identical */
   if (N === M && oldLines.every((l, i) => l === newLines[i])) {
     return [['equal', 0, N, 0, M]];
   }
 
   const opcodes = [];
   const blocks = [];
-  /* Sequential scan to find matching blocks */
   let oi = 0, ni = 0;
   while (oi < N && ni < M) {
     if (oldLines[oi] === newLines[ni]) {
@@ -180,7 +416,6 @@ function myersDiff(oldLines, newLines) {
       while (oi < N && ni < M && oldLines[oi] === newLines[ni]) { oi++; ni++; }
       blocks.push([startO, startN, oi - startO]);
     } else {
-      /* Find next match */
       let foundO = -1, foundN = -1;
       const searchLimit = Math.min(200, Math.max(N - oi, M - ni));
       for (let d = 1; d < searchLimit; d++) {
@@ -202,7 +437,6 @@ function myersDiff(oldLines, newLines) {
     }
   }
 
-  /* Convert blocks to opcodes */
   let lastO = 0, lastN = 0;
   for (const [bO, bN, size] of blocks) {
     if (bO > lastO || bN > lastN) {
@@ -256,7 +490,6 @@ function initEditor() {
     if (e.key === 'Tab') {
       e.preventDefault();
       if (e.shiftKey) {
-        /* Outdent: remove leading 2 spaces from current line */
         const start = textarea.selectionStart;
         const lineStart = textarea.value.lastIndexOf('\n', start - 1) + 1;
         const line = textarea.value.substring(lineStart, start);
@@ -269,12 +502,10 @@ function initEditor() {
       }
     }
     if (e.key === 'Enter') {
-      /* Auto-indent: match leading whitespace of current line */
       const start = textarea.selectionStart;
       const lineStart = textarea.value.lastIndexOf('\n', start - 1) + 1;
       const line = textarea.value.substring(lineStart, start);
       const indent = line.match(/^(\s*)/)[1];
-      /* Check for list continuation */
       const listMatch = line.match(/^(\s*)([-*+]|\d+\.)\s/);
       if (listMatch) {
         e.preventDefault();
@@ -285,7 +516,6 @@ function initEditor() {
         document.execCommand('insertText', false, '\n' + indent);
       }
     }
-    /* Cmd+S save */
     if ((e.metaKey || e.ctrlKey) && e.key === 's') {
       e.preventDefault();
       saveEdit();
@@ -295,16 +525,25 @@ function initEditor() {
   /* Track dirty state */
   textarea.addEventListener('input', () => {
     editState.dirty = textarea.value !== editState.savedContent;
+    document.body.classList.toggle('edit-dirty', editState.dirty);
     updateEditStatus(editState.dirty ? 'Modified' : 'Saved');
     _editGutterDebounce();
   });
 
-  /* Scroll sync: gutter canvas follows textarea scroll */
+  /* Scroll sync: gutter canvas + mirror follow .edit-body scroll (GPU-composited) */
   const editBody = textarea.closest('.edit-body');
+  let _scrollRAF = null;
   if (editBody) {
     editBody.addEventListener('scroll', () => {
-      const canvas = document.getElementById('edit-gutter-canvas');
-      if (canvas) canvas.style.marginTop = -editBody.scrollTop + 'px';
+      if (_scrollRAF) cancelAnimationFrame(_scrollRAF);
+      _scrollRAF = requestAnimationFrame(() => {
+        const canvas = document.getElementById('edit-gutter-canvas');
+        const mirror = document.getElementById('edit-mirror');
+        const offset = `translateY(${-editBody.scrollTop}px)`;
+        if (canvas) canvas.style.transform = offset;
+        if (mirror) mirror.style.transform = offset;
+        _scrollRAF = null;
+      });
     });
   }
 
@@ -324,7 +563,6 @@ function initEditor() {
 /* Cmd+Shift+E toggle edit mode (Cmd+E is stolen by Chrome --app mode) */
 document.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'e') {
-    /* Don't intercept if palette is open */
     const backdrop = document.querySelector('.palette-backdrop');
     if (backdrop && backdrop.classList.contains('visible')) return;
     e.preventDefault();

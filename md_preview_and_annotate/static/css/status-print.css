@@ -58,6 +58,23 @@
   padding: 0 6px;
   cursor: default;
 }
+#status-copy-path {
+  background: none;
+  border: none;
+  color: var(--ctp-overlay0);
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+#status-copy-path:hover {
+  color: var(--ctp-blue);
+}
+#status-copy-path.copied {
+  color: var(--ctp-green);
+}
 #status-export-pdf {
   background: none;
   border: none;
@@ -85,14 +102,18 @@
 /* ── Page layout (top-level for reliable parsing) ── */
 @page {
   size: letter;
+  margin: 0;
 }
 
 @media print {
   /* ── Preserve theme backgrounds (critical for dark themes) ── */
   * { print-color-adjust: exact !important; -webkit-print-color-adjust: exact !important; }
 
+  /* ── Edge-to-edge background (eliminates white outline on dark themes) ── */
+  html { background: var(--body-bg, var(--ctp-base)) !important; }
+
   /* ── Hide chrome ── */
-  #toc, #status, #status-export-pdf, #toc-restore, #toc-resize-handle,
+  #toc, #status, #status-export-pdf, #status-copy-path, #toc-restore, #toc-resize-handle,
   #tab-bar-wrapper, #annotations-gutter, #annotate-carousel,
   #annotations-toggle, .palette-backdrop, .palette-hint,
   #edit-view, #diff-view, #version-panel,
@@ -105,8 +126,8 @@
     max-width: 100% !important;
   }
   #content {
-    max-width: 100%;
-    padding: 0 0.4in;
+    max-width: 100% !important;
+    padding: 0.6in !important;
   }
 
   /* ── Page breaks ── */
@@ -138,8 +159,11 @@
   }
 
   /* ── Light themes: white background for print ── */
+  [data-theme="latte"] html,
   [data-theme="latte"] body,
+  [data-theme="rose-pine-dawn"] html,
   [data-theme="rose-pine-dawn"] body,
+  [data-theme="tokyo-light"] html,
   [data-theme="tokyo-light"] body {
     background: #fff !important;
   }

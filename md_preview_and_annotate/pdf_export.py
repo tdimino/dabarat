@@ -189,8 +189,8 @@ def _ws_recv(sock):
 
 
 def print_to_pdf(page_url, output_path, chrome_path=None,
-                 margin_top=0.6, margin_bottom=0.6,
-                 margin_left=0.6, margin_right=0.6,
+                 margin_top=0, margin_bottom=0,
+                 margin_left=0, margin_right=0,
                  print_background=True, timeout=30):
     """Export a page to PDF via CDP with explicit margin control.
 

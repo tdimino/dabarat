@@ -1142,10 +1142,6 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 print_to_pdf(
                     page_url=url,
                     output_path=output_path,
-                    margin_top=0.5,
-                    margin_bottom=0.5,
-                    margin_left=0.6,
-                    margin_right=0.6,
                 )
                 self._json_response({
                     "ok": True,

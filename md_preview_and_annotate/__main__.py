@@ -415,10 +415,6 @@ def cmd_export_pdf(argv):
             page_url=url,
             output_path=output,
             chrome_path=chrome,
-            margin_top=0.5,
-            margin_bottom=0.5,
-            margin_left=0.6,
-            margin_right=0.6,
         )
         size_kb = os.path.getsize(output) / 1024
         print(f"\033[38;2;166;227;161m\u2713\033[0m {os.path.basename(output)} ({size_kb:.0f} KB)")

@@ -348,65 +348,14 @@ body.home-active #toc-resize-handle {
   z-index: 5;
   margin-right: -260px;
 }
-/* Edge fade indicators — visible when tabs overflow */
-#tab-bar-wrapper::before,
-#tab-bar-wrapper::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 28px;
-  pointer-events: none;
-  z-index: 3;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-#tab-bar-wrapper::before {
-  left: 0;
-  background: linear-gradient(90deg, var(--crust-bg, var(--ctp-crust)) 30%, transparent);
-}
-#tab-bar-wrapper::after {
-  right: 0;
-  background: linear-gradient(-90deg, var(--crust-bg, var(--ctp-crust)) 30%, transparent);
-}
-#tab-bar-wrapper.has-overflow-left::before  { opacity: 1; }
-#tab-bar-wrapper.has-overflow-right::after  { opacity: 1; }
-
-/* ── Tab Scroll Arrows ──────────────────────────────── */
-.tab-scroll-arrow {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 24px;
-  z-index: 4;
-  background: var(--crust-bg, var(--ctp-crust));
-  border: none;
-  color: var(--ctp-overlay1);
-  cursor: pointer;
-  display: none;
-  font-size: 12px;
-  padding: 0;
-  transition: color 0.15s;
-}
-.tab-scroll-arrow.visible {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.tab-scroll-arrow:hover { color: var(--ctp-text); }
-.tab-scroll-left  { left: 0; }
-.tab-scroll-right { right: 0; }
-
 #tab-bar {
   background: var(--crust-bg, var(--ctp-crust));
   border-bottom: 1px solid var(--ctp-surface0);
   display: flex;
   align-items: stretch;
   min-height: 34px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  overflow: hidden;
 }
-#tab-bar::-webkit-scrollbar { width: 0; height: 0; }
 
 .tab {
   display: flex;
@@ -424,7 +373,7 @@ body.home-active #toc-resize-handle {
   transition: color 0.15s, background 0.15s, border-color 0.15s, opacity 0.15s, padding 0.15s;
   user-select: none;
   overflow: hidden; /* enables width-collapse animation on close */
-  flex: 0 0 auto;  /* JS sets explicit width via _recalcTabWidths() */
+  flex: 0 0 auto;  /* JS sets explicit width via _computeVisibleWindow() */
 }
 .tab > span:first-child {
   flex: 1;          /* fill remaining space → pushes close to right */
@@ -494,13 +443,13 @@ body.home-active #toc-resize-handle {
   color: var(--ctp-overlay0);
   cursor: pointer;
   padding: 0 10px;
-  font-size: 13px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
   transition: color 0.15s;
   flex-shrink: 0;
-  display: none;          /* hidden by default; JS adds .visible on overflow */
+  display: none;          /* JS controls display directly */
   align-items: center;
 }
-#tab-overflow.visible { display: flex; }
 #tab-overflow:hover { color: var(--ctp-text); }
 
 .tab-add-input {

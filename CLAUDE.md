@@ -34,7 +34,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `frontmatter.js` — Indicator bar, popup modal
 - `variables.js` — Highlighting, manifest panel, fill-in, preview
 - `tags.js` — Tag CRUD, pill rendering
-- `tabs.js` — Tab bar (dynamic widths, close pinned right, scroll reset, overflow dropdown), switching, cross-file links
+- `tabs.js` — Tab bar (visible window capping, +N overflow dropdown, dynamic widths 80-160px), switching, cross-file links
 - `annotations.js` — Highlights, bubbles, CRUD, carousel, gutter overlay
 - `diff.js` — Diff mode, scroll sync, resize
 - `editor.js` — Inline editing, word/char-level change tracking (Myers line diff → greedy word diff → char diff), transparent textarea + mirror overlay, ghost text deletion markers
@@ -46,7 +46,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 
 ### CSS (`static/css/` — 14 modules, concatenated in order)
 - `theme-variables.css` — 6 Catppuccin theme blocks (Mocha/Latte/Rosé Pine/Rosé Pine Dawn/Tokyo Storm/Tokyo Light) with color vars, RGB companions, `--interactive-hover-bg`, `--interactive-muted-bg`
-- `base-layout.css` — Resets, TOC, main area, tab bar, home-active TOC sidebar
+- `base-layout.css` — Resets, TOC, main area, tab bar (no scroll—visible window only), home-active TOC sidebar
 - `typography.css` — Markdown elements, hljs tokens, image effects (border, glow, hover lift)
 - `annotations.css` — Gutter, bubbles, carousel, form
 - `status-print.css` — Status bar, print media
@@ -97,7 +97,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **Motion One**: Optional animation CDN loaded as ES module (`@motionone/dom`). Assigns `window.Motion` with `animate`, `stagger`, `spring`. All call sites MUST guard with `if (window.Motion && !_prefersReducedMotion)` for progressive enhancement + accessibility. `_prefersReducedMotion` is a `const` in `state.js`. Falls back to CSS `@keyframes` animations. See `@agent_docs/motion-one.md` for full call site reference.
 - **Image lightbox**: Content images (excluding `.emoji` and `.tpl-var-img`) get `cursor: zoom-in` and open lightbox on click
 - **Workspace system**: See `@agent_docs/workspace-system.md` for full internals. Key state: server-side `_active_workspace`/`_active_workspace_path`, client-side in `state.js`
-- **PDF export**: `pdf_export.py` uses headless Chrome CDP. Export mode: `?theme=X&export=1` skips polling + emits render-complete sentinel. `print-color-adjust: exact` preserves dark backgrounds
+- **PDF export**: `pdf_export.py` uses headless Chrome CDP with zero page margins (`@page { margin: 0 }`, CDP margins: 0). Visual spacing via `#content { padding: 0.6in }` in print mode. Export mode: `?theme=X&export=1` skips polling + emits render-complete sentinel. `print-color-adjust: exact` preserves dark backgrounds. `html` gets theme background in print to prevent outline artifacts on dark themes. Light themes override both `html` and `body` to `#fff`.
 - **Finder integration (macOS)**: `Dabarat.app` droplet at `~/Applications/`. Bundle ID: `com.minoanmystery.dabarat`. Rebuild after Python upgrade: `bash macos/build.sh`. Default handler: `duti -s com.minoanmystery.dabarat .md all`
 - **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.

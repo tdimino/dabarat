@@ -4,8 +4,6 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 
 Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 
-> Python package directory: `md_preview_and_annotate/` (unchanged for import compatibility)
-
 ## Stack
 - Python 3.10+ (stdlib only — no pip dependencies)
 - CDN: marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One (cached after first load)
@@ -69,10 +67,11 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `INDEX.md` — Build and usage documentation
 
 ## Install
-- `pip install -e .` from project root — installs `dabarat`, `dbrt`, `mdpreview`, and `mdp` globally
+- `pip install .` from project root — installs `dabarat`, `dbrt`, `mdpreview`, and `mdp` globally (non-editable required for Finder "Open With" — editable installs hit macOS TCC on `~/Desktop/`)
+- `pip install -e .` for development — changes take effect immediately but Finder integration won't work (TCC blocks `~/Desktop/` access from AppleScript droplets)
 
 ## Commands
-- Run: `dabarat document.md` (or `dbrt`, `mdpreview`, `mdp`, `python3 -m md_preview_and_annotate`)
+- Run: `dabarat document.md` (or `dbrt`, `mdpreview`, `mdp`, `python3 -m dabarat`)
 - Workspace: `dabarat --workspace research.dabarat-workspace`
 - Add tab: `dabarat --add another.md`
 - Export PDF: `dabarat --export-pdf file.md [-o output.pdf] [--theme mocha]`

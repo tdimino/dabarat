@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""CLI entry point for md_preview_and_annotate.
+"""CLI entry point for dabarat.
 
 Usage:
-  python3 md_preview_and_annotate <file.md> [file2.md ...] [--port PORT] [--author NAME]
-  python3 md_preview_and_annotate --workspace <path.dabarat-workspace>
-  python3 md_preview_and_annotate --add <file.md> [--port PORT]
-  python3 md_preview_and_annotate --annotate <file.md> --text "..." --comment "..." [--author NAME]
+  python3 -m dabarat <file.md> [file2.md ...] [--port PORT] [--author NAME]
+  python3 -m dabarat --workspace <path.dabarat-workspace>
+  python3 -m dabarat --add <file.md> [--port PORT]
+  python3 -m dabarat --annotate <file.md> --text "..." --comment "..." [--author NAME]
   --max-instances N   Limit concurrent server instances (default 5)
 """
 
@@ -464,7 +464,7 @@ def cmd_serve(argv):
             print(f"\033[38;2;243;139;168m\u2717\033[0m Invalid workspace: {ws_path}")
             sys.exit(1)
         # Set server-side workspace state
-        import md_preview_and_annotate.server as _srv
+        import dabarat.server as _srv
         _srv._active_workspace_path = ws_path
         _srv._active_workspace = ws_data
         workspace.add_recent(ws_path, ws_data.get("name"))

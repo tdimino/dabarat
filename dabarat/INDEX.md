@@ -1,4 +1,4 @@
-# md_preview_and_annotate
+# dabarat
 
 Python package — the core application.
 
@@ -14,6 +14,6 @@ Python package — the core application.
 
 ## Entry Points
 
-- `python3 -m md_preview_and_annotate file.md` — start server + open browser
-- `python3 -m md_preview_and_annotate --add file.md` — add tab to running instance
-- `python3 -m md_preview_and_annotate --annotate file.md --text "..." --comment "..." --type comment` — CLI annotation
+- `python3 -m dabarat file.md` — start server + open browser
+- `python3 -m dabarat --add file.md` — add tab to running instance
+- `python3 -m dabarat --annotate file.md --text "..." --comment "..." --type comment` — CLI annotation

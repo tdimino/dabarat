@@ -37,26 +37,26 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 ## Quick Start
 
 ```bash
-python3 -m md_preview_and_annotate document.md
+python3 -m dabarat document.md
 ```
 
 Opens in Chrome `--app` mode (falls back to default browser). No install, no build step, no dependencies.
 
 ```bash
 # Multiple files
-python3 -m md_preview_and_annotate file1.md file2.md
+python3 -m dabarat file1.md file2.md
 
 # Tab reuse — if the server is already running, new files open as tabs automatically
-python3 -m md_preview_and_annotate another-file.md
+python3 -m dabarat another-file.md
 
 # Open a workspace (multi-root folders + pinned files)
-python3 -m md_preview_and_annotate --workspace research.dabarat-workspace
+python3 -m dabarat --workspace research.dabarat-workspace
 
 # Custom port and author
-python3 -m md_preview_and_annotate document.md --port 8080 --author "Alice"
+python3 -m dabarat document.md --port 8080 --author "Alice"
 
 # Annotate from CLI (no browser needed)
-python3 -m md_preview_and_annotate --annotate document.md \
+python3 -m dabarat --annotate document.md \
   --text "some passage" --comment "This needs revision" --type suggestion
 ```
 
@@ -152,7 +152,7 @@ See [docs/finder-integration.md](docs/finder-integration.md) for details.
 ## Architecture
 
 ```
-md_preview_and_annotate/
+dabarat/
 ├── __main__.py          # CLI entry point (serve, add, annotate, export-pdf, workspace)
 ├── server.py            # HTTP server + 36 REST API endpoints
 ├── template.py          # HTML shell assembly (inlines 16 JS + 14 CSS modules)

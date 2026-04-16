@@ -102,6 +102,7 @@ def _server_running():
 
 
 def _add_to_server(filepath):
+    """POST to /api/add and return the tab id (or None on failure)."""
     try:
         data = json.dumps({"filepath": filepath}).encode()
         req = urllib.request.Request(
@@ -112,10 +113,48 @@ def _add_to_server(filepath):
                 "Origin": f"http://127.0.0.1:{PORT}",
             },
         )
-        urllib.request.urlopen(req, timeout=3)
-        return True
+        with urllib.request.urlopen(req, timeout=3) as resp:
+            payload = json.loads(resp.read().decode())
+            return payload.get("id")
     except Exception:
-        return False
+        return None
+
+
+_CHROMIUM_BINS = [
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "/Applications/Vivaldi.app/Contents/MacOS/Vivaldi",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+]
+
+
+def _surface_browser(url):
+    # Prefer a Chromium --app=URL window: chromeless, tabless, standalone.
+    # Chrome/Brave/Edge/Vivaldi/Chromium all support this. Arc does not and
+    # is omitted. Falls back to /usr/bin/open (default browser, regular tab)
+    # if no Chromium browser is installed.
+    for chromium in _CHROMIUM_BINS:
+        if not os.path.isfile(chromium):
+            continue
+        try:
+            subprocess.Popen(
+                [chromium, f"--app={url}"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            return
+        except Exception:
+            continue
+    try:
+        subprocess.Popen(
+            ["/usr/bin/open", url],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except Exception:
+        pass
 
 
 def main():
@@ -132,8 +171,13 @@ def main():
         sys.exit(1)
 
     if _server_running():
+        last_id = None
         for f in files:
-            _add_to_server(f)
+            tid = _add_to_server(f)
+            if tid:
+                last_id = tid
+        url = f"http://127.0.0.1:{PORT}/?tab={last_id}" if last_id else f"http://127.0.0.1:{PORT}/"
+        _surface_browser(url)
     else:
         env = os.environ.copy()
         env["PATH"] = os.path.dirname(PYTHON) + ":" + env.get("PATH", "")
@@ -148,10 +192,13 @@ def main():
             _show_error(f"Failed to start Dabarat:\\n{exc}")
             sys.exit(1)
 
-        # Wait up to 10s for server to come up
+        # Wait up to 10s for server to come up, then surface the browser so
+        # first-ever launch from Finder doesn't leave a running server with no
+        # visible window.
         for _ in range(40):
             time.sleep(0.25)
             if _server_running():
+                _surface_browser(f"http://127.0.0.1:{PORT}/")
                 break
 
 
@@ -187,7 +234,7 @@ on open theFiles
     set helperPath to POSIX path of (path to home folder) & ".dabarat/open-helper.py"
 
     try
-        do shell script helperPath & argStr & " > /dev/null 2>&1 &"
+        do shell script "/bin/bash -c " & quoted form of ("nohup " & helperPath & argStr & " >> ~/.dabarat/open.log 2>&1 &")
     on error errMsg
         display dialog "Dabarat could not open the file(s)." & return & return & errMsg ¬
             with title "Dabarat" buttons {"OK"} default button "OK" with icon stop
@@ -218,6 +265,14 @@ echo "  Info.plist installed (Owner rank, net.daringfireball.markdown UTI)"
 
 # ── Step 5: Clear quarantine attribute (prevents Gatekeeper "unidentified developer" dialog)
 xattr -cr "$APP_DIR" 2>/dev/null || true
+
+# ── Step 5b: Re-sign the bundle
+# osacompile signs with the original (generic) Info.plist. Overlaying ours in
+# Step 4 invalidates that seal ("Info.plist=not bound"), and on macOS 15+ this
+# makes the droplet hang silently on `do shell script` under TCC. Re-apply an
+# ad-hoc signature so the Info.plist is bound to the seal.
+codesign --force --deep --sign - "$APP_DIR" 2>/dev/null || true
+echo "  Re-signed bundle (ad-hoc, Info.plist bound)"
 
 # ── Step 6: Register with Launch Services
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"

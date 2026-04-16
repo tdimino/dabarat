@@ -69,7 +69,7 @@ Things it **does** use:
 The entire tool is **6 Python files + 2 static files**:
 
 ```
-md_preview_and_annotate/
+dabarat/
 ├── __init__.py          # Package metadata
 ├── __main__.py          # CLI entry point
 ├── server.py            # HTTP server + 22 API endpoints

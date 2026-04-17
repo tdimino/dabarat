@@ -19,7 +19,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Resolve/archive workflow** — resolved annotations move to a separate archive file
 - **Global bookmark index** — bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
 - **Auto-cleanup of orphaned annotations** — when anchor text is deleted, its annotations are removed on next load
-- **6 Catppuccin themes** — 3 dark (Mocha, Rosé Pine, Tokyo Storm) + 3 light (Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel
+- **8 themes** — 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 - **Resizable TOC sidebar** — drag the right edge to adjust width (persisted across sessions)
 - **Switchable emoji styles** — Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji
 - **Command palette** — `Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
@@ -86,7 +86,7 @@ python3 -m dabarat --annotate document.md \
 |---------|---------|---------------------------|-----------|----------|
 | Dependencies | **0** (Python stdlib) | Svelte + npm ecosystem | Node.js + npm | Web service |
 | Annotation types | 5 (comment, question, suggestion, flag, bookmark) | Comments only | Inline comments | AI feedback |
-| Themes | 6 Catppuccin (3 dark + 3 light) | Basic | Terminal | Web UI |
+| Themes | 8 (4 dark + 4 light, incl. Ink/Vellum scholar pair) | Basic | Terminal | Web UI |
 | Live reload | Yes (500ms) | No | No | N/A |
 | Multi-tab | Yes | No | Yes | No |
 | Threaded replies | Yes | No | No | No |

@@ -7,7 +7,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 ## Stack
 - Python 3.10+ (stdlib only — no pip dependencies)
 - CDN: marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One (cached after first load)
-- 6 Catppuccin themes: 3 dark (Mocha, Rosé Pine, Tokyo Storm) + 3 light (Latte, Rosé Pine Dawn, Tokyo Light)
+- 8 themes: 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light). Ink + Vellum are The Scholar's Codex pair — parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 
 ## Structure
 
@@ -43,7 +43,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `init.js` — Bootstrap
 
 ### CSS (`static/css/` — 14 modules, concatenated in order)
-- `theme-variables.css` — 6 Catppuccin theme blocks (Mocha/Latte/Rosé Pine/Rosé Pine Dawn/Tokyo Storm/Tokyo Light) with color vars, RGB companions, `--interactive-hover-bg`, `--interactive-muted-bg`
+- `theme-variables.css` — 8 theme blocks (Ink/Vellum/Mocha/Latte/Rosé Pine/Rosé Pine Dawn/Tokyo Storm/Tokyo Light) with color vars, RGB companions, `--interactive-hover-bg`, `--interactive-muted-bg`
 - `base-layout.css` — Resets, TOC, main area, tab bar (no scroll—visible window only), home-active TOC sidebar
 - `typography.css` — Markdown elements, hljs tokens, image effects (border, glow, hover lift)
 - `annotations.css` — Gutter, bubbles, carousel, form
@@ -91,6 +91,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **Config dir**: `~/.dabarat/` (history, instances, recent.json). Auto-migrates from `~/.mdpreview/` on first run.
 - **localStorage prefix**: `dabarat-*` keys. Migration IIFE in `state.js` copies `mdpreview-*` → `dabarat-*` on first load.
 - **Color convention**: Never use hardcoded rgba channel values—use `rgba(var(--ctp-*-rgb), alpha)` from `theme-variables.css`. RGB companions (`--ctp-yellow-rgb`, `--ctp-blue-rgb`, etc.) auto-switch per theme. Latte overrides only needed when alpha values differ from Mocha defaults. TAG_COLORS in `palette.js` also uses CSS variable references for theme-awareness.
+- **Vellum shadow exception**: Vellum uses warm umber shadows (`rgba(70, 48, 20, ...)`) instead of the neutral `rgba(0, 0, 0, ...)` used by every other theme. Pure-black shadows punch cold holes into its warm parchment base; the convention break is documented inline in `theme-variables.css` and should not be "normalized" back.
 - **Interactive token convention**: For hover/focus states on surfaces that use `--card-bg` (white in light themes), use `var(--interactive-hover-bg)` (dark: `--ctp-surface1`, light: `--ctp-crust`) and `var(--interactive-muted-bg)` (dark: `rgba(surface1, 0.85)`, light: `rgba(0,0,0,0.06)`) instead of raw `var(--ctp-surface1)` which is invisible on white.
 - **Event delegation**: Never use inline `onclick` handlers in dynamically-built HTML—use `data-*` attributes + `addEventListener` event delegation. This prevents XSS via HTML entity decoding in path strings.
 - **Motion One**: Optional animation CDN loaded as ES module (`@motionone/dom`). Assigns `window.Motion` with `animate`, `stagger`, `spring`. All call sites MUST guard with `if (window.Motion && !_prefersReducedMotion)` for progressive enhancement + accessibility. `_prefersReducedMotion` is a `const` in `state.js`. Falls back to CSS `@keyframes` animations. See `@agent_docs/motion-one.md` for full call site reference.

@@ -66,7 +66,7 @@
 - Tag colors shared with `CommandPalette.TAG_COLORS` (uses CSS variable references for theme-aware rendering)
 
 ### Theme & Preferences
-- Theme: `localStorage('dabarat-theme')` — 6 themes (`mocha`, `latte`, `rose-pine`, `rose-pine-dawn`, `tokyo-storm`, `tokyo-light`), applied via `data-theme` attribute; 3 dark + 3 light
+- Theme: `localStorage('dabarat-theme')` — 8 themes (`ink`, `vellum`, `mocha`, `latte`, `rose-pine`, `rose-pine-dawn`, `tokyo-storm`, `tokyo-light`), applied via `data-theme` attribute; 4 dark + 4 light. Four registries in `theme.js` must stay in sync: `THEME_ORDER`, `THEME_META` (family/mode/label), `THEME_PAIRS` (dark↔light toggle), `SURFACE_COLORS` (base/mantle/crust RGB triples for `applyOpacity()`). `getActiveThemeLabel()` resolves the display name (handles `_custom` sentinel for user-imported themes).
 - Font size: `localStorage('dabarat-fontsize')` — 11–22px range, applied via CSS `--base-size`
 - TOC width: `localStorage('dabarat-toc-width')` — 180–500px, draggable resize handle
 - Active tab: `localStorage('dabarat-active-tab')` — restored on reload
@@ -84,10 +84,11 @@ Self-contained module with state, DOM construction, keyboard handling, command r
 - Built-in categories: File, View, Tags
 - Dynamic commands: tab switching, close tab, recent files
 - Third-party registration: `CommandPalette.register(category, commands)`
+- `sublabel` field accepts `string | () => string` — when a function, the renderer re-evaluates it on every palette open and adds `.palette-sublabel-dynamic` for italic styling. "Toggle Dark/Light" and "Next Theme" use `getActiveThemeLabel` so the current theme name shows next to each command.
 
 ### Tag Mode
 - Triggered by `#` prefix in search or "Add Tag..." command
-- 7 predefined tags + 6 prompt tags with Catppuccin colors via CSS variable references (`var(--ctp-*)` / `rgba(var(--ctp-*-rgb), alpha)`)—auto-adapt to Mocha/Latte theme
+- 7 predefined tags + 6 prompt tags with Catppuccin colors via CSS variable references (`var(--ctp-*)` / `rgba(var(--ctp-*-rgb), alpha)`)—auto-adapt to the active theme (Ink/Vellum/Mocha/Latte/Rosé Pine pairs/Tokyo pairs)
 - Custom tags: type any name, press Enter to create
 - Tags persist via POST `/api/tags` → sidecar JSON
 

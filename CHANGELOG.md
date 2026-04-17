@@ -2,6 +2,20 @@
 
 All notable changes to Markdown Dabarat.
 
+## [Unreleased] — 2026-04-17
+
+### The Scholar's Codex — Ink + Vellum Themes
+- **Two new themes rooted in manuscript culture** — theme count 6 → 8, with Ink/Vellum forming a paired dark/light register distinct from the existing Catppuccin (Mocha/Latte), Rosé Pine, and Tokyo Night families
+- **Ink (dark)** — parchment text ramp (`#e8e1cd`) on deep ink-navy base (`#181a24` / `#12131e` / `#0a0b14`); tungsten gold (`#c79b4b`) as the ruling signature accent; iron-gall blue as secondary; rubricated ochre for alerts; all accents earthed to ~35-50% saturation to match the medieval pigment register — no candy
+- **Vellum (light)** — iron-gall ink (`#262526`) on warm parchment cream (`#faf3df` / `#f4ecd4` / `#ebe2c4`); iron-gall blue (`#3d4d6a`) as the ruling signature with rubricated red-ochre (`#b85a2a`) secondary; `--card-bg: #fffaec` (never pure white — reserved for scholia/inset annotations); companion to Ink via `THEME_PAIRS`
+- **Warm-umber shadow exception** — Vellum uses `rgba(70, 48, 20, ...)` shadows instead of the neutral `rgba(0, 0, 0, ...)` used by every other theme; pure-black shadows punch cold holes into the warm parchment base, so the exception is deliberate and documented inline in `theme-variables.css`
+- **Four-registry sync** — `THEME_ORDER`, `THEME_META` (family/mode/label), `THEME_PAIRS` (dark↔light toggle), and `SURFACE_COLORS` (base/mantle/crust RGB triples for `applyOpacity()`) all updated in parallel so every code path that iterates themes picks up the new entries
+
+### Command Palette
+- **Current-theme name shown in italics** next to "Toggle Dark/Light" and "Next Theme" entries — the palette now tells you which theme you're cycling *from* before you press Enter
+- **`sublabel` field accepts `string | () => string`** — when a function, the renderer re-evaluates on every palette open and adds `.palette-sublabel-dynamic` for italic styling; lets any third-party command expose a live status string without re-registering
+- **`getActiveThemeLabel()` helper** extracted into `theme.js`, reused at all three call sites (the two palette entries + theme-picker header); dead `typeof THEME_META !== 'undefined'` guards dropped since `theme.js` is always concatenated before `palette.js`
+
 ## [Unreleased] — 2026-02-20
 
 ### Workspace System

@@ -32,11 +32,14 @@ function adjustTocFont(delta) {
 
 /* ── Theme ────────────────────────────────────────────── */
 const THEME_ORDER = [
+  'ink', 'vellum',
   'mocha', 'latte',
   'rose-pine', 'rose-pine-dawn',
   'tokyo-storm', 'tokyo-light',
 ];
 const THEME_META = {
+  'ink':            { family: 'scholar',    mode: 'dark',  label: 'Ink' },
+  'vellum':         { family: 'scholar',    mode: 'light', label: 'Vellum' },
   'mocha':          { family: 'catppuccin',  mode: 'dark',  label: 'Catppuccin Mocha' },
   'latte':          { family: 'catppuccin',  mode: 'light', label: 'Catppuccin Latte' },
   'rose-pine':      { family: 'rose-pine',   mode: 'dark',  label: 'Rosé Pine' },
@@ -45,6 +48,7 @@ const THEME_META = {
   'tokyo-light':    { family: 'tokyo-night',  mode: 'light', label: 'Tokyo Night Light' },
 };
 const THEME_PAIRS = {
+  'ink': 'vellum', 'vellum': 'ink',
   'mocha': 'latte', 'latte': 'mocha',
   'rose-pine': 'rose-pine-dawn', 'rose-pine-dawn': 'rose-pine',
   'tokyo-storm': 'tokyo-light', 'tokyo-light': 'tokyo-storm',
@@ -117,6 +121,8 @@ let opacityIndex = parseInt(localStorage.getItem('dabarat-opacity-idx') || '0');
 if (opacityIndex < 0 || opacityIndex >= OPACITY_STEPS.length) opacityIndex = 0;
 
 const SURFACE_COLORS = {
+  'ink':            { base: [24,26,36],    mantle: [18,19,30],    crust: [10,11,20]    },
+  'vellum':         { base: [250,243,223], mantle: [244,236,212], crust: [235,226,196]  },
   'mocha':          { base: [30,30,46],    mantle: [24,24,37],    crust: [17,17,27]   },
   'latte':          { base: [239,241,245], mantle: [230,233,239], crust: [220,224,232] },
   'rose-pine':      { base: [25,23,36],    mantle: [21,19,32],    crust: [17,15,28]   },
@@ -540,6 +546,15 @@ const CUSTOM_ACTIVE_KEY = 'dabarat-custom-active';
 function getCustomThemes() {
   try { return JSON.parse(localStorage.getItem(CUSTOM_THEMES_KEY) || '[]'); }
   catch { return []; }
+}
+
+function getActiveThemeLabel() {
+  if (currentTheme === '_custom') {
+    const activeId = localStorage.getItem(CUSTOM_ACTIVE_KEY);
+    const match = getCustomThemes().find(c => c.id === activeId);
+    return match ? match.name : 'Custom';
+  }
+  return THEME_META[currentTheme] ? THEME_META[currentTheme].label : currentTheme;
 }
 
 function saveCustomTheme(name, variables, source) {

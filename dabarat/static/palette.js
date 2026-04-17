@@ -147,8 +147,14 @@ const CommandPalette = {
       }},
     ]);
     this.register('View', [
-      { id: 'toggle-theme', label: 'Toggle Dark/Light', icon: 'ph-moon', action: () => toggleTheme() },
-      { id: 'cycle-theme', label: 'Next Theme', icon: 'ph-palette', action: () => cycleTheme() },
+      { id: 'toggle-theme', label: 'Toggle Dark/Light', icon: 'ph-moon',
+        sublabel: getActiveThemeLabel,
+        action: () => toggleTheme()
+      },
+      { id: 'cycle-theme', label: 'Next Theme', icon: 'ph-palette',
+        sublabel: getActiveThemeLabel,
+        action: () => cycleTheme()
+      },
       { id: 'toggle-toc', label: 'Toggle Sidebar', icon: 'ph-sidebar', action: () => toggleToc() },
       { id: 'font-up', label: 'Increase Font', icon: 'ph-text-aa', action: () => adjustFont(1) },
       { id: 'font-down', label: 'Decrease Font', icon: 'ph-text-aa', action: () => adjustFont(-1) },
@@ -717,6 +723,19 @@ const CommandPalette = {
     const wrap = document.createElement('div');
     wrap.className = 'theme-picker';
 
+    /* Header — "Theme" label with current theme name in italic */
+    const header = document.createElement('div');
+    header.className = 'tp-header';
+    const headerLabel = document.createElement('span');
+    headerLabel.className = 'tp-header-label';
+    headerLabel.textContent = 'Theme';
+    const headerCurrent = document.createElement('em');
+    headerCurrent.className = 'tp-header-current';
+    headerCurrent.textContent = getActiveThemeLabel();
+    header.appendChild(headerLabel);
+    header.appendChild(headerCurrent);
+    wrap.appendChild(header);
+
     /* Tabs */
     const tabBar = document.createElement('div');
     tabBar.className = 'theme-picker-tabs';
@@ -1134,10 +1153,13 @@ const CommandPalette = {
         item.appendChild(label);
 
         if (cmd.sublabel) {
-          const sub = document.createElement('span');
-          sub.className = 'palette-sublabel';
-          sub.textContent = cmd.sublabel;
-          item.appendChild(sub);
+          const subText = (typeof cmd.sublabel === 'function') ? cmd.sublabel() : cmd.sublabel;
+          if (subText) {
+            const sub = document.createElement('span');
+            sub.className = 'palette-sublabel' + (typeof cmd.sublabel === 'function' ? ' palette-sublabel-dynamic' : '');
+            sub.textContent = subText;
+            item.appendChild(sub);
+          }
         }
 
         if (cmd.shortcut) {

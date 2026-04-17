@@ -399,6 +399,186 @@
 }
 
 /* ══════════════════════════════════════════════════════════
+   Ink (dark — The Scholar's Codex)
+
+   Direction: ink-on-vellum under lamplight.
+   Signature accent: tungsten gold (--ctp-yellow).
+   Secondary: rubricated ochre (--ctp-peach), iron-gall blue (--ctp-blue).
+   Text ramp: parchment off-white, not periwinkle.
+   All accents muted / earthed (medieval pigment register).
+   Paired with: vellum.
+   ══════════════════════════════════════════════════════════ */
+[data-theme="ink"] {
+  /* Medieval pigment accents — saturation ~35-50%, not candy */
+  --ctp-rosewater: #d4b8a8;
+  --ctp-flamingo: #d4a5a0;
+  --ctp-pink:     #c9a0b5;
+  --ctp-mauve:    #8c7aa0;
+  --ctp-red:      #b04a52;  /* sealing wax */
+  --ctp-maroon:   #9f5259;  /* aged red */
+  --ctp-peach:    #c96d4a;  /* rubricated ochre (secondary signature) */
+  --ctp-yellow:   #c79b4b;  /* TUNGSTEN GOLD — signature */
+  --ctp-green:    #6a9672;  /* verdigris */
+  --ctp-teal:     #5a8d8a;
+  --ctp-sky:      #7596b4;  /* iron-gall sky */
+  --ctp-sapphire: #5e82a3;
+  --ctp-blue:     #8aa2c4;  /* iron-gall for links */
+  --ctp-lavender: #9a8aaa;
+
+  --ctp-rosewater-rgb: 212, 184, 168;
+  --ctp-flamingo-rgb:  212, 165, 160;
+  --ctp-pink-rgb:      201, 160, 181;
+  --ctp-mauve-rgb:     140, 122, 160;
+  --ctp-red-rgb:       176, 74, 82;
+  --ctp-maroon-rgb:    159, 82, 89;
+  --ctp-peach-rgb:     201, 109, 74;
+  --ctp-yellow-rgb:    199, 155, 75;
+  --ctp-green-rgb:     106, 150, 114;
+  --ctp-teal-rgb:      90, 141, 138;
+  --ctp-sky-rgb:       117, 150, 180;
+  --ctp-sapphire-rgb:  94, 130, 163;
+  --ctp-blue-rgb:      138, 162, 196;
+  --ctp-lavender-rgb:  154, 138, 170;
+
+  --ctp-surface0-rgb: 33, 34, 47;
+  --ctp-surface1-rgb: 44, 46, 64;
+  --ctp-overlay0-rgb: 87, 81, 74;
+  --ctp-base-rgb:     24, 26, 36;
+  --ctp-mantle-rgb:   18, 19, 30;
+
+  /* Text ramp — parchment off-white (not cool periwinkle) */
+  --ctp-text:     #e8e1cd;
+  --ctp-subtext1: #c9c3b0;
+  --ctp-subtext0: #a39d8c;
+  --ctp-overlay2: #8a8576;
+  --ctp-overlay1: #6f695c;
+  --ctp-overlay0: #57514a;
+
+  /* Surface spine — deep ink, slight warm tint */
+  --ctp-surface2: #3a3c51;
+  --ctp-surface1: #2c2e40;
+  --ctp-surface0: #21222f;
+  --ctp-base:     #181a24;
+  --ctp-mantle:   #12131e;
+  --ctp-crust:    #0a0b14;
+
+  --bold-color:       #f0eada;                             /* brightest vellum */
+  --italic-color:     #c8a478;                             /* softer tungsten */
+  --blockquote-color: #c9c3b0;                             /* faded vellum — quoted, not shouted */
+  --blockquote-bg:    rgba(var(--ctp-mantle-rgb), 0.6);
+  --toc-active-bg:    rgba(var(--ctp-yellow-rgb), 0.09);   /* tungsten current-section mark */
+  --row-even-bg:      rgba(var(--ctp-surface0-rgb), 0.25);
+  --row-hover-bg:     rgba(var(--ctp-yellow-rgb), 0.04);
+  --code-fg:          var(--ctp-sky);                      /* iron-gall blue */
+  --card-bg:          var(--ctp-surface0);
+  --card-bg-rgb:      var(--ctp-surface0-rgb);
+  --card-border:      rgba(var(--ctp-surface1-rgb), 0.5);
+  --interactive-hover-bg: var(--ctp-surface1);
+  --interactive-muted-bg: rgba(var(--ctp-surface1-rgb), 0.85);
+
+  --elevation-1:
+    0 2px 4px -1px rgba(0, 0, 0, 0.22),
+    0 1px 2px -1px rgba(0, 0, 0, 0.14);
+  --elevation-2:
+    0 12px 24px -8px rgba(0, 0, 0, 0.32),
+    0 6px 12px -4px rgba(0, 0, 0, 0.18),
+    0 2px 4px -1px rgba(0, 0, 0, 0.12);
+
+  color-scheme: dark;
+}
+
+/* ══════════════════════════════════════════════════════════
+   Vellum (light — The Scholar's Codex)
+
+   Direction: warm parchment, iron-gall ink.
+   Signature accent: iron-gall blue-black (--ctp-blue, --ctp-sapphire).
+   Secondary: rubricated red ochre (--ctp-peach), orpiment yellow.
+   Base spine: warm cream with yellow undertone — NOT cool blue-grey.
+   Text: iron-gall near-black, slight warm.
+   Paired with: ink.
+   ══════════════════════════════════════════════════════════ */
+[data-theme="vellum"] {
+  /* Medieval pigment accents — muted, earthed */
+  --ctp-rosewater: #b8876a;
+  --ctp-flamingo: #b87a6a;
+  --ctp-pink:     #a66a74;  /* madder */
+  --ctp-mauve:    #6a4c6a;  /* muted tyrian */
+  --ctp-red:      #a63a3a;  /* cinnabar */
+  --ctp-maroon:   #8c3e4a;
+  --ctp-peach:    #b85a2a;  /* rubricated red ochre (secondary signature) */
+  --ctp-yellow:   #b8872a;  /* orpiment — medieval yellow */
+  --ctp-green:    #5a7a52;  /* verdigris */
+  --ctp-teal:     #4d7a74;
+  --ctp-sky:      #4a6a8c;  /* woad */
+  --ctp-sapphire: #3d4d6a;  /* iron-gall deep */
+  --ctp-blue:     #3d4d6a;  /* IRON-GALL BLUE-BLACK — signature */
+  --ctp-lavender: #7a6a8c;
+
+  --ctp-rosewater-rgb: 184, 135, 106;
+  --ctp-flamingo-rgb:  184, 122, 106;
+  --ctp-pink-rgb:      166, 106, 116;
+  --ctp-mauve-rgb:     106, 76, 106;
+  --ctp-red-rgb:       166, 58, 58;
+  --ctp-maroon-rgb:    140, 62, 74;
+  --ctp-peach-rgb:     184, 90, 42;
+  --ctp-yellow-rgb:    184, 135, 42;
+  --ctp-green-rgb:     90, 122, 82;
+  --ctp-teal-rgb:      77, 122, 116;
+  --ctp-sky-rgb:       74, 106, 140;
+  --ctp-sapphire-rgb:  61, 77, 106;
+  --ctp-blue-rgb:      61, 77, 106;
+  --ctp-lavender-rgb:  122, 106, 140;
+
+  --ctp-surface0-rgb: 238, 230, 206;
+  --ctp-surface1-rgb: 221, 211, 183;
+  --ctp-overlay0-rgb: 184, 179, 160;
+  --ctp-base-rgb:     250, 243, 223;
+  --ctp-mantle-rgb:   244, 236, 212;
+
+  /* Text ramp — iron-gall ink, warm near-black */
+  --ctp-text:     #262526;
+  --ctp-subtext1: #4a4742;
+  --ctp-subtext0: #6b6758;
+  --ctp-overlay2: #8a8674;
+  --ctp-overlay1: #a39e8c;
+  --ctp-overlay0: #b8b3a0;
+
+  /* Surface spine — warm parchment, aged vellum */
+  --ctp-surface2: #c9bf9f;
+  --ctp-surface1: #ddd3b7;
+  --ctp-surface0: #eee6ce;
+  --ctp-base:     #faf3df;
+  --ctp-mantle:   #f4ecd4;
+  --ctp-crust:    #ebe2c4;
+
+  --bold-color:       #1a1a1f;                             /* deepest ink */
+  --italic-color:     #3d4d6a;                             /* iron-gall — signature italic */
+  --blockquote-color: #6b5a3a;                             /* sepia brown — aged quotation */
+  --blockquote-bg:    rgba(var(--ctp-mantle-rgb), 0.75);
+  --toc-active-bg:    rgba(var(--ctp-blue-rgb), 0.10);
+  --row-even-bg:      rgba(var(--ctp-surface0-rgb), 0.5);
+  --row-hover-bg:     rgba(var(--ctp-peach-rgb), 0.06);    /* rubricated row hover */
+  --code-fg:          var(--ctp-sapphire);                 /* iron-gall blue, 7:1 on surface0 */
+  --card-bg:          #fffaec;                             /* warm paper highlight — NOT pure white */
+  --card-bg-rgb:      255, 250, 236;
+  --card-border:      rgba(var(--ctp-surface1-rgb), 0.7);
+  --interactive-hover-bg: var(--ctp-crust);
+  --interactive-muted-bg: rgba(var(--ctp-overlay0-rgb), 0.22);
+
+  /* Warm umber shadows — tinted to match parchment (convention exception).
+     Pure-black shadows punch cold holes into warm cream; umber preserves material feel. */
+  --elevation-1:
+    0 2px 6px -1px rgba(70, 48, 20, 0.10),
+    0 1px 3px -1px rgba(70, 48, 20, 0.08);
+  --elevation-2:
+    0 12px 28px -8px rgba(70, 48, 20, 0.16),
+    0 6px 14px -4px rgba(70, 48, 20, 0.10),
+    0 2px 6px -1px rgba(70, 48, 20, 0.08);
+
+  color-scheme: light;
+}
+
+/* ══════════════════════════════════════════════════════════
    Tokyo Night Light
    ══════════════════════════════════════════════════════════ */
 [data-theme="tokyo-light"] {

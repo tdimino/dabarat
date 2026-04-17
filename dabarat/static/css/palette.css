@@ -83,6 +83,14 @@
   max-width: 200px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
+.palette-sublabel-dynamic {
+  font-family: 'DM Sans', sans-serif;
+  font-style: italic;
+  font-size: 12px;
+  color: var(--italic-color);
+  margin-left: auto;
+  padding-right: 8px;
+}
 
 .palette-shortcut {
   font-family: 'Victor Mono', monospace;
@@ -385,6 +393,28 @@
 .theme-picker {
   width: 100%;
   padding: 8px 18px 12px;
+}
+.tp-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 2px 8px;
+  margin-bottom: 2px;
+}
+.tp-header-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ctp-text);
+  letter-spacing: 0.01em;
+}
+.tp-header-current {
+  font-style: italic;
+  font-size: 13px;
+  color: var(--italic-color);
+  font-weight: 400;
+  /* Nudge for optical balance — italics read lighter */
+  letter-spacing: 0.005em;
 }
 .theme-picker-tabs {
   display: flex;

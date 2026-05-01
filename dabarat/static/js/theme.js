@@ -189,7 +189,10 @@ function applyOpacity() {
   const theme = currentTheme || 'mocha';
   const colors = SURFACE_COLORS[theme] || SURFACE_COLORS['mocha'];
   const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
-  document.documentElement.style.setProperty('--body-bg', rgba(colors.base, alpha));
+  const isExportLight = document.documentElement.dataset.export === '1'
+    && THEME_META[theme] && THEME_META[theme].mode === 'light';
+  document.documentElement.style.setProperty('--body-bg',
+    isExportLight ? '#fff' : rgba(colors.base, alpha));
   document.documentElement.style.setProperty('--toc-bg', rgba(colors.mantle, alpha));
   document.documentElement.style.setProperty('--crust-bg', rgba(colors.crust, alpha));
 

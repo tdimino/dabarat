@@ -2,6 +2,12 @@
 
 All notable changes to Markdown Dabarat.
 
+## [Unreleased] — 2026-05-01
+
+### PDF Export
+- **Proper page margins at page breaks** — `@page` margin changed from `0` to `0.5in 0`, giving every page consistent top/bottom clearance; `#content` vertical padding reduced from `0.6in` to `0.1in` to compensate so total visual margin stays ~0.6in; CDP `preferCSSPageSize: true` defers to CSS as the single source of truth
+- **Light-theme export background fix** — export mode forces `--body-bg: #fff` on light themes to prevent grey page artifacts from RGBA base colors
+
 ## [Unreleased] — 2026-04-17
 
 ### The Scholar's Codex — Ink + Vellum Themes

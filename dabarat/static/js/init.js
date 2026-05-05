@@ -52,6 +52,14 @@ async function init() {
 
   /* Signal render-complete for headless PDF export */
   if (document.documentElement.dataset.export === '1') {
+    const pdfDate = document.documentElement.dataset.date;
+    if (pdfDate) {
+      const el = document.createElement('div');
+      el.className = 'pdf-date';
+      el.textContent = pdfDate;
+      const content = document.getElementById('content');
+      content.insertBefore(el, content.firstChild);
+    }
     const sentinel = document.createElement('div');
     sentinel.id = 'dabarat-render-complete';
     document.body.appendChild(sentinel);

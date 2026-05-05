@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1200">
+<title>Labyrinth Etymology — Light</title>
+<meta name="description" content="&quot;Labyrinth&quot; doesn't come from labrys. Linear B DA-PU₂-RI-TO appears with the honey ideogram. The Semitic root D-B-R gives us deborah (bee), dabar (word), and debir (Holy of Holies). The labyrinth is the sanctuary of bees and words.">
+<meta property="og:title" content="Labyrinth ≠ Labrys: A Semitic Etymology">
+<meta property="og:description" content="Linear B DA-PU₂-RI-TO appears with the honey ideogram. The Semitic root D-B-R produces bee, word, and sanctuary from a single triliteral.">
+<meta property="og:image" content="light-meander.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Noto+Sans:ital,wght@0,300;0,400;0,600&family=Noto+Sans+Hebrew:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #f2ead5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Noto Sans', sans-serif;
+  }
+
+  .canvas {
+    width: 1200px;
+    height: 675px;
+    background: #f2ead5;
+    position: relative;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 310px 1fr 240px;
+  }
+
+  .canvas::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 30% 50%, rgba(160, 104, 48, 0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at 75% 40%, rgba(160, 104, 48, 0.03) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .border-top, .border-bottom {
+    position: absolute;
+    left: 0; right: 0;
+    height: 28px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+  }
+  .border-top { top: 0; }
+  .border-bottom { bottom: 0; }
+
+  .border-top .wave-row, .border-bottom .wave-row {
+    display: flex;
+    width: 100%;
+    height: 100%;
+  }
+
+  .border-top .wave-row svg, .border-bottom .wave-row svg {
+    height: 28px;
+    width: 100px;
+    flex-shrink: 0;
+  }
+
+  .gold-line-top {
+    position: absolute;
+    top: 28px;
+    left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #2b6b8a 20%, #2b6b8a 80%, transparent);
+    opacity: 0.25;
+    z-index: 10;
+  }
+  .gold-line-bottom {
+    position: absolute;
+    bottom: 28px;
+    left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #2b6b8a 20%, #2b6b8a 80%, transparent);
+    opacity: 0.25;
+    z-index: 10;
+  }
+
+  .left-panel {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 44px 16px 44px 20px;
+  }
+
+  .bee-img-wrapper {
+    width: 270px;
+    height: 460px;
+    overflow: hidden;
+    border: 1px solid rgba(160, 104, 48, 0.25);
+    position: relative;
+    box-shadow: 0 2px 12px rgba(70, 48, 20, 0.10);
+  }
+
+  .bee-img-wrapper img {
+    width: 200%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 52% center;
+    filter: brightness(1.05) contrast(1.02);
+  }
+
+  .bee-caption {
+    margin-top: 10px;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 300;
+    color: rgba(160, 104, 48, 0.6);
+    text-align: center;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
+    max-width: 260px;
+  }
+
+  .center-panel {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px 48px 10px;
+  }
+
+  .header-line {
+    font-family: 'Cinzel', serif;
+    font-weight: 900;
+    font-size: 38px;
+    letter-spacing: 6px;
+    color: #2a1a0e;
+    text-align: center;
+    margin-bottom: 6px;
+  }
+
+  .header-line .neq {
+    color: #c0402e;
+    font-size: 34px;
+    margin: 0 4px;
+  }
+
+  .header-line .labrys-word {
+    color: #c0402e;
+    text-decoration: line-through;
+    text-decoration-thickness: 3px;
+  }
+
+  .subtitle {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    color: rgba(44, 24, 16, 0.45);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+  }
+
+  .linear-b-label {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(44, 24, 16, 0.35);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .linear-b-glyphs {
+    font-size: 32px;
+    color: rgba(160, 104, 48, 0.5);
+    letter-spacing: 14px;
+    margin-bottom: 2px;
+  }
+
+  .linear-b-text {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 26px;
+    color: #2a1a0e;
+    letter-spacing: 4px;
+  }
+
+  .honey-note {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 11.5px;
+    font-style: italic;
+    color: #a06830;
+    margin-bottom: 18px;
+    letter-spacing: 0.5px;
+  }
+
+  .honey-hex {
+    display: inline-block;
+    width: 12px;
+    height: 14px;
+    margin: 0 3px;
+    vertical-align: middle;
+    opacity: 0.8;
+  }
+
+  .flow-arrow {
+    width: 2px;
+    height: 32px;
+    background: linear-gradient(to bottom, #a06830, #b87a3a);
+    position: relative;
+    margin: 0 auto 4px;
+  }
+  .flow-arrow::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 8px solid #b87a3a;
+  }
+
+  .root-label {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(44, 24, 16, 0.35);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+
+  .semitic-root {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 36px;
+    color: #a06830;
+    letter-spacing: 8px;
+    margin-bottom: 20px;
+  }
+
+  .branches {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  .branch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+  }
+
+  .branch-hebrew {
+    font-family: 'Noto Sans Hebrew', 'Noto Sans', sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #2a1a0e;
+    direction: rtl;
+    margin-bottom: 4px;
+  }
+
+  .branch-translit {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 400;
+    color: #a06830;
+    font-style: italic;
+    margin-bottom: 2px;
+  }
+
+  .branch-meaning {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 11px;
+    font-weight: 300;
+    color: rgba(44, 24, 16, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+  }
+
+  .branch-divider {
+    width: 1px;
+    height: 50px;
+    background: linear-gradient(to bottom, rgba(160, 104, 48, 0.3), transparent);
+    margin-top: 4px;
+  }
+
+  .closing-line {
+    margin-top: 24px;
+    font-family: 'Cinzel', serif;
+    font-weight: 400;
+    font-size: 13px;
+    color: rgba(160, 104, 48, 0.7);
+    letter-spacing: 2px;
+    text-align: center;
+    font-style: italic;
+  }
+
+  .right-panel {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 20px 48px 10px;
+  }
+
+  .labrys-frame {
+    position: relative;
+    width: 170px;
+    height: 170px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+  }
+
+  .meander-border {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .labrys-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .labrys-container img {
+    width: 110px;
+    height: 110px;
+    object-fit: contain;
+    opacity: 0.25;
+  }
+
+  .labrys-strike {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 190px;
+    height: 4px;
+    background: #c0402e;
+    transform: translate(-50%, -50%) rotate(-35deg);
+    border-radius: 2px;
+    opacity: 0.7;
+  }
+
+  .labrys-label {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 400;
+    color: #c0402e;
+    letter-spacing: 1.5px;
+    margin-top: 14px;
+    opacity: 0.7;
+  }
+
+  .labrys-greek {
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: rgba(192, 64, 46, 0.5);
+    margin-top: 6px;
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+  }
+
+  .right-spiral {
+    position: absolute;
+    bottom: 70px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    opacity: 0.06;
+  }
+
+  .right-spiral svg {
+    fill: #a06830;
+    width: 100%;
+    height: 100%;
+  }
+
+  .handle {
+    position: absolute;
+    bottom: 34px;
+    right: 24px;
+    font-family: 'Noto Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 300;
+    color: rgba(74, 122, 92, 0.7);
+    letter-spacing: 1.5px;
+    z-index: 10;
+  }
+
+  .sep-left {
+    position: absolute;
+    left: 310px;
+    top: 60px;
+    bottom: 60px;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(160, 104, 48, 0.15) 20%, rgba(160, 104, 48, 0.15) 80%, transparent);
+    z-index: 5;
+  }
+  .sep-right {
+    position: absolute;
+    right: 240px;
+    top: 60px;
+    bottom: 60px;
+    width: 1px;
+    background: linear-gradient(to bottom, transparent, rgba(160, 104, 48, 0.1) 20%, rgba(160, 104, 48, 0.1) 80%, transparent);
+    z-index: 5;
+  }
+</style>
+</head>
+<body>
+
+<div class="canvas">
+  <div class="border-top">
+    <div class="wave-row">
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+    </div>
+  </div>
+  <div class="gold-line-top"></div>
+
+  <div class="border-bottom">
+    <div class="wave-row">
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg" style="transform: scaleY(-1)"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg" style="transform: scaleY(-1)"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg" style="transform: scaleY(-1)"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg" style="transform: scaleY(-1)"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg" style="transform: scaleY(-1)"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+      <svg viewBox="0 200 1024 650" xmlns="http://www.w3.org/2000/svg" style="transform: scaleY(-1)"><path d="M 80 472 Q 180 260 350 260 Q 520 260 532 472 Q 544 684 714 684 Q 884 684 944 472 L 944 552 Q 884 764 714 764 Q 544 764 532 552 Q 520 340 350 340 Q 180 340 80 552 Z" fill="#2b6b8a" opacity="0.22"/><path d="M 80 592 Q 180 380 350 380 Q 520 380 532 592 Q 544 804 714 804 Q 884 804 944 592 L 944 640 Q 884 852 714 852 Q 544 852 532 640 Q 520 428 350 428 Q 180 428 80 640 Z" fill="#4a7a5c" opacity="0.22"/></svg>
+    </div>
+  </div>
+  <div class="gold-line-bottom"></div>
+
+  <div class="sep-left"></div>
+  <div class="sep-right"></div>
+
+  <div class="left-panel">
+    <div class="bee-img-wrapper">
+      <img src="bee-goddess.jpg" alt="Bee Goddess plaques, Camiros, Rhodes">
+    </div>
+    <div class="bee-caption">Bee Goddess plaques<br>Camiros, Rhodes &middot; 7th c. BCE</div>
+  </div>
+
+  <div class="center-panel">
+    <div class="header-line">
+      LABYRINTH <span class="neq">&ne;</span> <span class="labrys-word">LABRYS</span>
+    </div>
+    <div class="subtitle">a Semitic etymology</div>
+
+    <div class="linear-b-label">Linear B</div>
+    <div class="linear-b-glyphs">&#x10011; &#x10041; &#x10029; &#x10037;</div>
+    <span class="linear-b-text">DA-PU&#x2082;-RI-TO</span>
+    <div class="honey-note">
+      appears with the honey ideogram
+      <svg class="honey-hex" viewBox="0 0 20 23" xmlns="http://www.w3.org/2000/svg"><polygon points="10,0 20,5.75 20,17.25 10,23 0,17.25 0,5.75" fill="none" stroke="#a06830" stroke-width="1.5"/></svg>
+    </div>
+
+    <div class="flow-arrow"></div>
+
+    <div class="root-label">Semitic Root</div>
+    <div class="semitic-root">D - B - R</div>
+
+    <div class="branches">
+      <div class="branch">
+        <div class="branch-hebrew">דְּבוֹרָה</div>
+        <div class="branch-translit">deborah</div>
+        <div class="branch-meaning">bee</div>
+      </div>
+      <div class="branch-divider"></div>
+      <div class="branch">
+        <div class="branch-hebrew">דָּבָר</div>
+        <div class="branch-translit">dabar</div>
+        <div class="branch-meaning">word</div>
+      </div>
+      <div class="branch-divider"></div>
+      <div class="branch">
+        <div class="branch-hebrew">דְּבִיר</div>
+        <div class="branch-translit">debir</div>
+        <div class="branch-meaning">holy of holies</div>
+      </div>
+    </div>
+
+    <div class="closing-line">The labyrinth is the sanctuary of bees and words.</div>
+  </div>
+
+  <div class="right-panel">
+    <div class="labrys-frame">
+      <svg class="meander-border" viewBox="0 0 170 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="168" height="168" fill="none" stroke="#a06830" stroke-width="0.6" opacity="0.3"/>
+        <path d="M 4,3 H 24 V 11 H 10 V 7 H 20 V 3 H 44 V 11 H 30 V 7 H 40 V 3 H 64 V 11 H 50 V 7 H 60 V 3 H 84 V 11 H 70 V 7 H 80 V 3 H 104 V 11 H 90 V 7 H 100 V 3 H 124 V 11 H 110 V 7 H 120 V 3 H 144 V 11 H 130 V 7 H 140 V 3 H 164 V 11 H 150 V 7 H 160 V 3 H 166" fill="none" stroke="#a06830" stroke-width="1.0" stroke-linecap="square" opacity="0.35"/>
+        <path d="M 4,167 H 24 V 159 H 10 V 163 H 20 V 167 H 44 V 159 H 30 V 163 H 40 V 167 H 64 V 159 H 50 V 163 H 60 V 167 H 84 V 159 H 70 V 163 H 80 V 167 H 104 V 159 H 90 V 163 H 100 V 167 H 124 V 159 H 110 V 163 H 120 V 167 H 144 V 159 H 130 V 163 H 140 V 167 H 164 V 159 H 150 V 163 H 160 V 167 H 166" fill="none" stroke="#a06830" stroke-width="1.0" stroke-linecap="square" opacity="0.35"/>
+        <path d="M 3,4 V 24 H 11 V 10 H 7 V 20 H 3 V 44 H 11 V 30 H 7 V 40 H 3 V 64 H 11 V 50 H 7 V 60 H 3 V 84 H 11 V 70 H 7 V 80 H 3 V 104 H 11 V 90 H 7 V 100 H 3 V 124 H 11 V 110 H 7 V 120 H 3 V 144 H 11 V 130 H 7 V 140 H 3 V 164 H 11 V 150 H 7 V 160 H 3 V 166" fill="none" stroke="#a06830" stroke-width="1.0" stroke-linecap="square" opacity="0.35"/>
+        <path d="M 167,4 V 24 H 159 V 10 H 163 V 20 H 167 V 44 H 159 V 30 H 163 V 40 H 167 V 64 H 159 V 50 H 163 V 60 H 167 V 84 H 159 V 70 H 163 V 80 H 167 V 104 H 159 V 90 H 163 V 100 H 167 V 124 H 159 V 110 H 163 V 120 H 167 V 144 H 159 V 130 H 163 V 140 H 167 V 164 H 159 V 150 H 163 V 160 H 167 V 166" fill="none" stroke="#a06830" stroke-width="1.0" stroke-linecap="square" opacity="0.35"/>
+        <rect x="14" y="14" width="142" height="142" fill="none" stroke="#a06830" stroke-width="0.4" opacity="0.15"/>
+      </svg>
+      <div class="labrys-container">
+        <img src="labrys-brown.png" alt="Labrys double axe">
+        <div class="labrys-strike"></div>
+      </div>
+    </div>
+    <div class="labrys-label">Not from</div>
+    <div class="labrys-greek">&#955;&#940;&#946;&#961;&#965;&#962;</div>
+
+    <div class="right-spiral">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+        <path d="M 512 470 Q 540 470 540 500 Q 540 530 512 530 Q 470 530 470 490 Q 470 430 512 420 Q 580 410 590 490 Q 600 570 512 580 Q 420 590 410 490 Q 400 380 512 370 Q 640 360 650 490 Q 660 630 512 640 Q 370 650 360 490 Q 350 330 512 320 Q 700 310 710 490 Q 720 690 512 700 Q 320 710 310 490 Q 300 280 512 270 Q 760 260 770 490 Q 780 750 512 760 Q 270 770 260 490 Q 250 230 512 220 Q 820 210 830 490 Q 840 810 512 820 Q 220 830 210 490 Q 200 180 512 170 Q 870 160 880 490 L 830 490 Q 830 210 512 220 Q 250 230 260 490 Q 270 780 512 770 Q 790 760 780 490 Q 770 260 512 270 Q 310 280 320 490 Q 330 720 512 700 Q 710 690 700 490 Q 690 310 512 320 Q 370 330 380 490 Q 390 640 512 630 Q 640 620 640 490 Q 640 360 512 370 Q 420 380 420 490 Q 420 580 512 580 Q 590 580 590 490 Q 590 420 512 420 Q 470 420 470 470 Q 470 520 512 520 Q 530 520 530 500 Q 530 480 512 480 Z" fill="#a06830"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="handle">@IdaeanDaktyl</div>
+</div>
+
+</body>
+</html>

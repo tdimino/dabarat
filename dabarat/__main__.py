@@ -408,7 +408,11 @@ def cmd_export_pdf(argv):
     # Export via CDP (Chrome DevTools Protocol) for reliable margin control
     from .pdf_export import print_to_pdf
 
+    date = _flag_value(argv, "--date")
     url = f"http://127.0.0.1:{port}?theme={theme}&export=1"
+    if date:
+        from urllib.parse import quote
+        url += f"&date={quote(date)}"
 
     try:
         print_to_pdf(

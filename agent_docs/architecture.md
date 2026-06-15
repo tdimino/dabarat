@@ -2,7 +2,7 @@
 
 ## Overview
 
-A zero-dependency Python markdown previewer that runs entirely from stdlib. Six CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One) load on first page view and are browser-cached thereafter. Motion One is optional—all animations fall back to CSS `@keyframes` if unavailable.
+A zero-dependency Python markdown previewer that runs entirely from stdlib. Seven CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap/ProseMirror) load on first page view and are browser-cached thereafter. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable.
 
 ## Data Flow
 
@@ -79,10 +79,10 @@ CLI (__main__.py)
 - Preview images: `/api/preview-image` serves images restricted to tab/browse directories
 - Static file serving for assets referenced by markdown content (images, etc.)
 
-### `template.py` (~227 lines)
+### `template.py` (~258 lines)
 - Reads `static/` files at import time, inlines them into a single HTML document
 - Concatenates 16 JS modules + 14 CSS modules with `/* ── module.js ── */` delimiters
-- CDN dependencies: marked.js (markdown), highlight.js (syntax), Phosphor Icons, Twemoji (emoji), Vibrant.js (color extraction), Motion One (animations, optional)
+- CDN dependencies: marked.js (markdown), highlight.js (syntax), Phosphor Icons, Twemoji (emoji), Vibrant.js (color extraction), Motion One (animations, optional), Tiptap/ProseMirror (WYSIWYG editing, optional)
 - Google Fonts: Cormorant Garamond, DM Sans, Victor Mono
 - Lightbox overlay DOM injected into HTML body
 - Passes `defaultAuthor` config to JS via `window.DABARAT_CONFIG`

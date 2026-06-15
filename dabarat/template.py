@@ -62,6 +62,22 @@ def get_html(title="dabarat", default_author="Tom"):
     window.Motion = {{ animate, stagger, spring }};
   }} catch (e) {{ /* Motion One unavailable — CSS fallback animations remain */ }}
 </script>
+<script type="module">
+  try {{
+    const {{ Editor }} = await import("https://esm.sh/@tiptap/core@2.27.2");
+    const StarterKit = (await import("https://esm.sh/@tiptap/starter-kit@2.27.2")).default;
+    const {{ Markdown }} = await import("https://esm.sh/tiptap-markdown@0.8.10");
+    const TaskList = (await import("https://esm.sh/@tiptap/extension-task-list@2.27.2")).default;
+    const TaskItem = (await import("https://esm.sh/@tiptap/extension-task-item@2.27.2")).default;
+    const Table = (await import("https://esm.sh/@tiptap/extension-table@2.27.2")).default;
+    const TableRow = (await import("https://esm.sh/@tiptap/extension-table-row@2.27.2")).default;
+    const TableCell = (await import("https://esm.sh/@tiptap/extension-table-cell@2.27.2")).default;
+    const TableHeader = (await import("https://esm.sh/@tiptap/extension-table-header@2.27.2")).default;
+    const Placeholder = (await import("https://esm.sh/@tiptap/extension-placeholder@2.27.2")).default;
+    window.Tiptap = {{ Editor, StarterKit, Markdown, TaskList, TaskItem,
+                       Table, TableRow, TableCell, TableHeader, Placeholder }};
+  }} catch (e) {{ /* Tiptap unavailable — textarea fallback */ }}
+</script>
 <script>(function(){{var v=['mocha','latte','rose-pine','rose-pine-dawn','tokyo-storm','tokyo-light','_custom'];var p=new URLSearchParams(window.location.search);var qt=p.get('theme');var t=(qt&&v.indexOf(qt)!==-1)?qt:localStorage.getItem('dabarat-theme')||localStorage.getItem('mdpreview-theme')||'mocha';if(v.indexOf(t)===-1)t='mocha';document.documentElement.setAttribute('data-theme',t);if(p.get('export')==='1')document.documentElement.dataset.export='1';var dd=p.get('date');if(dd)document.documentElement.dataset.date=dd;if(t==='_custom'){{try{{var a=localStorage.getItem('dabarat-custom-active')||localStorage.getItem('mdpreview-custom-active');if(a){{var th=JSON.parse(localStorage.getItem('dabarat-custom-themes')||localStorage.getItem('mdpreview-custom-themes')||'[]');for(var i=0;i<th.length;i++){{if(th[i].id===a&&th[i].variables){{var s=document.createElement('style');s.id='custom-theme-style';var r='';var vr=th[i].variables;for(var k in vr){{if(vr.hasOwnProperty(k))r+=k+':'+vr[k]+';'}}s.textContent='[data-theme="_custom"]{{'+r+'}}';document.head.appendChild(s);break}}}}}}}}catch(e){{document.documentElement.setAttribute('data-theme','mocha')}}}}}})()</script>
 <style>
 {css}
@@ -127,17 +143,26 @@ def get_html(title="dabarat", default_author="Tom"):
     <div id="edit-view" style="display:none">
       <div class="edit-toolbar">
         <span class="edit-mode-badge"><i class="ph ph-pencil-simple"></i> Editing</span>
+        <button class="edit-fmt-btn" data-cmd="bold" title="Bold (Cmd+B)"><i class="ph ph-text-bolder"></i></button>
+        <button class="edit-fmt-btn" data-cmd="italic" title="Italic (Cmd+I)"><i class="ph ph-text-italic"></i></button>
+        <button class="edit-fmt-btn" data-cmd="strike" title="Strikethrough"><i class="ph ph-text-strikethrough"></i></button>
+        <span class="edit-toolbar-sep"></span>
+        <button class="edit-fmt-btn" data-cmd="heading" title="Heading"><i class="ph ph-text-h"></i></button>
+        <button class="edit-fmt-btn" data-cmd="bulletList" title="Bullet List"><i class="ph ph-list-bullets"></i></button>
+        <button class="edit-fmt-btn" data-cmd="orderedList" title="Numbered List"><i class="ph ph-list-numbers"></i></button>
+        <button class="edit-fmt-btn" data-cmd="taskList" title="Task List"><i class="ph ph-check-square"></i></button>
+        <span class="edit-toolbar-sep"></span>
+        <button class="edit-fmt-btn" data-cmd="code" title="Inline Code"><i class="ph ph-code"></i></button>
+        <button class="edit-fmt-btn" data-cmd="codeBlock" title="Code Block"><i class="ph ph-code-block"></i></button>
+        <button class="edit-fmt-btn" data-cmd="blockquote" title="Blockquote"><i class="ph ph-quotes"></i></button>
+        <button class="edit-fmt-btn" data-cmd="horizontalRule" title="Horizontal Rule"><i class="ph ph-minus"></i></button>
         <span class="spacer"></span>
         <span id="edit-status">Saved</span>
         <button id="edit-save-btn" title="Save (Cmd+S)"><i class="ph ph-floppy-disk"></i> Save</button>
-        <button id="edit-discard-btn" title="Discard & Exit (Cmd+Shift+E)"><i class="ph ph-x"></i> Close</button>
+        <button id="edit-discard-btn" title="Close (Cmd+Shift+E)"><i class="ph ph-x"></i> Close</button>
       </div>
       <div class="edit-body">
-        <div class="edit-gutter"><canvas id="edit-gutter-canvas" width="4" height="0"></canvas></div>
-        <div class="edit-textarea-wrapper">
-          <pre id="edit-mirror" aria-hidden="true"></pre>
-          <textarea id="edit-textarea" spellcheck="true" placeholder="Start writing..."></textarea>
-        </div>
+        <div id="tiptap-editor"></div>
       </div>
     </div>
   </div>
@@ -190,6 +215,7 @@ def get_html(title="dabarat", default_author="Tom"):
     <button class="carousel-btn" data-type="important"><i class="ph ph-flag"></i><span>Flag</span></button>
     <button class="carousel-btn" data-type="bookmark"><i class="ph ph-bookmark-simple"></i><span>Bookmark</span></button>
   </div>
+  <button id="edit-toggle" title="Edit (⇧⌘E)" onclick="enterEditMode()"><i class="ph ph-pencil-simple"></i></button>
   <button id="annotations-toggle" title="Annotations"><i class="ph ph-chat-circle-dots"></i><span class="ann-count" id="ann-count-badge">0</span></button>
 
   <div id="version-panel">

@@ -25,7 +25,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Command palette** — `Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
 - **File tagging** — predefined + custom tags as colored pills in palette header, status bar, and tab bar
 - **Prompt engineering support** — `.prompt.md` files with YAML frontmatter render metadata indicator bars and variable highlighting
-- **Inline editing** — `Cmd+E` to edit raw markdown with change-tracking gutter, auto-save with atomic writes
+- **WYSIWYG editing** — `Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface. Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes — all rendered inline. Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
 - **Side-by-side diff** — compare any two markdown files with word-level granularity, synchronized scroll
 - **Version history** — git-backed timeline panel with diff stats, compare any version, one-click restore
 - **Workspace system** — VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
@@ -93,6 +93,7 @@ python3 -m dabarat --annotate document.md \
 | Bookmark persistence | Global index | No | No | No |
 | Tab reuse | Yes (automatic) | No | No | No |
 | Multi-root workspaces | Yes (.dabarat-workspace) | No | No | No |
+| WYSIWYG editing | Yes (Tiptap) | No | No | No |
 | Cross-file links | Yes | No | No | No |
 | Orphan auto-cleanup | Yes | No | No | No |
 | Last updated | 2026 | 2020 (abandoned) | 2026 | 2026 |
@@ -106,7 +107,7 @@ Most markdown annotation tools either require a heavy framework (Svelte, React, 
 - **AI-native** — built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
 - **Beautiful** — Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
 
-Six CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One) load on first page view and are cached by the browser. Motion One is optional—all animations fall back to CSS `@keyframes` if the CDN is unavailable. After first load, the tool works fully offline.
+CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap) load on first page view and are cached by the browser. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable. After first load, the tool works fully offline.
 
 ## CLI Reference
 

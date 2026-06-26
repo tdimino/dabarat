@@ -10,61 +10,11 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - 8 themes: 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light). Ink + Vellum are The Scholar's Codex pair — parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 
 ## Structure
-
-### Python
-- `server.py` — HTTP server + 36 REST API endpoints
-- `template.py` — HTML shell assembly (concatenates JS/CSS modules, inlines into single doc)
-- `annotations.py` — Sidecar JSON I/O + orphan cleanup
-- `bookmarks.py` — Global `~/.claude/bookmarks/` persistence
-- `frontmatter.py` — YAML frontmatter parser (stdlib, pyyaml fallback) + mtime cache
-- `diff.py` — Side-by-side markdown diff engine
-- `history.py` — Git-based file version history
-- `recent.py` — Recently opened files tracking
-- `workspace.py` — `.dabarat-workspace` CRUD, recent workspaces tracking
-- `pdf_export.py` — CDP-based PDF export (headless Chrome, stdlib WebSocket, zero deps)
-- `__main__.py` — CLI entry point (serve, add, annotate, export-pdf, workspace)
-
-### JavaScript (`static/js/` — 16 modules, concatenated in order)
-- `state.js` — Global vars, config
-- `utils.js` — `slugify()`, `escapeHtml()`, `formatTimeAgoShared()`
-- `theme.js` — Font size, theme toggle, emoji style, TOC resize
-- `render.js` — `render()`, `buildToc()`, scroll spy, word count, table scroll wrapping, lightbox hook
-- `frontmatter.js` — Indicator bar, popup modal
-- `variables.js` — Highlighting, manifest panel, fill-in, preview
-- `tags.js` — Tag CRUD, pill rendering
-- `tabs.js` — Tab bar (visible window capping, +N overflow dropdown, dynamic widths 80-160px), switching, cross-file links
-- `annotations.js` — Highlights, bubbles, CRUD, carousel, gutter overlay
-- `diff.js` — Diff mode, scroll sync, resize
-- `editor.js` — Tiptap WYSIWYG editor (rich-text editing via ProseMirror), toolbar command dispatch, frontmatter strip/prepend, save via tiptap-markdown serialization, textarea fallback when CDN unavailable
-- `history-ui.js` — Version history panel
-- `lightbox.js` — Image lightbox (zoom, keyboard nav, blur backdrop)
-- `home.js` — Workspace-driven home page, directory browser, file cards, Motion One animations
-- `polling.js` — 500ms poll loop
-- `init.js` — Bootstrap
-
-### CSS (`static/css/` — 14 modules, concatenated in order)
-- `theme-variables.css` — 8 theme blocks (Ink/Vellum/Mocha/Latte/Rosé Pine/Rosé Pine Dawn/Tokyo Storm/Tokyo Light) with color vars, RGB companions, `--interactive-hover-bg`, `--interactive-muted-bg`
-- `base-layout.css` — Resets, TOC, main area, tab bar (no scroll—visible window only), home-active TOC sidebar
-- `typography.css` — Markdown elements, hljs tokens, image effects (border, glow, hover lift)
-- `annotations.css` — Gutter, bubbles, carousel, form
-- `status-print.css` — Status bar, print media
-- `responsive.css` — Responsive breakpoints (1400px gutter, 900px TOC, 600px compact)
-- `palette.css` — Command palette, tag pills, hint badge, shortcut labels
-- `frontmatter.css` — Indicator bar, popup, variable pills
-- `variables-panel.css` — Gutter tabs, cards, preview overlay
-- `diff.css` — Diff header, panels, blocks
-- `editor.css` — Tiptap ProseMirror surface styles (headings, lists, task lists, tables, code blocks, blockquotes), edit-mode toolbar, floating edit toggle button, edit-mode atmosphere (yellow caret, dirty state deepening), light theme overrides
-- `history-ui.css` — Version history panel
-- `lightbox.css` — Image lightbox overlay, backdrop blur, navigation
-- `home.css` — Workspace cards, directory browser, smart badges, Motion One keyframes, `.ws-toggle` segmented control, `.home-empty` flex-centered empty state with ghost button
-
-### Standalone
-- `static/palette.js` — Command palette + tag mode (Cmd+K), shortcut display — loaded separately
-
-### macOS (`macos/`)
-- `build.sh` — Builds `Dabarat.app` AppleScript droplet → `~/Applications/`
-- `Info.plist` — UTI declarations, bundle metadata (`com.minoanmystery.dabarat`)
-- `INDEX.md` — Build and usage documentation
+- 11 Python modules in `dabarat/` — `server.py` (HTTP + 36 endpoints), `template.py` (HTML assembly), `annotations.py`, `bookmarks.py`, `frontmatter.py`, `diff.py`, `history.py`, `recent.py`, `workspace.py`, `pdf_export.py`, `__main__.py` (CLI entry)
+- 16 JS modules in `static/js/` concatenated in dependency order — see `agent_docs/client-architecture.md`
+- 14 CSS modules in `static/css/` concatenated in dependency order — theme-variables, base-layout, typography, then feature-specific (annotations, editor, diff, home, etc.)
+- `static/palette.js` — Command palette + tag mode (Cmd+K) — loaded separately
+- `macos/` — Finder integration: `build.sh` builds `Dabarat.app` droplet, `Info.plist` declares UTIs (`com.minoanmystery.dabarat`)
 
 ## Install
 - `pip install .` from project root — installs `dabarat`, `dbrt`, `mdpreview`, and `mdp` globally (non-editable required for Finder "Open With" — editable installs hit macOS TCC on `~/Desktop/`)
@@ -101,7 +51,10 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **Finder integration (macOS)**: `Dabarat.app` droplet at `~/Applications/`. Bundle ID: `com.minoanmystery.dabarat`. Rebuild after Python upgrade: `bash macos/build.sh`. Default handler: `duti -s com.minoanmystery.dabarat .md all`
 - **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.
-- **WYSIWYG editing**: Tiptap/ProseMirror editor loaded from esm.sh CDN (pinned @2.27.2 + tiptap-markdown@0.8.10). Extensions: StarterKit, TaskList, TaskItem, Table (row/cell/header), Placeholder. Markdown configured with `html: false`. Frontmatter stripped before Tiptap (stashed in `_stashedFrontmatter`), prepended on save. Edit mode hides annotations UI and exits diff/home mode on enter. Falls back to raw textarea if CDN unavailable. `body.edit-mode` and `body.edit-dirty` classes control atmosphere (yellow caret, background wash deepening). Floating pencil button (`#edit-toggle`) mirrors annotations toggle styling.
+- **WYSIWYG editing**: Tiptap/ProseMirror editor loaded from esm.sh CDN (pinned @2.27.2 + tiptap-markdown@0.8.10). Extensions: StarterKit, TaskList, TaskItem, Table (row/cell/header), Placeholder. Markdown configured with `html: false`. Frontmatter stripped before Tiptap (stashed in `_stashedFrontmatter`), prepended on save. Edit mode hides annotations UI and exits diff/home mode on enter. Falls back to raw textarea if CDN unavailable. `body.edit-mode` and `body.edit-dirty` classes control dirty-state indicator (yellow caret, badge border). Editor surface matches read-mode typography (DM Sans body, Cormorant Garamond h1-h2, same `--base-size` and `line-height: 1.65`). Floating pencil button (`#edit-toggle`) mirrors annotations toggle styling with halo-glow hover.
+- **Light-theme override convention**: All four light themes (Latte, Vellum, Rosé Pine Dawn, Tokyo Light) MUST appear together in every `[data-theme="..."]` override block in `editor.css`. Vellum was previously missing; omitting any light theme from a selector group causes silent contrast/styling regressions on that theme.
+- **Floating button hover pattern**: `#annotations-toggle` and `#edit-toggle` use halo-glow hover (accent border + ring shadow + diffuse glow + `scale(1.08)`) rather than solid background fill. This avoids mid-luminance contrast problems where accent fills (especially yellow) produce unreadable text on light themes. Both buttons include `scale(0.96)` active state for tactile feedback.
+- **Toolbar hover pattern**: Save and Close buttons use outline hover (accent border + text color, no background fill) for cross-theme contrast safety. Dirty-state save button on light themes uses `--ctp-text` instead of `--ctp-yellow` for readability.
 
 ## On-Demand References
 

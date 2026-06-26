@@ -19,7 +19,7 @@
   justify-content: center;
   z-index: 25;
   box-shadow: 0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #annotations-toggle {
@@ -28,20 +28,31 @@
     -webkit-backdrop-filter: blur(8px);
   }
 }
-[data-theme="latte"] #annotations-toggle {
+[data-theme="latte"] #annotations-toggle,
+[data-theme="vellum"] #annotations-toggle,
+[data-theme="rose-pine-dawn"] #annotations-toggle,
+[data-theme="tokyo-light"] #annotations-toggle {
   background: rgba(var(--ctp-mantle-rgb), 0.8);
 }
 @supports (backdrop-filter: blur(8px)) {
-  [data-theme="latte"] #annotations-toggle {
+  [data-theme="latte"] #annotations-toggle,
+  [data-theme="vellum"] #annotations-toggle,
+  [data-theme="rose-pine-dawn"] #annotations-toggle,
+  [data-theme="tokyo-light"] #annotations-toggle {
     background: rgba(var(--ctp-mantle-rgb), 0.6);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
 }
 #annotations-toggle:hover {
-  background: var(--ctp-blue);
-  color: var(--ctp-base);
-  transform: scale(1.05);
+  border-color: var(--ctp-blue);
+  color: var(--ctp-blue);
+  box-shadow: 0 0 0 3px rgba(var(--ctp-blue-rgb), 0.15),
+              0 0 20px rgba(var(--ctp-blue-rgb), 0.2);
+  transform: scale(1.08);
+}
+#annotations-toggle:active {
+  transform: scale(0.96);
 }
 #annotations-toggle .ann-count {
   position: absolute;

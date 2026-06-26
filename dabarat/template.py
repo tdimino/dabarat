@@ -141,21 +141,21 @@ def get_html(title="dabarat", default_author="Tom"):
       </div>
     </div>
     <div id="edit-view" style="display:none">
-      <div class="edit-toolbar">
+      <div class="edit-toolbar" role="toolbar" aria-label="Formatting">
         <span class="edit-mode-badge"><i class="ph ph-pencil-simple"></i> Editing</span>
-        <button class="edit-fmt-btn" data-cmd="bold" title="Bold (Cmd+B)"><i class="ph ph-text-bolder"></i></button>
-        <button class="edit-fmt-btn" data-cmd="italic" title="Italic (Cmd+I)"><i class="ph ph-text-italic"></i></button>
-        <button class="edit-fmt-btn" data-cmd="strike" title="Strikethrough"><i class="ph ph-text-strikethrough"></i></button>
-        <span class="edit-toolbar-sep"></span>
-        <button class="edit-fmt-btn" data-cmd="heading" title="Heading"><i class="ph ph-text-h"></i></button>
-        <button class="edit-fmt-btn" data-cmd="bulletList" title="Bullet List"><i class="ph ph-list-bullets"></i></button>
-        <button class="edit-fmt-btn" data-cmd="orderedList" title="Numbered List"><i class="ph ph-list-numbers"></i></button>
-        <button class="edit-fmt-btn" data-cmd="taskList" title="Task List"><i class="ph ph-check-square"></i></button>
-        <span class="edit-toolbar-sep"></span>
-        <button class="edit-fmt-btn" data-cmd="code" title="Inline Code"><i class="ph ph-code"></i></button>
-        <button class="edit-fmt-btn" data-cmd="codeBlock" title="Code Block"><i class="ph ph-code-block"></i></button>
-        <button class="edit-fmt-btn" data-cmd="blockquote" title="Blockquote"><i class="ph ph-quotes"></i></button>
-        <button class="edit-fmt-btn" data-cmd="horizontalRule" title="Horizontal Rule"><i class="ph ph-minus"></i></button>
+        <button class="edit-fmt-btn" data-cmd="bold" title="Bold (Cmd+B)" aria-label="Bold"><i class="ph ph-text-bolder"></i></button>
+        <button class="edit-fmt-btn" data-cmd="italic" title="Italic (Cmd+I)" aria-label="Italic"><i class="ph ph-text-italic"></i></button>
+        <button class="edit-fmt-btn" data-cmd="strike" title="Strikethrough" aria-label="Strikethrough"><i class="ph ph-text-strikethrough"></i></button>
+        <span class="edit-toolbar-sep" role="separator"></span>
+        <button class="edit-fmt-btn" data-cmd="heading" title="Heading" aria-label="Heading"><i class="ph ph-text-h"></i></button>
+        <button class="edit-fmt-btn" data-cmd="bulletList" title="Bullet List" aria-label="Bullet list"><i class="ph ph-list-bullets"></i></button>
+        <button class="edit-fmt-btn" data-cmd="orderedList" title="Numbered List" aria-label="Numbered list"><i class="ph ph-list-numbers"></i></button>
+        <button class="edit-fmt-btn" data-cmd="taskList" title="Task List" aria-label="Task list"><i class="ph ph-check-square"></i></button>
+        <span class="edit-toolbar-sep" role="separator"></span>
+        <button class="edit-fmt-btn" data-cmd="code" title="Inline Code" aria-label="Inline code"><i class="ph ph-code"></i></button>
+        <button class="edit-fmt-btn" data-cmd="codeBlock" title="Code Block" aria-label="Code block"><i class="ph ph-code-block"></i></button>
+        <button class="edit-fmt-btn" data-cmd="blockquote" title="Blockquote" aria-label="Blockquote"><i class="ph ph-quotes"></i></button>
+        <button class="edit-fmt-btn" data-cmd="horizontalRule" title="Horizontal Rule" aria-label="Horizontal rule"><i class="ph ph-minus"></i></button>
         <span class="spacer"></span>
         <span id="edit-status">Saved</span>
         <button id="edit-save-btn" title="Save (Cmd+S)"><i class="ph ph-floppy-disk"></i> Save</button>

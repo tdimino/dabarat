@@ -118,7 +118,7 @@
   /* ── Hide chrome ── */
   #toc, #status, #status-export-pdf, #status-copy-path, #toc-restore, #toc-resize-handle,
   #tab-bar-wrapper, #annotations-gutter, #annotate-carousel,
-  #annotations-toggle, .palette-backdrop, .palette-hint,
+  #annotations-toggle, #edit-toggle, .palette-backdrop, .palette-hint,
   #edit-view, #diff-view, #version-panel,
   .ann-gutter-close, .gutter-tabs,
   .fm-indicator, .fm-popup-backdrop { display: none !important; }

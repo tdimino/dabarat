@@ -10,29 +10,29 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 
 ## Features
 
-- **Live-reload preview** — 500ms polling detects file changes automatically
-- **Multi-tab support** — open multiple `.md` files; cross-file linking via `--add`
-- **Tab reuse** — launching a new file while the server is running adds it as a tab instead of restarting
-- **5 annotation types** — Comment, Question, Suggestion, Important, Bookmark
-- **Selection-based carousel** — select any text, pick an annotation type from the floating UI
-- **Threaded replies** — reply to any annotation inline
-- **Resolve/archive workflow** — resolved annotations move to a separate archive file
-- **Global bookmark index** — bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
-- **Auto-cleanup of orphaned annotations** — when anchor text is deleted, its annotations are removed on next load
-- **8 themes** — 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
-- **Resizable TOC sidebar** — drag the right edge to adjust width (persisted across sessions)
-- **Switchable emoji styles** — Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji
-- **Command palette** — `Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
-- **File tagging** — predefined + custom tags as colored pills in palette header, status bar, and tab bar
-- **Prompt engineering support** — `.prompt.md` files with YAML frontmatter render metadata indicator bars and variable highlighting
-- **WYSIWYG editing** — `Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface. Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes — all rendered inline. Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
-- **Side-by-side diff** — compare any two markdown files with word-level granularity, synchronized scroll
-- **Version history** — git-backed timeline panel with diff stats, compare any version, one-click restore
-- **Workspace system** — VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
-- **Image lightbox** — click any content image for overlay with blur backdrop, keyboard nav, zoom
-- **Motion One animations** — staggered card entrance, sidebar cascade, view transitions; progressive enhancement
-- **PDF export** — CLI or browser (`Cmd+K` → "Export PDF...") via headless Chrome CDP with theme preservation
-- **Finder integration (macOS)** — `Dabarat.app` registers as default `.md` handler for double-click, drag-and-drop, and Open With
+- **Live-reload preview**—500ms polling detects file changes automatically
+- **Multi-tab support**—open multiple `.md` files; cross-file linking via `--add`
+- **Tab reuse**—launching a new file while the server is running adds it as a tab instead of restarting
+- **5 annotation types**—Comment, Question, Suggestion, Important, Bookmark
+- **Selection-based carousel**—select any text, pick an annotation type from the floating UI
+- **Threaded replies**—reply to any annotation inline
+- **Resolve/archive workflow**—resolved annotations move to a separate archive file
+- **Global bookmark index**—bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
+- **Auto-cleanup of orphaned annotations**—when anchor text is deleted, its annotations are removed on next load
+- **8 themes**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
+- **Resizable TOC sidebar**—drag the right edge to adjust width (persisted across sessions)
+- **Switchable emoji styles**—Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji
+- **Command palette**—`Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
+- **File tagging**—predefined + custom tags as colored pills in palette header, status bar, and tab bar
+- **Prompt engineering support**—`.prompt.md` files with YAML frontmatter render metadata indicator bars and variable highlighting
+- **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes—all rendered inline. Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
+- **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll
+- **Version history**—git-backed timeline panel with diff stats, compare any version, one-click restore
+- **Workspace system**—VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
+- **Image lightbox**—click any content image for overlay with blur backdrop, keyboard nav, zoom
+- **Motion One animations**—staggered card entrance, sidebar cascade, view transitions; progressive enhancement
+- **PDF export**—CLI or browser (`Cmd+K` → "Export PDF...") via headless Chrome CDP with theme preservation
+- **Finder integration (macOS)**—`Dabarat.app` registers as default `.md` handler for double-click, drag-and-drop, and Open With
 
 ## Quick Start
 
@@ -46,7 +46,7 @@ Opens in Chrome `--app` mode (falls back to default browser). No install, no bui
 # Multiple files
 python3 -m dabarat file1.md file2.md
 
-# Tab reuse — if the server is already running, new files open as tabs automatically
+# Tab reuse—if the server is already running, new files open as tabs automatically
 python3 -m dabarat another-file.md
 
 # Open a workspace (multi-root folders + pinned files)
@@ -68,7 +68,7 @@ python3 -m dabarat --annotate document.md \
 
 *Catppuccin Latte with background image, TOC sidebar, and annotation panel. Select any text to leave a note—each annotation is anchored to a specific passage with author, timestamp, and type badge.*
 
-### Light Theme — Workspace with Smart Badges
+### Light Theme—Workspace with Smart Badges
 
 ![Light theme workspace showing Recent Files with smart badges and directory browser](screenshots/02-light-workspace.png)
 
@@ -102,10 +102,10 @@ python3 -m dabarat --annotate document.md \
 
 Most markdown annotation tools either require a heavy framework (Svelte, React, Electron) or operate only in the terminal. This tool is:
 
-- **Zero-dependency** — pure Python stdlib server. No npm, no pip install, no build step.
-- **Modular** — 12 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document.
-- **AI-native** — built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
-- **Beautiful** — Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
+- **Zero-dependency**—pure Python stdlib server. No npm, no pip install, no build step.
+- **Modular**—12 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document.
+- **AI-native**—built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
+- **Beautiful**—Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
 
 CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap) load on first page view and are cached by the browser. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable. After first load, the tool works fully offline.
 

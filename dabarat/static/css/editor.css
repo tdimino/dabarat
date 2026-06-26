@@ -55,7 +55,11 @@
   justify-content: center;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.edit-fmt-btn:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
 }
 .edit-fmt-btn:hover {
   background: var(--interactive-hover-bg, var(--ctp-surface1));
@@ -79,8 +83,8 @@
 
 #edit-status {
   font-family: 'Victor Mono', monospace;
-  font-size: 10px;
-  color: var(--ctp-overlay1);
+  font-size: 11px;
+  color: var(--ctp-subtext0);
   margin-right: 8px;
   user-select: none;
 }
@@ -95,13 +99,17 @@
   padding: 3px 12px;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
 }
 
+#edit-save-btn:focus-visible,
+#edit-discard-btn:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
+}
 #edit-save-btn:hover {
-  background: var(--ctp-blue);
-  color: var(--ctp-base);
   border-color: var(--ctp-blue);
+  color: var(--ctp-blue);
 }
 
 #edit-save-btn.dirty {
@@ -109,14 +117,20 @@
   color: var(--ctp-yellow);
 }
 #edit-save-btn.dirty:hover {
-  background: var(--ctp-yellow);
-  color: var(--ctp-base);
   border-color: var(--ctp-yellow);
+  color: var(--ctp-yellow);
+  background: rgba(var(--ctp-yellow-rgb), 0.1);
 }
 
 #edit-discard-btn:hover {
   border-color: var(--ctp-red);
   color: var(--ctp-red);
+}
+
+.edit-fmt-btn:active,
+#edit-save-btn:active,
+#edit-discard-btn:active {
+  transform: scale(0.96);
 }
 
 /* ── Body ────────────────────────────────────────────────── */
@@ -128,20 +142,15 @@
 }
 
 body.edit-mode .edit-body {
-  background: rgba(var(--ctp-yellow-rgb), 0.02);
-  transition: background 0.3s ease;
-}
-
-body.edit-mode.edit-dirty .edit-body {
-  background: rgba(var(--ctp-yellow-rgb), 0.04);
+  background: var(--ctp-base);
 }
 
 /* ── ProseMirror Surface ─────────────────────────────────── */
 #tiptap-editor .ProseMirror {
-  font-family: var(--body-font, 'Cormorant Garamond', serif);
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: var(--base-size, 15px);
   color: var(--ctp-text);
-  line-height: 1.7;
+  line-height: 1.65;
   max-width: 900px;
   margin: 0 auto;
   padding: 48px 56px 80px;
@@ -350,28 +359,48 @@ body.edit-mode.edit-dirty .edit-body {
 }
 
 /* ── Light theme adjustments ─────────────────────────────── */
-[data-theme="latte"] body.edit-mode .edit-body,
-[data-theme="rose-pine-dawn"] body.edit-mode .edit-body,
-[data-theme="tokyo-light"] body.edit-mode .edit-body {
-  background: rgba(var(--ctp-yellow-rgb), 0.03);
-}
-[data-theme="latte"] body.edit-mode.edit-dirty .edit-body,
-[data-theme="rose-pine-dawn"] body.edit-mode.edit-dirty .edit-body,
-[data-theme="tokyo-light"] body.edit-mode.edit-dirty .edit-body {
-  background: rgba(var(--ctp-yellow-rgb), 0.06);
-}
-
 [data-theme="latte"] .edit-mode-badge,
+[data-theme="vellum"] .edit-mode-badge,
 [data-theme="rose-pine-dawn"] .edit-mode-badge,
 [data-theme="tokyo-light"] .edit-mode-badge {
-  background: rgba(var(--ctp-yellow-rgb), 0.12);
-  border-color: rgba(var(--ctp-yellow-rgb), 0.3);
+  background: rgba(var(--ctp-yellow-rgb), 0.15);
+  border-color: rgba(var(--ctp-yellow-rgb), 0.35);
+  color: var(--ctp-text);
 }
 
 [data-theme="latte"] #tiptap-editor .ProseMirror ::selection,
+[data-theme="vellum"] #tiptap-editor .ProseMirror ::selection,
 [data-theme="rose-pine-dawn"] #tiptap-editor .ProseMirror ::selection,
 [data-theme="tokyo-light"] #tiptap-editor .ProseMirror ::selection {
   background: rgba(var(--ctp-blue-rgb), 0.15);
+}
+
+[data-theme="latte"] .edit-fmt-btn,
+[data-theme="vellum"] .edit-fmt-btn,
+[data-theme="rose-pine-dawn"] .edit-fmt-btn,
+[data-theme="tokyo-light"] .edit-fmt-btn {
+  color: var(--ctp-subtext1);
+}
+
+[data-theme="latte"] #edit-status,
+[data-theme="vellum"] #edit-status,
+[data-theme="rose-pine-dawn"] #edit-status,
+[data-theme="tokyo-light"] #edit-status {
+  color: var(--ctp-subtext1);
+}
+
+[data-theme="latte"] .edit-toolbar-sep,
+[data-theme="vellum"] .edit-toolbar-sep,
+[data-theme="rose-pine-dawn"] .edit-toolbar-sep,
+[data-theme="tokyo-light"] .edit-toolbar-sep {
+  background: var(--ctp-surface2);
+}
+
+[data-theme="latte"] #edit-save-btn.dirty,
+[data-theme="vellum"] #edit-save-btn.dirty,
+[data-theme="rose-pine-dawn"] #edit-save-btn.dirty,
+[data-theme="tokyo-light"] #edit-save-btn.dirty {
+  color: var(--ctp-text);
 }
 
 /* ── Edit Toggle Button (floating, mirrors annotations-toggle) ── */
@@ -392,7 +421,7 @@ body.edit-mode.edit-dirty .edit-body {
   justify-content: center;
   z-index: 25;
   box-shadow: 0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
-  transition: all 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #edit-toggle {
@@ -402,12 +431,14 @@ body.edit-mode.edit-dirty .edit-body {
   }
 }
 [data-theme="latte"] #edit-toggle,
+[data-theme="vellum"] #edit-toggle,
 [data-theme="rose-pine-dawn"] #edit-toggle,
 [data-theme="tokyo-light"] #edit-toggle {
   background: rgba(var(--ctp-mantle-rgb), 0.8);
 }
 @supports (backdrop-filter: blur(8px)) {
   [data-theme="latte"] #edit-toggle,
+  [data-theme="vellum"] #edit-toggle,
   [data-theme="rose-pine-dawn"] #edit-toggle,
   [data-theme="tokyo-light"] #edit-toggle {
     background: rgba(var(--ctp-mantle-rgb), 0.6);
@@ -416,9 +447,14 @@ body.edit-mode.edit-dirty .edit-body {
   }
 }
 #edit-toggle:hover {
-  background: var(--ctp-yellow);
-  color: var(--ctp-base);
-  transform: scale(1.05);
+  border-color: var(--ctp-yellow);
+  color: var(--ctp-yellow);
+  box-shadow: 0 0 0 3px rgba(var(--ctp-yellow-rgb), 0.15),
+              0 0 20px rgba(var(--ctp-yellow-rgb), 0.2);
+  transform: scale(1.08);
+}
+#edit-toggle:active {
+  transform: scale(0.96);
 }
 body.edit-mode #edit-toggle { display: none; }
 body.home-active #edit-toggle { display: none; }

@@ -237,7 +237,8 @@ async function saveEdit() {
   try {
     let content;
     if (_tiptapEditor) {
-      const md = _tiptapEditor.storage.markdown.getMarkdown();
+      let md = _tiptapEditor.storage.markdown.getMarkdown();
+      md = md.replace(/\\\[\^([^\]]*)\\\]/g, '[^$1]');
       content = _prependFrontmatter(md);
     } else {
       const textarea = document.getElementById('edit-textarea-fallback');

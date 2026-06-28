@@ -6,7 +6,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 
 ## Stack
 - Python 3.10+ (stdlib only — no pip dependencies)
-- CDN: marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap/ProseMirror (cached after first load)
+- CDN: marked.js, marked-footnote, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap/ProseMirror (cached after first load)
 - 8 themes: 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light). Ink + Vellum are The Scholar's Codex pair — parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 
 ## Structure
@@ -55,6 +55,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **Light-theme override convention**: All four light themes (Latte, Vellum, Rosé Pine Dawn, Tokyo Light) MUST appear together in every `[data-theme="..."]` override block in `editor.css`. Vellum was previously missing; omitting any light theme from a selector group causes silent contrast/styling regressions on that theme.
 - **Floating button hover pattern**: `#annotations-toggle` and `#edit-toggle` use halo-glow hover (accent border + ring shadow + diffuse glow + `scale(1.08)`) rather than solid background fill. This avoids mid-luminance contrast problems where accent fills (especially yellow) produce unreadable text on light themes. Both buttons include `scale(0.96)` active state for tactile feedback.
 - **Toolbar hover pattern**: Save and Close buttons use outline hover (accent border + text color, no background fill) for cross-theme contrast safety. Dirty-state save button on light themes uses `--ctp-text` instead of `--ctp-yellow` for readability.
+- **Footnotes**: `marked-footnote@1.4.0` UMD loaded after marked.js, registered via `marked.use(markedFootnote())` in `render.js`. Styles in `typography.css` (`section.footnotes`). Editor save path in `editor.js` post-processes serialized markdown to unescape `\[^...\]` → `[^...]` since tiptap-markdown doesn't understand footnote syntax.
 
 ## On-Demand References
 

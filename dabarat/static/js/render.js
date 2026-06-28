@@ -54,6 +54,11 @@ function updateActiveHeading() {
 }
 window.addEventListener('scroll', updateActiveHeading, { passive: true });
 
+/* ── Marked extensions ────────────────────────────────── */
+if (typeof markedFootnote === 'function') {
+  marked.use(markedFootnote());
+}
+
 /* ── Render ───────────────────────────────────────────── */
 function render(md) {
   /* Skip if content hasn't changed */

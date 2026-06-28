@@ -26,6 +26,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **File tagging**—predefined + custom tags as colored pills in palette header, status bar, and tab bar
 - **Prompt engineering support**—`.prompt.md` files with YAML frontmatter render metadata indicator bars and variable highlighting
 - **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes—all rendered inline. Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
+- **Footnotes**—`[^ref]` syntax renders as superscript numbered links with a compact footnote section at the bottom (via `marked-footnote`). Auto-numbered, with backref arrows. Preserved through WYSIWYG editing round-trips
 - **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll
 - **Version history**—git-backed timeline panel with diff stats, compare any version, one-click restore
 - **Workspace system**—VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files

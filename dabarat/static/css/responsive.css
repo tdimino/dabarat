@@ -5,7 +5,7 @@
 #annotations-toggle {
   position: fixed;
   right: 14px;
-  top: 14px;
+  top: 46px;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-blue);

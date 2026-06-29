@@ -90,7 +90,7 @@ def get_html(title="dabarat", default_author="Tom"):
 <body>
   <nav id="toc">
     <div id="toc-chrome">
-      <button id="toc-toggle" title="Collapse" onclick="toggleToc()"><i class="ph ph-caret-left"></i></button>
+      <button id="toc-toggle" title="Collapse (Cmd+\\)" onclick="toggleToc()"><i class="ph ph-caret-left"></i></button>
       <span class="chrome-spacer"></span>
       <div class="chrome-controls">
         <div class="chrome-group">
@@ -114,7 +114,7 @@ def get_html(title="dabarat", default_author="Tom"):
     </div>
   </nav>
   <div id="toc-resize-handle"></div>
-  <button id="toc-restore" title="Show sidebar" onclick="toggleToc()"><i class="ph ph-caret-right"></i></button>
+  <button id="toc-restore" title="Show sidebar (Cmd+\\)" onclick="toggleToc()"><i class="ph ph-caret-right"></i></button>
 
   <div id="main-area">
     <div id="tab-bar-wrapper"><div id="tab-bar"></div></div>

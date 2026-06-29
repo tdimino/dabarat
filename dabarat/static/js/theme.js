@@ -113,7 +113,23 @@ function setTheme(name) {
 
 function toggleToc() {
   document.body.classList.toggle('toc-collapsed');
+  localStorage.setItem('dabarat-toc-collapsed',
+    document.body.classList.contains('toc-collapsed') ? '1' : '');
+  if (document.body.classList.contains('toc-collapsed')) {
+    const btn = document.getElementById('toc-restore');
+    if (btn && window.Motion && !_prefersReducedMotion) {
+      window.Motion.animate(btn,
+        { opacity: [0, 1], scale: [0.5, 1], x: [-8, 0] },
+        { duration: 0.35, easing: window.Motion.spring({ stiffness: 300, damping: 20 }) }
+      );
+    }
+  }
 }
+(function _restoreTocCollapsed() {
+  if (localStorage.getItem('dabarat-toc-collapsed') === '1') {
+    document.body.classList.add('toc-collapsed');
+  }
+})();
 
 /* ── Opacity ─────────────────────────────────────────── */
 const OPACITY_STEPS = [1.0, 0.95, 0.90, 0.85, 0.80, 0.70];
@@ -218,6 +234,32 @@ document.addEventListener('keydown', (e) => {
     toggleOpacity();
   }
 });
+
+/* Cmd+\ toggle sidebar */
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
+    e.preventDefault();
+    toggleToc();
+  }
+});
+
+/* Auto-collapse TOC at narrow viewport — JS-driven for smooth transition */
+(function _watchTocBreakpoint() {
+  const mq = window.matchMedia('(max-width: 900px)');
+  let wasNarrow = mq.matches;
+  mq.addEventListener('change', (e) => {
+    if (e.matches && !wasNarrow) {
+      if (!document.body.classList.contains('toc-collapsed')) {
+        document.body.classList.add('toc-collapsed');
+      }
+    } else if (!e.matches && wasNarrow) {
+      if (localStorage.getItem('dabarat-toc-collapsed') !== '1') {
+        document.body.classList.remove('toc-collapsed');
+      }
+    }
+    wasNarrow = e.matches;
+  });
+})();
 
 /* ── Emoji Style ─────────────────────────────────────── */
 const EMOJI_STYLES = ['twitter', 'openmoji', 'noto', 'native'];

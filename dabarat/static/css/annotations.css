@@ -481,3 +481,48 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
 }
 .ann-btn-ghost:hover { color: var(--ctp-text); }
 
+/* ── Light theme: boost annotation form contrast ───────── */
+[data-theme="latte"] #annotation-form,
+[data-theme="vellum"] #annotation-form,
+[data-theme="rose-pine-dawn"] #annotation-form,
+[data-theme="tokyo-light"] #annotation-form {
+  background: var(--ctp-mantle);
+  border-color: var(--ctp-overlay0);
+  box-shadow: 0 1px 6px rgba(var(--ctp-crust-rgb), 0.12);
+}
+
+[data-theme="latte"] .ann-form-label,
+[data-theme="vellum"] .ann-form-label,
+[data-theme="rose-pine-dawn"] .ann-form-label,
+[data-theme="tokyo-light"] .ann-form-label {
+  color: var(--ctp-subtext0);
+}
+
+[data-theme="latte"] .ann-type-btn,
+[data-theme="vellum"] .ann-type-btn,
+[data-theme="rose-pine-dawn"] .ann-type-btn,
+[data-theme="tokyo-light"] .ann-type-btn {
+  color: var(--ctp-subtext1);
+  border-color: var(--ctp-overlay0);
+}
+
+[data-theme="latte"] #annotation-form input[type="text"],
+[data-theme="vellum"] #annotation-form input[type="text"],
+[data-theme="rose-pine-dawn"] #annotation-form input[type="text"],
+[data-theme="tokyo-light"] #annotation-form input[type="text"],
+[data-theme="latte"] #annotation-form textarea,
+[data-theme="vellum"] #annotation-form textarea,
+[data-theme="rose-pine-dawn"] #annotation-form textarea,
+[data-theme="tokyo-light"] #annotation-form textarea {
+  background: var(--card-bg, #fff);
+  border-color: var(--ctp-overlay0);
+  box-shadow: inset 0 1px 2px rgba(var(--ctp-crust-rgb), 0.08);
+}
+
+[data-theme="latte"] .ann-btn-ghost,
+[data-theme="vellum"] .ann-btn-ghost,
+[data-theme="rose-pine-dawn"] .ann-btn-ghost,
+[data-theme="tokyo-light"] .ann-btn-ghost {
+  color: var(--ctp-subtext0);
+}
+

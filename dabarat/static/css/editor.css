@@ -55,20 +55,30 @@
   justify-content: center;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  transition: background 0.15s, color 0.15s, border-color 0.2s ease-out,
+              box-shadow 0.2s ease-out, transform 0.1s;
 }
 .edit-fmt-btn:focus-visible {
   outline: 2px solid var(--ctp-blue);
   outline-offset: 2px;
 }
 .edit-fmt-btn:hover {
-  background: var(--interactive-hover-bg, var(--ctp-surface1));
   color: var(--ctp-text);
+  border-color: rgba(var(--ctp-blue-rgb), 0.4);
+  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.1),
+              0 0 6px rgba(var(--ctp-blue-rgb), 0.15),
+              inset 0 -2px 0 0 var(--ctp-blue);
 }
 .edit-fmt-btn.active {
-  background: rgba(var(--ctp-blue-rgb), 0.15);
+  background: rgba(var(--ctp-blue-rgb), 0.12);
   color: var(--ctp-blue);
   border-color: rgba(var(--ctp-blue-rgb), 0.3);
+  box-shadow: inset 0 -2px 0 0 var(--ctp-blue);
+}
+.edit-fmt-btn.active:hover {
+  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
+              0 0 6px rgba(var(--ctp-blue-rgb), 0.2),
+              inset 0 -2px 0 0 var(--ctp-blue);
 }
 
 .edit-toolbar-sep {
@@ -396,6 +406,15 @@ body.edit-mode .edit-body {
   background: var(--ctp-surface2);
 }
 
+[data-theme="latte"] .edit-fmt-btn:hover,
+[data-theme="vellum"] .edit-fmt-btn:hover,
+[data-theme="rose-pine-dawn"] .edit-fmt-btn:hover,
+[data-theme="tokyo-light"] .edit-fmt-btn:hover {
+  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
+              0 0 8px rgba(var(--ctp-blue-rgb), 0.12),
+              inset 0 -2px 0 0 var(--ctp-blue);
+}
+
 [data-theme="latte"] #edit-save-btn.dirty,
 [data-theme="vellum"] #edit-save-btn.dirty,
 [data-theme="rose-pine-dawn"] #edit-save-btn.dirty,
@@ -407,7 +426,7 @@ body.edit-mode .edit-body {
 #edit-toggle {
   position: fixed;
   right: 14px;
-  top: 54px;
+  top: 86px;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-yellow);

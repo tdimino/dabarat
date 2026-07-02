@@ -32,7 +32,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Workspace system**—VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
 - **Image lightbox**—click any content image for overlay with blur backdrop, keyboard nav, zoom
 - **Motion One animations**—staggered card entrance, sidebar cascade, view transitions; progressive enhancement
-- **PDF export**—CLI or browser (`Cmd+K` → "Export PDF...") via headless Chrome CDP with theme preservation
+- **PDF export**—CLI or browser (`Cmd+K` → "Export PDF...") via headless Chrome CDP with theme preservation and embedded images
 - **Finder integration (macOS)**—`Dabarat.app` registers as default `.md` handler for double-click, drag-and-drop, and Open With
 
 ## Quick Start

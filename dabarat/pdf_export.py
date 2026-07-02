@@ -254,8 +254,31 @@ def print_to_pdf(page_url, output_path, chrome_path=None,
         if not ready:
             raise RuntimeError("Chrome failed to load the page")
 
-        # Give the page time to render (JS execution, font loading)
-        time.sleep(2)
+        # Poll for render-complete sentinel (includes image loading)
+        # Independent timeout — render latency shouldn't be starved by slow Chrome startup
+        render_deadline = time.monotonic() + timeout
+        js_check = "!!document.getElementById('dabarat-render-complete')"
+        sentinel_found = False
+        while time.monotonic() < render_deadline:
+            try:
+                eval_result = _cdp_request(debug_port, "Runtime.evaluate", {
+                    "expression": js_check,
+                    "returnByValue": True,
+                })
+                if eval_result.get("result", {}).get("value") is True:
+                    sentinel_found = True
+                    break
+            except Exception:
+                pass
+            time.sleep(0.3)
+
+        if not sentinel_found:
+            import sys
+            print(
+                "Warning: render-complete sentinel not found within timeout; "
+                "PDF may be incomplete",
+                file=sys.stderr,
+            )
 
         # Call Page.printToPDF via CDP
         result = _cdp_request(debug_port, "Page.printToPDF", {

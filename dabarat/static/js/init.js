@@ -60,6 +60,16 @@ async function init() {
       const content = document.getElementById('content');
       content.insertBefore(el, content.firstChild);
     }
+    // Wait for all content images + fonts to finish loading before signaling ready
+    const images = document.querySelectorAll('#content img');
+    const imgPromises = Array.from(images).map(img => {
+      if (img.complete) return Promise.resolve();
+      return new Promise(resolve => {
+        img.addEventListener('load', resolve, { once: true });
+        img.addEventListener('error', resolve, { once: true });
+      });
+    });
+    await Promise.all([...imgPromises, document.fonts.ready]);
     const sentinel = document.createElement('div');
     sentinel.id = 'dabarat-render-complete';
     document.body.appendChild(sentinel);

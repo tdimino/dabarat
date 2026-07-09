@@ -57,7 +57,7 @@ function exitDiffMode() {
   /* Force re-render */
   lastRenderedMd = '';
   if (activeTabId && tabs[activeTabId] && tabs[activeTabId].content) {
-    render(tabs[activeTabId].content);
+    render(tabBody(tabs[activeTabId]));
   }
 }
 

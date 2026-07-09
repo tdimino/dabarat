@@ -187,14 +187,18 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             tab_id = params.get("tab", [None])[0]
             tab = self._refresh_tab(tab_id) if tab_id else None
             if tab:
-                # Parse frontmatter — strip from content, return as separate field
+                # content is always the raw file (the editor round-trips it);
+                # body is the frontmatter-stripped markdown for rendering
                 fm, body = frontmatter.get_frontmatter(tab["filepath"])
-                self._json_response({
-                    "content": body if fm else tab["content"],
+                response = {
+                    "content": tab["content"],
                     "frontmatter": fm,
                     "mtime": tab["mtime"],
                     "changeKey": tab.get("change_key", "0:0"),
-                })
+                }
+                if fm:
+                    response["body"] = body
+                self._json_response(response)
             else:
                 self._json_response({"error": "tab not found"}, 404)
 

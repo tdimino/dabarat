@@ -257,7 +257,7 @@ function switchTab(id) {
   currentFrontmatter = tabs[id].frontmatter || null;
 
   if (tabs[id].content) {
-    render(tabs[id].content);
+    render(tabBody(tabs[id]));
   } else {
     /* Content not yet loaded — fetch immediately */
     fetchTabContent(id);
@@ -283,12 +283,13 @@ async function fetchTabContent(id) {
     const data = await res.json();
     if (data.error || !tabs[id]) return;
     tabs[id].content = data.content;
+    tabs[id].body = data.body;
     tabs[id].mtime = data.mtime;
     tabs[id].changeKey = data.changeKey;
     tabs[id].frontmatter = data.frontmatter || null;
     if (id === activeTabId) {
       currentFrontmatter = tabs[id].frontmatter;
-      render(data.content);
+      render(tabBody(tabs[id]));
     }
   } catch (e) { /* ignore */ }
 }
@@ -327,7 +328,8 @@ async function closeTab(id) {
     activeTabId = Object.keys(tabs)[0] || null;
     lastRenderedMd = '';
     if (activeTabId && tabs[activeTabId].content) {
-      render(tabs[activeTabId].content);
+      currentFrontmatter = tabs[activeTabId].frontmatter || null;
+      render(tabBody(tabs[activeTabId]));
       document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
     } else if (!activeTabId) {
       showHomeScreen();

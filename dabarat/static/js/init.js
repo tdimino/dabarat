@@ -27,6 +27,7 @@ async function init() {
         .then(r => r.json())
         .then(data => {
           tabs[id].content = data.content;
+          tabs[id].body = data.body;
           tabs[id].mtime = data.mtime;
           tabs[id].changeKey = data.changeKey;
           tabs[id].frontmatter = data.frontmatter || null;
@@ -41,7 +42,7 @@ async function init() {
   if (Object.keys(tabs).length === 0) {
     showHomeScreen();
   } else if (activeTabId && tabs[activeTabId]) {
-    render(tabs[activeTabId].content);
+    render(tabBody(tabs[activeTabId]));
     document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
   }
 

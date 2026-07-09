@@ -39,11 +39,12 @@ async function poll() {
       const data = await res.json();
       if (!data.error && data.changeKey !== tabs[activeTabId].changeKey) {
         tabs[activeTabId].content = data.content;
+        tabs[activeTabId].body = data.body;
         tabs[activeTabId].mtime = data.mtime;
         tabs[activeTabId].changeKey = data.changeKey;
         currentFrontmatter = data.frontmatter || null;
         tabs[activeTabId].frontmatter = currentFrontmatter;
-        render(data.content);
+        render(tabBody(tabs[activeTabId]));
       }
     } catch (e) { /* ignore */ }
   }
@@ -62,6 +63,7 @@ async function poll() {
             .then(data => {
               if (!data.error && data.changeKey !== tabs[id].changeKey) {
                 tabs[id].content = data.content;
+                tabs[id].body = data.body;
                 tabs[id].mtime = data.mtime;
                 tabs[id].changeKey = data.changeKey;
                 tabs[id].frontmatter = data.frontmatter || null;
@@ -94,7 +96,8 @@ async function poll() {
             activeTabId = Object.keys(tabs)[0] || null;
             lastRenderedMd = '';
             if (activeTabId) {
-              render(tabs[activeTabId].content);
+              currentFrontmatter = tabs[activeTabId].frontmatter || null;
+              render(tabBody(tabs[activeTabId]));
               document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
             }
           }

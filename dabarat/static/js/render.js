@@ -60,10 +60,18 @@ if (typeof markedFootnote === 'function') {
 }
 
 /* ── Render ───────────────────────────────────────────── */
+/* Render markdown for a tab: the stripped body when frontmatter exists,
+   the raw content otherwise. tab.content always holds the raw file. */
+function tabBody(tab) {
+  return tab.body !== undefined ? tab.body : tab.content;
+}
+
 function render(md) {
-  /* Skip if content hasn't changed */
-  if (md === lastRenderedMd) return;
-  lastRenderedMd = md;
+  /* Skip if content AND frontmatter are unchanged — a frontmatter-only
+     edit must still refresh the indicator bar and semantic styles */
+  const renderKey = md + '\x00' + (currentFrontmatter ? JSON.stringify(currentFrontmatter) : '');
+  if (renderKey === lastRenderedMd) return;
+  lastRenderedMd = renderKey;
 
   const html = marked.parse(md, { gfm: true, breaks: false });
   buildToc(html);

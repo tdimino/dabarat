@@ -283,7 +283,7 @@ function setEmojiStyle(style) {
   emojiStyle = style;
   localStorage.setItem('dabarat-emoji-style', emojiStyle);
   lastRenderedMd = '';
-  if (activeTabId && tabs[activeTabId]) render(tabs[activeTabId].content || '');
+  if (activeTabId && tabs[activeTabId]) render(tabBody(tabs[activeTabId]) || '');
 }
 
 function cycleEmojiStyle() {

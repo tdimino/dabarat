@@ -211,7 +211,7 @@ function exitEditMode(force) {
     if (fmIndicator) fmIndicator.style.display = '';
     lastRenderedMd = '';
     if (activeTabId && tabs[activeTabId]) {
-      render(tabs[activeTabId].content);
+      render(tabBody(tabs[activeTabId]));
     }
     if (window.Motion && !_prefersReducedMotion) {
       contentEl.style.opacity = '0';
@@ -253,6 +253,9 @@ async function saveEdit() {
     const data = await res.json();
     if (data.ok && tabs[tabId]) {
       tabs[tabId].content = content;
+      /* Keep the rendering body in sync (same fm regex as _stripFrontmatter) */
+      const fmMatch = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+      tabs[tabId].body = fmMatch ? content.slice(fmMatch[0].length) : undefined;
       tabs[tabId].mtime = data.mtime;
       tabs[tabId].changeKey = data.changeKey;
       editState.savedContent = content;

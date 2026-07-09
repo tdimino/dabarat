@@ -213,6 +213,26 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
+        elif parsed.path == "/api/mtime":
+            # Lightweight change probe (stat only, no file read) — used by
+            # edit mode to watch for external modifications while full
+            # content polling is paused
+            tab_id = params.get("tab", [None])[0]
+            filepath = self._tab_filepath(tab_id) if tab_id else None
+            if not filepath:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            try:
+                st = os.stat(filepath)
+                self._json_response({
+                    "changeKey": f"{st.st_mtime_ns}:{st.st_size}",
+                    "fileMissing": False,
+                })
+            except FileNotFoundError:
+                self._json_response({"changeKey": "", "fileMissing": True})
+            except Exception:
+                self._json_response({"changeKey": "", "fileMissing": False})
+
         elif parsed.path == "/api/tabs":
             with self._tabs_lock:
                 snapshot = [(tid, t["filepath"]) for tid, t in self._tabs.items()]
@@ -894,6 +914,22 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if len(content) > 10 * 1024 * 1024:  # 10 MB limit
                 self._json_response({"error": "content too large"}, 413)
                 return
+            # Optimistic-concurrency check: refuse to clobber an external
+            # edit made after the client last loaded the file
+            base_change_key = body.get("baseChangeKey")
+            if base_change_key:
+                try:
+                    st = os.stat(filepath)
+                    current_key = f"{st.st_mtime_ns}:{st.st_size}"
+                    if current_key != base_change_key:
+                        self._json_response({
+                            "error": "conflict",
+                            "message": "File was modified externally since you started editing.",
+                            "currentChangeKey": current_key,
+                        }, 409)
+                        return
+                except FileNotFoundError:
+                    pass  # deleted underneath us — save recreates it (ghost-tab recovery)
             try:
                 import tempfile
                 dir_name = os.path.dirname(filepath)

@@ -4,8 +4,20 @@ const POLL_TABS_MS = 2000;
 let lastTabsCheck = 0;
 
 async function poll() {
-  /* Skip polling during diff mode or edit mode */
+  /* Full polling pauses during diff/edit mode, but edit mode keeps a
+     lightweight stat-only watch so external changes surface immediately */
   if (diffState.active || editState.active) {
+    if (editState.active && activeTabId && tabs[activeTabId]) {
+      try {
+        const res = await fetch('/api/mtime?tab=' + activeTabId);
+        const data = await res.json();
+        if (data.fileMissing) {
+          _setTabGhost(activeTabId, true);
+        } else if (data.changeKey && data.changeKey !== tabs[activeTabId].changeKey) {
+          _showExternalChangeBanner();
+        }
+      } catch(e) {}
+    }
     setTimeout(poll, POLL_ACTIVE_MS);
     return;
   }

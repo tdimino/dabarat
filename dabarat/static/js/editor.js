@@ -186,6 +186,7 @@ function exitEditMode(force) {
     _tiptapEditor = null;
   }
   _stashedFrontmatter = '';
+  _hideExternalChangeBanner();
 
   const mount = document.getElementById('tiptap-editor');
   if (mount) mount.innerHTML = '';
@@ -228,6 +229,38 @@ function exitEditMode(force) {
   }
 }
 
+/* ── External-change banner (edit mode) ──────────────── */
+function _showExternalChangeBanner() {
+  if (document.getElementById('external-change-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'external-change-banner';
+  banner.className = 'status-banner';
+  banner.innerHTML = '<i class="ph ph-warning"></i>' +
+    '<span>File changed on disk while editing.</span>' +
+    '<button data-action="reload">Reload</button>' +
+    '<button data-action="dismiss">Dismiss</button>';
+  banner.addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'reload') {
+      if (editState.dirty && !confirm('Discard your unsaved changes and reload from disk?')) return;
+      banner.remove();
+      const tabId = editState.tabId;
+      exitEditMode(true);
+      await fetchTabContent(tabId);
+      enterWysiwygMode();
+    } else {
+      banner.remove();
+    }
+  });
+  document.body.appendChild(banner);
+}
+
+function _hideExternalChangeBanner() {
+  const b = document.getElementById('external-change-banner');
+  if (b) b.remove();
+}
+
 /* ── Save ────────────────────────────────────────────── */
 let _saveInFlight = false;
 
@@ -247,13 +280,29 @@ async function saveEdit() {
       content = textarea ? textarea.value : '';
     }
 
-    const res = await fetch('/api/save', {
+    let res = await fetch('/api/save', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ tab: tabId, content: content })
+      body: JSON.stringify({
+        tab: tabId,
+        content: content,
+        baseChangeKey: tabs[tabId] ? tabs[tabId].changeKey : undefined
+      })
     });
+    if (res.status === 409) {
+      if (!confirm('File changed on disk since you started editing. Overwrite with your version?')) {
+        updateEditStatus('Save cancelled — file changed on disk');
+        return;
+      }
+      res = await fetch('/api/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ tab: tabId, content: content })
+      });
+    }
     const data = await res.json();
     if (data.ok && tabs[tabId]) {
+      _hideExternalChangeBanner();
       tabs[tabId].content = content;
       /* Keep the rendering body in sync (same fm regex as _stripFrontmatter) */
       const fmMatch = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);

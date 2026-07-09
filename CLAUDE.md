@@ -10,7 +10,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - 8 themes: 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light). Ink + Vellum are The Scholar's Codex pair — parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 
 ## Structure
-- 11 Python modules in `dabarat/` — `server.py` (HTTP + 37 endpoints), `template.py` (HTML assembly), `annotations.py`, `bookmarks.py`, `frontmatter.py`, `diff.py`, `history.py`, `recent.py`, `workspace.py`, `pdf_export.py`, `__main__.py` (CLI entry)
+- 11 Python modules in `dabarat/` — `server.py` (HTTP + 39 endpoints), `template.py` (HTML assembly), `annotations.py`, `bookmarks.py`, `frontmatter.py`, `diff.py`, `history.py`, `recent.py`, `workspace.py`, `pdf_export.py`, `__main__.py` (CLI entry)
 - 16 JS modules in `static/js/` concatenated in dependency order — see `agent_docs/client-architecture.md`
 - 14 CSS modules in `static/css/` concatenated in dependency order — theme-variables, base-layout, typography, then feature-specific (annotations, editor, diff, home, etc.)
 - `static/palette.js` — Command palette + tag mode (Cmd+K) — loaded separately

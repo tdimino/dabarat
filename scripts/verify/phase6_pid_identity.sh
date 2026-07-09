@@ -67,15 +67,27 @@ assert not os.path.exists(os.path.expanduser('~/.dabarat/instances/9999.pid'))
 print('  ✓ legacy format handled + cleaned')"
 check $? "legacy format compat"
 
-echo "── 5. _kill_port refuses a responsive dabarat"
+echo "── 5. _kill_zombie_on_port refuses a responsive dabarat (exit 1, no kill)"
 python3 -c "
-from dabarat.__main__ import _kill_port
-_kill_port($PORT)
-print('  ✓ _kill_port returned without killing')"
-check $? "_kill_port guard ran"
+from dabarat.__main__ import _kill_zombie_on_port
+_kill_zombie_on_port($PORT)" 2>/dev/null
+RC=$?
+[ "$RC" = "1" ]; check $? "aborted with exit 1 instead of killing (rc=$RC)"
 sleep 0.5
-kill -0 $PID 2>/dev/null; check $? "server survived _kill_port"
+kill -0 $PID 2>/dev/null; check $? "server survived"
 curl -s --max-time 2 http://127.0.0.1:$PORT/api/tabs > /dev/null; check $? "server still responsive"
+
+echo "── 5b. Unknown port holder refused (identity check)"
+python3 - "$PORT" << 'PY'
+import sys
+from dabarat.__main__ import _port_listeners, _recorded_pid
+port = int(sys.argv[1])
+pids = _port_listeners(port)
+rec = _recorded_pid(port)
+assert pids and rec in pids, (pids, rec)
+print(f"  ✓ listener {pids} matches recorded pid {rec}")
+PY
+check $? "recorded PID matches TCP listener"
 
 echo "── 6. Helper heredoc contains flock serialization"
 grep -q "fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)" macos/build.sh; check $? "flock in build.sh heredoc"

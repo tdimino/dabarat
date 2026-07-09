@@ -76,6 +76,21 @@ assert d.get("ok"), d
 print("  ✓ save ok, new changeKey:", d["changeKey"])'
 check $? "fresh-key save accepted"
 
+echo "── 4b. Deleted file + baseChangeKey → 409 with fileMissing (consent gate)"
+KEY3=$(curl -s "$BASE/api/content?tab=$TAB" | python3 -c 'import json,sys;print(json.load(sys.stdin)["changeKey"])')
+rm "$WORK/conflict.md"
+CODE=$(curl -s -o "$WORK/409b.json" -w "%{http_code}" -X POST "$BASE/api/save" \
+  -H "Content-Type: application/json" -H "Origin: $BASE" \
+  -d "{\"tab\": \"$TAB\", \"content\": \"# Recreate attempt\", \"baseChangeKey\": \"$KEY3\"}")
+[ "$CODE" = "409" ]; check $? "deletion gated behind 409 (got $CODE)"
+python3 -c '
+import json
+d=json.load(open("'$WORK'/409b.json"))
+assert d.get("fileMissing") is True, d
+print("  ✓ 409 flags fileMissing for the client confirm")'
+check $? "409 payload marks deletion"
+test ! -f "$WORK/conflict.md"; check $? "file NOT silently recreated"
+
 echo "── 5. Force save (no baseChangeKey) always succeeds"
 echo "# Another external change" > "$WORK/conflict.md"
 curl -s -X POST "$BASE/api/save" \

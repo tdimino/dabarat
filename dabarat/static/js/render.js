@@ -66,12 +66,18 @@ function tabBody(tab) {
   return tab.body !== undefined ? tab.body : tab.content;
 }
 
+let lastRenderKey = '';
+
 function render(md) {
   /* Skip if content AND frontmatter are unchanged — a frontmatter-only
-     edit must still refresh the indicator bar and semantic styles */
+     edit must still refresh the indicator bar and semantic styles.
+     lastRenderedMd stays pure markdown (variables.js parses it); the
+     composite skip-key lives separately. Setting lastRenderedMd = ''
+     still forces a repaint. */
   const renderKey = md + '\x00' + (currentFrontmatter ? JSON.stringify(currentFrontmatter) : '');
-  if (renderKey === lastRenderedMd) return;
-  lastRenderedMd = renderKey;
+  if (md === lastRenderedMd && renderKey === lastRenderKey) return;
+  lastRenderedMd = md;
+  lastRenderKey = renderKey;
 
   const html = marked.parse(md, { gfm: true, breaks: false });
   buildToc(html);

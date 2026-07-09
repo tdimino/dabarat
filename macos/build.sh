@@ -172,18 +172,33 @@ def main():
 
     # Serialize concurrent Finder opens: without this, two rapid
     # double-clicks both see "server not running" and double-spawn dabarat.
-    # flock is advisory and auto-released on process death, so a stale
-    # lock file is harmless.
+    # flock is advisory and auto-released on process death. O_NOFOLLOW +
+    # no-truncate + fstat check keep a planted symlink from redirecting or
+    # clobbering anything; the wait is bounded so a wedged lock holder can
+    # never permanently disable Finder opens.
     import fcntl
+    import stat as statmod
     lock_path = os.path.expanduser("~/.dabarat/open-helper.lock")
     os.makedirs(os.path.dirname(lock_path), exist_ok=True)
-    lock_fd = open(lock_path, "w")
+    lock_fd = None
     try:
-        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except (IOError, OSError):
-        # Another helper is mid-launch — wait for it to finish, then
-        # re-probe (the winner has likely started the server by now)
-        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+        lock_fd = os.open(lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+        info = os.fstat(lock_fd)
+        if not statmod.S_ISREG(info.st_mode) or info.st_uid != os.getuid():
+            os.close(lock_fd)
+            lock_fd = None
+    except OSError:
+        lock_fd = None  # unusable lock file — proceed unserialized
+    if lock_fd is not None:
+        deadline = time.time() + 15
+        while time.time() < deadline:
+            try:
+                fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except (IOError, OSError):
+                time.sleep(0.25)
+        # On timeout: fall through unserialized; the server probe below
+        # still routes to the winner's instance in the common case
 
     if _server_running():
         last_id = None

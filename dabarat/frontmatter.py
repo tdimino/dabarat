@@ -128,6 +128,23 @@ except ImportError:
     _parse = parse_yaml_subset
 
 
+def parse_frontmatter_text(raw: str) -> tuple:
+    """Parse frontmatter from an in-memory document. Returns (fm_dict, body).
+
+    Pure function — no file I/O, no caching. Guarantees the split is
+    derived from exactly the text passed in, so callers holding a content
+    snapshot never mix versions.
+    """
+    m = FM_RE.match(raw)
+    if not m:
+        return {}, raw
+    try:
+        fm = _parse(m.group(1))
+    except Exception:
+        fm = {}
+    return fm, raw[m.end():]
+
+
 def get_frontmatter(filepath: str) -> tuple:
     """Parse frontmatter from a file. Returns (frontmatter_dict, body_string).
 
@@ -149,18 +166,6 @@ def get_frontmatter(filepath: str) -> tuple:
     except (OSError, UnicodeDecodeError):
         return {}, ""
 
-    m = FM_RE.match(raw)
-    if not m:
-        result = ({}, raw)
-        _fm_cache[key] = result
-        return result
-
-    try:
-        fm = _parse(m.group(1))
-    except Exception:
-        fm = {}
-
-    body = raw[m.end():]
-    result = (fm, body)
+    result = parse_frontmatter_text(raw)
     _fm_cache[key] = result
     return result

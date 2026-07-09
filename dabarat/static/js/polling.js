@@ -2,6 +2,7 @@
 const POLL_ACTIVE_MS = 500;
 const POLL_TABS_MS = 2000;
 let lastTabsCheck = 0;
+let _editProbeFailures = 0;
 
 async function poll() {
   /* Full polling pauses during diff/edit mode, but edit mode keeps a
@@ -11,12 +12,22 @@ async function poll() {
       try {
         const res = await fetch('/api/mtime?tab=' + activeTabId);
         const data = await res.json();
-        if (data.fileMissing) {
-          _setTabGhost(activeTabId, true);
-        } else if (data.changeKey && data.changeKey !== tabs[activeTabId].changeKey) {
+        _editProbeFailures = 0;
+        _hideServerUnreachableBanner();
+        if (!data.error) {
+          /* Every successful probe re-syncs ghost state, so a recreated
+             file clears its strikethrough during edit mode too */
+          _setTabGhost(activeTabId, !!data.fileMissing);
+          _setTabFileError(activeTabId, data.statError || null);
+        }
+        if (!data.fileMissing && data.changeKey && data.changeKey !== tabs[activeTabId].changeKey) {
           _showExternalChangeBanner();
         }
-      } catch(e) {}
+      } catch(e) {
+        /* ~3s of consecutive failures → warn; single hiccups stay quiet */
+        _editProbeFailures++;
+        if (_editProbeFailures >= 6) _showServerUnreachableBanner();
+      }
     }
     setTimeout(poll, POLL_ACTIVE_MS);
     return;
@@ -49,7 +60,10 @@ async function poll() {
     try {
       const res = await fetch('/api/content?tab=' + activeTabId);
       const data = await res.json();
-      if (!data.error) _setTabGhost(activeTabId, !!data.fileMissing);
+      if (!data.error) {
+        _setTabGhost(activeTabId, !!data.fileMissing);
+        _setTabFileError(activeTabId, data.fileError || null);
+      }
       if (!data.error && data.changeKey !== tabs[activeTabId].changeKey) {
         tabs[activeTabId].content = data.content;
         tabs[activeTabId].body = data.body;

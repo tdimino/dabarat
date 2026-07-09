@@ -1,6 +1,6 @@
 # API Reference
 
-All endpoints served by `server.py:PreviewHandler`. 37 endpoints total (15 GET, 22 POST).
+All endpoints served by `server.py:PreviewHandler`. 39 endpoints total (16 GET, 23 POST).
 
 ## GET Endpoints
 
@@ -25,13 +25,14 @@ Returns markdown content and change metadata for a tab.
   "fileMissing": true
 }
 ```
-`content` is always the raw file (the editor round-trips it). `body` (frontmatter-stripped, for rendering) is present only when frontmatter exists. `changeKey` is `st_mtime_ns:size` — the client re-renders when it differs from its cached value (`mtime` is kept for compatibility). `fileMissing: true` appears when the file was deleted/moved; cached content is still served so a save can recreate it. Client polls every 500ms.
+`content` is always the raw file (the editor round-trips it). `body` (frontmatter-stripped, for rendering) is present only when frontmatter exists — both derive from the same content snapshot. `changeKey` is `st_mtime_ns:size` captured via `fstat` of the descriptor that read the content (never torn). `fileMissing: true` appears when the file was deleted/moved; `fileError: "<ExceptionName>"` when it exists but cannot be read (permissions, encoding). Cached content is still served in both cases. Client polls every 500ms.
 
 ### `GET /api/mtime?tab={id}`
 Stat-only change probe — no file read. Used by edit mode to watch for external modifications while full polling is paused.
 ```json
 { "changeKey": "1708099200123456789:3200", "fileMissing": false }
 ```
+A stat failure that isn't deletion reports `statError: "<ExceptionName>"` instead of masquerading as no-change.
 
 ### `GET /api/annotations?tab={id}`
 Loads annotations from sidecar JSON. Runs orphan cleanup against current markdown content.
@@ -224,7 +225,7 @@ Saves edited content to file (atomic write via tempfile + `os.replace`). Auto-co
 // Response
 { "ok": true, "mtime": 1708099200.0, "changeKey": "1708099201987654321:3210", "version": "abc123" }
 ```
-Max content size: 10 MB. `baseChangeKey` is optional optimistic concurrency: when present and the file on disk no longer matches, the server answers `409 { "error": "conflict", "message": "...", "currentChangeKey": "..." }` instead of writing. Retry without `baseChangeKey` to force-overwrite. A missing file passes the check (save recreates it — ghost-tab recovery).
+Max content size: 10 MB. `baseChangeKey` is optional optimistic concurrency: when present and the file on disk no longer matches, the server answers `409 { "error": "conflict", "message": "...", "currentChangeKey": "..." }`; when the file was deleted the 409 carries `fileMissing: true` (recreation requires the client's explicit confirm). Retry without `baseChangeKey` to force-overwrite/recreate. The check-then-write runs under a server-side write lock shared with `/api/restore` and `/api/rename`, and the returned `changeKey` is the `fstat` of the exact bytes written.
 
 ### `POST /api/restore`
 Restores file to a previous git version.
@@ -348,4 +349,4 @@ Exports the active tab as a PDF via headless Chrome. Opens macOS save dialog for
 // Response (error)
 { "error": "Chrome not found" }
 ```
-Requires Chrome/Chromium installed. Uses `--headless=new --print-to-pdf` with `--virtual-time-budget=5000` for JS rendering. Timeout: 30s.
+Requires Chrome/Chromium installed. Uses headless Chrome CDP (`Page.printToPDF` over WebSocket) with a render-complete sentinel handshake so JS rendering and images finish before printing. Timeout: 30s per phase.

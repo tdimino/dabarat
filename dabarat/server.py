@@ -27,20 +27,28 @@ _active_workspace = None       # Parsed workspace dict (or None)
 _workspace_lock = threading.Lock()
 
 _on_tabs_changed = None  # Optional callback wired by __main__ — fires after tab add/close/rename
+_tabs_changed_warned = False
 
 
 def _notify_tabs_changed():
+    global _tabs_changed_warned
     cb = _on_tabs_changed
     if cb:
         try:
             cb()
-        except Exception:
-            pass
+        except Exception as e:
+            # Never break a request over persistence, but say so once —
+            # a silently dead callback means crash recovery quietly stopped
+            if not _tabs_changed_warned:
+                _tabs_changed_warned = True
+                import sys
+                print(f"Warning: tab-state persistence failing ({e!r})", file=sys.stderr)
 
 
 class PreviewHandler(http.server.BaseHTTPRequestHandler):
     _tabs = {}
     _tabs_lock = threading.Lock()
+    _file_write_lock = threading.Lock()  # serializes save/restore/rename check-then-write
     default_author = "Tom"
     _server_port = 3031
 
@@ -48,32 +56,34 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         pass
 
     @classmethod
-    def add_tab(cls, filepath):
-        tab_id = uuid.uuid4().hex[:8]
-        try:
-            with open(filepath) as f:
-                content = f.read()
-            st = os.stat(filepath)
-            mtime = st.st_mtime
-            change_key = f"{st.st_mtime_ns}:{st.st_size}"
-        except Exception:
-            content = ""
-            mtime = 0
-            change_key = "0:0"
+    def get_or_create_tab(cls, filepath):
+        """Return (tab_id, existing). Dup-check and insert share one lock
+        acquisition, so concurrent adds of the same path cannot create
+        duplicate tabs. Content is populated afterward via _refresh_tab
+        (fd-coherent read)."""
         with cls._tabs_lock:
+            for tid, t in cls._tabs.items():
+                if t["filepath"] == filepath:
+                    return tid, True
+            tab_id = uuid.uuid4().hex[:8]
             cls._tabs[tab_id] = {
                 "filepath": filepath,
-                "content": content,
-                "mtime": mtime,
-                "change_key": change_key,
+                "content": "",
+                "mtime": 0,
+                "change_key": None,
             }
+        snap = cls._refresh_tab(tab_id) or {}
         # Track in recent files
         try:
-            recent.add_entry(filepath, content=content)
+            recent.add_entry(filepath, content=snap.get("content", ""))
         except Exception:
             pass
         _notify_tabs_changed()
-        return tab_id
+        return tab_id, False
+
+    @classmethod
+    def add_tab(cls, filepath):
+        return cls.get_or_create_tab(filepath)[0]
 
     @classmethod
     def _tab_filepath(cls, tab_id):
@@ -89,18 +99,29 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             return [os.path.dirname(t["filepath"]) for t in cls._tabs.values()]
 
     @classmethod
-    def _update_tab_content(cls, tab_id, content, filepath):
+    def _update_tab_content(cls, tab_id, content, filepath, st=None):
         """Write-back the tab cache after a successful save/restore.
 
-        Returns (mtime, change_key) from the freshly-written file.
+        Pass `st` (an os.stat_result of exactly the bytes written — e.g.
+        fstat of the temp file before os.replace, since rename preserves
+        inode metadata) to guarantee content and change_key describe the
+        same version. Without it, falls back to a path stat; on stat
+        failure the previous cache metadata is kept rather than fabricated.
+        Returns (mtime, change_key).
         """
-        try:
-            st = os.stat(filepath)
-            mtime, change_key = st.st_mtime, f"{st.st_mtime_ns}:{st.st_size}"
-        except Exception:
-            mtime, change_key = 0, "0:0"
+        if st is None:
+            try:
+                st = os.stat(filepath)
+            except Exception:
+                st = None
         with cls._tabs_lock:
             tab = cls._tabs.get(tab_id)
+            if st is not None:
+                mtime, change_key = st.st_mtime, f"{st.st_mtime_ns}:{st.st_size}"
+            elif tab:
+                mtime, change_key = tab["mtime"], tab.get("change_key", "0:0")
+            else:
+                mtime, change_key = 0, "0:0"
             if tab:
                 tab["content"] = content
                 tab["mtime"] = mtime
@@ -123,31 +144,43 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             filepath = tab["filepath"]
             change_key = tab.get("change_key")
         file_missing = False
+        file_error = None
         try:
-            st = os.stat(filepath)
-            new_key = f"{st.st_mtime_ns}:{st.st_size}"
-            if new_key != change_key:
-                with open(filepath) as f:
-                    content = f.read()
+            # fstat + read from one descriptor so content and change_key
+            # always describe the same file version (a concurrent atomic
+            # replace between stat and read would otherwise tear them)
+            with open(filepath) as f:
+                st = os.fstat(f.fileno())
+                new_key = f"{st.st_mtime_ns}:{st.st_size}"
+                content = f.read() if new_key != change_key else None
+            if content is not None:
                 with cls._tabs_lock:
                     tab = cls._tabs.get(tab_id)
                     if tab is None:
                         return None
-                    tab["content"] = content
-                    tab["mtime"] = st.st_mtime
-                    tab["change_key"] = new_key
+                    # Generation guard: only write back over the key we
+                    # observed — a concurrent refresh that already stored
+                    # a different (possibly newer) version wins
+                    if tab.get("change_key") == change_key:
+                        tab["content"] = content
+                        tab["mtime"] = st.st_mtime
+                        tab["change_key"] = new_key
         except FileNotFoundError:
             # Deleted/moved underneath us — keep serving the cached content
             # (a save can recreate the file) but tell the client
             file_missing = True
-        except Exception:
-            pass
+        except Exception as e:
+            # PermissionError, UnicodeDecodeError, IsADirectoryError, … —
+            # cached content still serves, but masking this as "no change"
+            # would let the user edit over external changes unknowingly
+            file_error = e.__class__.__name__
         with cls._tabs_lock:
             tab = cls._tabs.get(tab_id)
             if tab is None:
                 return None
             snap = dict(tab)
         snap["file_missing"] = file_missing
+        snap["file_error"] = file_error
         return snap
 
     def _read_body(self):
@@ -197,8 +230,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             tab = self._refresh_tab(tab_id) if tab_id else None
             if tab:
                 # content is always the raw file (the editor round-trips it);
-                # body is the frontmatter-stripped markdown for rendering
-                fm, body = frontmatter.get_frontmatter(tab["filepath"])
+                # body is the frontmatter-stripped markdown for rendering.
+                # Parse from the snapshot itself — a separate file read could
+                # return a different version than the snapshot's content
+                fm, body = frontmatter.parse_frontmatter_text(tab["content"])
                 response = {
                     "content": tab["content"],
                     "frontmatter": fm,
@@ -209,6 +244,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     response["body"] = body
                 if tab.get("file_missing"):
                     response["fileMissing"] = True
+                if tab.get("file_error"):
+                    response["fileError"] = tab["file_error"]
                 self._json_response(response)
             else:
                 self._json_response({"error": "tab not found"}, 404)
@@ -230,8 +267,14 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 })
             except FileNotFoundError:
                 self._json_response({"changeKey": "", "fileMissing": True})
-            except Exception:
-                self._json_response({"changeKey": "", "fileMissing": False})
+            except Exception as e:
+                # Not missing, but not statable either (permissions, broken
+                # symlink) — say which, don't masquerade as "no change"
+                self._json_response({
+                    "changeKey": "",
+                    "fileMissing": False,
+                    "statError": e.__class__.__name__,
+                })
 
         elif parsed.path == "/api/tabs":
             with self._tabs_lock:
@@ -692,27 +735,15 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"error": f"file not found: {filepath}"}, 400)
                 return
 
-            # Check if already open (snapshot — add_tab reacquires the lock)
-            with self._tabs_lock:
-                existing = next(
-                    (tid for tid, t in self._tabs.items() if t["filepath"] == filepath),
-                    None,
-                )
-            if existing:
-                self._json_response({
-                    "id": existing,
-                    "filename": os.path.basename(filepath),
-                    "filepath": filepath,
-                    "existing": True,
-                })
-                return
-
-            tab_id = self.add_tab(filepath)
-            self._json_response({
+            tab_id, existing = self.get_or_create_tab(filepath)
+            response = {
                 "id": tab_id,
                 "filename": os.path.basename(filepath),
                 "filepath": filepath,
-            })
+            }
+            if existing:
+                response["existing"] = True
+            self._json_response(response)
 
         elif parsed.path == "/api/close":
             tab_id = body.get("id", "")
@@ -754,16 +785,17 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 return
 
             try:
-                os.rename(old_path, new_path)
-                # Rename sidecar files
-                for suffix in [".annotations.json", ".annotations.resolved.json"]:
-                    old_sc = old_path + suffix
-                    new_sc = new_path + suffix
-                    if os.path.exists(old_sc):
-                        os.rename(old_sc, new_sc)
-                with self._tabs_lock:
-                    if tab_id in self._tabs:
-                        self._tabs[tab_id]["filepath"] = new_path
+                with self._file_write_lock:
+                    os.rename(old_path, new_path)
+                    # Rename sidecar files
+                    for suffix in [".annotations.json", ".annotations.resolved.json"]:
+                        old_sc = old_path + suffix
+                        new_sc = new_path + suffix
+                        if os.path.exists(old_sc):
+                            os.rename(old_sc, new_sc)
+                    with self._tabs_lock:
+                        if tab_id in self._tabs:
+                            self._tabs[tab_id]["filepath"] = new_path
                 _notify_tabs_changed()
                 self._json_response({"ok": True, "filepath": new_path, "filename": new_name})
             except OSError as e:
@@ -914,34 +946,49 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if len(content) > 10 * 1024 * 1024:  # 10 MB limit
                 self._json_response({"error": "content too large"}, 413)
                 return
-            # Optimistic-concurrency check: refuse to clobber an external
-            # edit made after the client last loaded the file
-            base_change_key = body.get("baseChangeKey")
-            if base_change_key:
-                try:
-                    st = os.stat(filepath)
-                    current_key = f"{st.st_mtime_ns}:{st.st_size}"
-                    if current_key != base_change_key:
-                        self._json_response({
-                            "error": "conflict",
-                            "message": "File was modified externally since you started editing.",
-                            "currentChangeKey": current_key,
-                        }, 409)
-                        return
-                except FileNotFoundError:
-                    pass  # deleted underneath us — save recreates it (ghost-tab recovery)
             try:
                 import tempfile
-                dir_name = os.path.dirname(filepath)
-                fd, tmp_path = tempfile.mkstemp(
-                    dir=dir_name, suffix=".tmp", prefix=".dabarat-"
-                )
-                try:
-                    os.write(fd, content.encode("utf-8"))
-                finally:
-                    os.close(fd)
-                os.replace(tmp_path, filepath)
-                mtime, change_key = self._update_tab_content(tab_id, content, filepath)
+                base_change_key = body.get("baseChangeKey")
+                with self._file_write_lock:
+                    # Optimistic-concurrency check runs inside the write lock,
+                    # immediately before the replace, so concurrent saves with
+                    # the same base key cannot both pass
+                    if base_change_key:
+                        try:
+                            st_now = os.stat(filepath)
+                            current_key = f"{st_now.st_mtime_ns}:{st_now.st_size}"
+                            if current_key != base_change_key:
+                                self._json_response({
+                                    "error": "conflict",
+                                    "message": "File was modified externally since you started editing.",
+                                    "currentChangeKey": current_key,
+                                }, 409)
+                                return
+                        except FileNotFoundError:
+                            # Deleted underneath us — deletion may be deliberate,
+                            # so recreation needs explicit consent (409; the
+                            # client confirms and retries without the key)
+                            self._json_response({
+                                "error": "conflict",
+                                "message": "File was deleted on disk. Save again to recreate it.",
+                                "fileMissing": True,
+                            }, 409)
+                            return
+                    dir_name = os.path.dirname(filepath)
+                    fd, tmp_path = tempfile.mkstemp(
+                        dir=dir_name, suffix=".tmp", prefix=".dabarat-"
+                    )
+                    try:
+                        os.write(fd, content.encode("utf-8"))
+                        # fstat the bytes we wrote — rename preserves inode
+                        # metadata, so this is exactly the post-replace stat
+                        st_written = os.fstat(fd)
+                    finally:
+                        os.close(fd)
+                    os.replace(tmp_path, filepath)
+                    mtime, change_key = self._update_tab_content(
+                        tab_id, content, filepath, st=st_written
+                    )
                 # Auto-commit to version history
                 version_hash = ""
                 try:
@@ -968,9 +1015,11 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"error": "hash required"}, 400)
                 return
             try:
-                content = history.restore(filepath, commit_hash)
+                with self._file_write_lock:
+                    content = history.restore(filepath, commit_hash)
+                    if content is not None:
+                        mtime, change_key = self._update_tab_content(tab_id, content, filepath)
                 if content is not None:
-                    mtime, change_key = self._update_tab_content(tab_id, content, filepath)
                     self._json_response({
                         "ok": True,
                         "content": content,

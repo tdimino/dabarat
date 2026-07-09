@@ -627,6 +627,27 @@ function _hideFileMissingBanner() {
   if (b) b.remove();
 }
 
+/* File exists but cannot be read (permissions, encoding, replaced by a dir) */
+function _setTabFileError(id, errName) {
+  if (!tabs[id]) return;
+  const prev = tabs[id]._fileError || null;
+  tabs[id]._fileError = errName || null;
+  if (id !== activeTabId || prev === tabs[id]._fileError) return;
+  const existing = document.getElementById('file-error-banner');
+  if (existing) existing.remove();
+  if (!errName) return;
+  const banner = document.createElement('div');
+  banner.id = 'file-error-banner';
+  banner.className = 'status-banner';
+  banner.innerHTML = '<i class="ph ph-warning"></i>' +
+    '<span>File cannot be read (' + errName + ') — showing last known content.</span>' +
+    '<button data-action="dismiss">Dismiss</button>';
+  banner.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="dismiss"]')) banner.remove();
+  });
+  document.body.appendChild(banner);
+}
+
 /* ── Cross-file Link Interception ─────────────────────── */
 document.addEventListener('click', (e) => {
   const a = e.target.closest('#content a');

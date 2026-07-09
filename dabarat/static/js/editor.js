@@ -9,7 +9,14 @@ let editState = {
 let _tiptapEditor = null;
 let _stashedFrontmatter = '';
 
-function _stripFrontmatter(md) {
+function _stripFrontmatter(md, tab) {
+  /* Prefer the server's split when available: its parser accepts BOM and
+     whitespace-padded delimiters that the regex fallback does not, and the
+     prefix-by-length derivation is exact for any syntax the server strips */
+  if (tab && tab.body !== undefined && tab.content === md && md.endsWith(tab.body)) {
+    _stashedFrontmatter = md.slice(0, md.length - tab.body.length);
+    return tab.body;
+  }
   const match = md.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
   if (match) {
     _stashedFrontmatter = match[0];
@@ -60,7 +67,7 @@ function enterWysiwygMode() {
     if (fmIndicator) fmIndicator.style.display = 'none';
     editView.style.display = 'flex';
 
-    const body = _stripFrontmatter(editState.savedContent);
+    const body = _stripFrontmatter(editState.savedContent, tabs[editState.tabId]);
     const mount = document.getElementById('tiptap-editor');
 
     try {
@@ -177,8 +184,11 @@ function enterEditMode() {
 }
 
 function exitEditMode(force) {
+  /* Returns a promise resolved after the view is restored, so callers
+     that immediately re-enter edit mode (external-change Reload) don't
+     race the exit animation's deferred doRestore */
   if (!force && editState.dirty) {
-    if (!confirm('Discard unsaved changes?')) return;
+    if (!confirm('Discard unsaved changes?')) return Promise.resolve(false);
   }
 
   if (_tiptapEditor) {
@@ -223,10 +233,11 @@ function exitEditMode(force) {
   };
 
   if (window.Motion && !_prefersReducedMotion) {
-    Motion.animate(editView, { opacity: 0 }, { duration: 0.15 }).finished.then(doRestore).catch(doRestore);
-  } else {
-    doRestore();
+    return Motion.animate(editView, { opacity: 0 }, { duration: 0.15 })
+      .finished.then(doRestore, doRestore).then(() => true);
   }
+  doRestore();
+  return Promise.resolve(true);
 }
 
 /* ── External-change banner (edit mode) ──────────────── */
@@ -246,7 +257,7 @@ function _showExternalChangeBanner() {
       if (editState.dirty && !confirm('Discard your unsaved changes and reload from disk?')) return;
       banner.remove();
       const tabId = editState.tabId;
-      exitEditMode(true);
+      await exitEditMode(true);  /* wait out the exit animation's doRestore */
       await fetchTabContent(tabId);
       enterWysiwygMode();
     } else {
@@ -261,6 +272,23 @@ function _hideExternalChangeBanner() {
   if (b) b.remove();
 }
 
+/* Server stopped answering while the user edits — unsaved work is at risk
+   and external-change detection is dark; say so instead of failing silently */
+function _showServerUnreachableBanner() {
+  if (document.getElementById('server-unreachable-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'server-unreachable-banner';
+  banner.className = 'status-banner';
+  banner.innerHTML = '<i class="ph ph-plugs"></i>' +
+    '<span>Server unreachable — saving will fail; copy your work before closing.</span>';
+  document.body.appendChild(banner);
+}
+
+function _hideServerUnreachableBanner() {
+  const b = document.getElementById('server-unreachable-banner');
+  if (b) b.remove();
+}
+
 /* ── Save ────────────────────────────────────────────── */
 let _saveInFlight = false;
 
@@ -271,10 +299,12 @@ async function saveEdit() {
 
   try {
     let content;
+    let savedBody;  /* exact post-save body when the editor knows it */
     if (_tiptapEditor) {
       let md = _tiptapEditor.storage.markdown.getMarkdown();
       md = md.replace(/\\\[\^([^\]]*)\\\]/g, '[^$1]');
       content = _prependFrontmatter(md);
+      savedBody = md;
     } else {
       const textarea = document.getElementById('edit-textarea-fallback');
       content = textarea ? textarea.value : '';
@@ -290,8 +320,14 @@ async function saveEdit() {
       })
     });
     if (res.status === 409) {
-      if (!confirm('File changed on disk since you started editing. Overwrite with your version?')) {
-        updateEditStatus('Save cancelled — file changed on disk');
+      const conflict = await res.json().catch(() => ({}));
+      const msg = conflict.fileMissing
+        ? 'File was deleted on disk. Recreate it with your version?'
+        : 'File changed on disk since you started editing. Overwrite with your version?';
+      if (!confirm(msg)) {
+        updateEditStatus(conflict.fileMissing
+          ? 'Save cancelled — file was deleted on disk'
+          : 'Save cancelled — file changed on disk');
         return;
       }
       res = await fetch('/api/save', {
@@ -303,10 +339,17 @@ async function saveEdit() {
     const data = await res.json();
     if (data.ok && tabs[tabId]) {
       _hideExternalChangeBanner();
+      _setTabGhost(tabId, false);
       tabs[tabId].content = content;
-      /* Keep the rendering body in sync (same fm regex as _stripFrontmatter) */
-      const fmMatch = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
-      tabs[tabId].body = fmMatch ? content.slice(fmMatch[0].length) : undefined;
+      /* Keep the rendering body in sync — the WYSIWYG path knows the exact
+         body (avoids the regex misfiring on documents that open with an
+         hr); the raw-textarea fallback re-strips with the regex */
+      if (savedBody !== undefined) {
+        tabs[tabId].body = savedBody;
+      } else {
+        const fmMatch = content.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n?/);
+        tabs[tabId].body = fmMatch ? content.slice(fmMatch[0].length) : undefined;
+      }
       tabs[tabId].mtime = data.mtime;
       tabs[tabId].changeKey = data.changeKey;
       editState.savedContent = content;

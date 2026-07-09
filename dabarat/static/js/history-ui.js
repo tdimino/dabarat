@@ -108,9 +108,12 @@ async function restoreVersion(hash) {
     if (data.ok && tabs[tabId]) {
       tabs[tabId].content = data.content;
       tabs[tabId].mtime = data.mtime;
+      tabs[tabId].changeKey = data.changeKey;
       if (tabId === activeTabId) {
         lastRenderedMd = '';
-        render(data.content);
+        /* Full refetch applies the body/frontmatter split and renders
+           (same pattern as edit/diff exit) */
+        await fetchTabContent(tabId);
       }
       closeVersionPanel();
     }

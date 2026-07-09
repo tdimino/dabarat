@@ -15,6 +15,7 @@ import json
 import os
 import signal
 import sys
+import threading
 import uuid
 
 from . import annotations
@@ -89,36 +90,44 @@ def _live_instances():
             continue
         fpath = os.path.join(_INSTANCE_DIR, fname)
         try:
+            # The filename is authoritative for the port; JSON contents are
+            # advisory and bounded (a malformed file must never abort the
+            # scan or fabricate a permanently-live instance)
+            port = int(fname[: -len(".pid")])
             with open(fpath) as f:
-                raw = f.read().strip()
+                raw = f.read(4096).strip()
             started = None
             try:
                 data = json.loads(raw)
+                if not isinstance(data, dict):
+                    raise ValueError("not an object")
                 pid = int(data["pid"])
-                port = int(data.get("port", fname.replace(".pid", "")))
-                started = data.get("started")
-            except (json.JSONDecodeError, TypeError, KeyError):
-                pid = int(raw)
-                port = int(fname.replace(".pid", ""))
+                s = data.get("started")
+                started = s if isinstance(s, str) else None
+            except (json.JSONDecodeError, ValueError, TypeError, KeyError):
+                pid = int(raw)  # legacy plain-int format
+            if pid <= 1:
+                raise ValueError("implausible pid")
 
             if _pid_alive(pid):
                 if _server_running(port):
                     live.append((port, pid))
                     continue
-                # Alive but not serving: PID reuse, or still starting up
+                # Alive but not serving: PID reuse, or still starting up.
+                # Grace only for a valid, non-future, recent timestamp.
                 if started:
                     try:
                         age = (
                             datetime.datetime.now(datetime.timezone.utc)
                             - datetime.datetime.fromisoformat(started)
                         ).total_seconds()
-                        if age < 30:
+                        if 0 <= age < 30:
                             live.append((port, pid))
                             continue
-                    except ValueError:
+                    except (ValueError, TypeError):
                         pass
             os.remove(fpath)
-        except (ValueError, OSError):
+        except (ValueError, TypeError, OSError):
             try:
                 os.remove(fpath)
             except OSError:
@@ -130,37 +139,80 @@ def _tab_state_path(port):
     return os.path.join(_INSTANCE_DIR, f"{port}.tabs.json")
 
 
+_tab_state_lock = threading.Lock()  # orders snapshot→write so stale state never wins
+_tab_state_warned = False
+
+
 def _save_tab_state(port):
-    """Persist current tab filepaths for crash recovery (atomic write)."""
+    """Persist current tab filepaths for crash recovery (atomic write).
+
+    Snapshot and replace happen under one lock: without it, a delayed
+    writer holding an older snapshot could overwrite a newer close and
+    resurrect deliberately-closed tabs after a crash.
+    """
+    global _tab_state_warned
     import tempfile
     _ensure_instance_dir()
-    with PreviewHandler._tabs_lock:
-        filepaths = [t["filepath"] for t in PreviewHandler._tabs.values()]
-    data = {
-        "port": port,
-        "pid": os.getpid(),
-        "started": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        "tabs": filepaths,
-    }
-    try:
-        fd, tmp = tempfile.mkstemp(dir=_INSTANCE_DIR, suffix=".tmp", prefix=".tabs-")
+    with _tab_state_lock:
+        with PreviewHandler._tabs_lock:
+            filepaths = [t["filepath"] for t in PreviewHandler._tabs.values()]
+        data = {
+            "port": port,
+            "pid": os.getpid(),
+            "started": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+            "tabs": filepaths,
+        }
         try:
-            os.write(fd, json.dumps(data).encode())
-        finally:
-            os.close(fd)
-        os.replace(tmp, _tab_state_path(port))
-    except Exception:
-        pass
+            fd, tmp = tempfile.mkstemp(dir=_INSTANCE_DIR, suffix=".tmp", prefix=".tabs-")
+            try:
+                os.write(fd, json.dumps(data).encode())
+            finally:
+                os.close(fd)
+            os.replace(tmp, _tab_state_path(port))
+        except Exception as e:
+            if not _tab_state_warned:
+                _tab_state_warned = True
+                print(
+                    f"Warning: cannot persist tab session ({e!r}) — "
+                    "crash recovery will not reflect this session",
+                    file=sys.stderr,
+                )
 
 
 def _load_tab_state(port):
-    """Return surviving tab filepaths from an uncleanly-dead instance, or []."""
-    try:
-        with open(_tab_state_path(port)) as f:
-            data = json.load(f)
-        return [p for p in data.get("tabs", []) if os.path.isfile(p)]
-    except Exception:
+    """Return surviving tab filepaths from an uncleanly-dead instance, or [].
+
+    Consume-once: the state file is removed after reading so stale state
+    can never re-trigger. Entries are validated (string paths, regular
+    non-symlink files) and corruption is reported instead of hidden.
+    """
+    path = _tab_state_path(port)
+    if not os.path.lexists(path):
         return []
+    paths = []
+    try:
+        if os.path.islink(path):
+            raise ValueError("tab-state file is a symlink")
+        with open(path) as f:
+            data = json.load(f)
+        tabs_list = data.get("tabs") if isinstance(data, dict) else None
+        if not isinstance(tabs_list, list):
+            raise ValueError("malformed tabs list")
+        paths = [
+            p for p in tabs_list
+            if isinstance(p, str) and os.path.isfile(p) and not os.path.islink(p)
+        ]
+    except Exception as e:
+        print(
+            f"Warning: ignoring unreadable tab-session file {path} ({e!r})",
+            file=sys.stderr,
+        )
+        paths = []
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+    return paths
 
 
 def _clear_tab_state(port):
@@ -171,15 +223,23 @@ def _clear_tab_state(port):
 
 
 def _register_instance(port, server=None):
-    """Write a PID file for this instance and register cleanup."""
+    """Write a PID file for this instance (atomic) and register cleanup."""
+    import tempfile
     _ensure_instance_dir()
     pidfile = os.path.join(_INSTANCE_DIR, f"{port}.pid")
-    with open(pidfile, "w") as f:
-        json.dump({
-            "pid": os.getpid(),
-            "port": port,
-            "started": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-        }, f)
+    payload = json.dumps({
+        "pid": os.getpid(),
+        "port": port,
+        "started": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    })
+    # Atomic write — concurrent _live_instances scans must never read a
+    # partial file and clean up a healthy instance
+    fd, tmp = tempfile.mkstemp(dir=_INSTANCE_DIR, suffix=".tmp", prefix=".pid-")
+    try:
+        os.write(fd, payload.encode())
+    finally:
+        os.close(fd)
+    os.replace(tmp, pidfile)
 
     def _cleanup(*_args):
         try:
@@ -299,46 +359,56 @@ def _clear_pyc():
                 os.remove(os.path.join(cache_dir, f))
 
 
-def _kill_port(port):
-    """Kill any process listening on the given port (SIGTERM then SIGKILL).
-
-    Defense-in-depth: refuses to kill a responsive dabarat — callers must
-    route around live instances (add to them or pick another port).
-    """
+def _port_listeners(port):
+    """Return PIDs holding a TCP LISTEN on the port, or None if unknowable."""
     import subprocess
-    import time
-
-    if _server_running(port):
-        return
     try:
         result = subprocess.run(
-            ["lsof", "-ti", f":{port}"],
+            ["lsof", "-nP", f"-tiTCP:{port}", "-sTCP:LISTEN"],
             capture_output=True, text=True, timeout=3,
         )
-        pids = [int(p) for p in result.stdout.strip().split() if p]
-        if not pids:
-            return
-        # Graceful first — lets atexit/SIGTERM handlers clean up PID files
-        for pid in pids:
+        return [int(p) for p in result.stdout.strip().split() if p]
+    except FileNotFoundError:
+        print("Warning: lsof not found — cannot inspect port holders", file=sys.stderr)
+        return None
+    except Exception:
+        return None
+
+
+def _recorded_pid(port):
+    """PID recorded by a previous dabarat instance for this port, or None."""
+    try:
+        with open(os.path.join(_INSTANCE_DIR, f"{port}.pid")) as f:
+            raw = f.read(4096).strip()
+        try:
+            return int(json.loads(raw)["pid"])
+        except Exception:
+            return int(raw)
+    except Exception:
+        return None
+
+
+def _kill_pids(pids, port):
+    """SIGTERM then SIGKILL the given PIDs; clear the port's PID file."""
+    import time
+
+    # Graceful first — lets atexit/SIGTERM handlers clean up PID files
+    for pid in pids:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except (ProcessLookupError, ValueError):
+            pass
+    time.sleep(0.5)
+    # Escalate for any survivors
+    for pid in pids:
+        if _pid_alive(pid):
             try:
-                os.kill(pid, signal.SIGTERM)
+                os.kill(pid, signal.SIGKILL)
             except (ProcessLookupError, ValueError):
                 pass
-        time.sleep(0.5)
-        # Escalate for any survivors
-        for pid in pids:
-            if _pid_alive(pid):
-                try:
-                    os.kill(pid, signal.SIGKILL)
-                except (ProcessLookupError, ValueError):
-                    pass
-        time.sleep(0.3)
-    except Exception:
-        pass
-    # Remove stale PID file for this port regardless
-    stale = os.path.join(_INSTANCE_DIR, f"{port}.pid")
+    time.sleep(0.3)
     try:
-        os.remove(stale)
+        os.remove(os.path.join(_INSTANCE_DIR, f"{port}.pid"))
     except OSError:
         pass
 
@@ -363,25 +433,26 @@ def _find_free_port():
 
 
 def _kill_zombie_on_port(port):
-    """Kill whatever holds the port ONLY if it is not a responsive dabarat.
+    """Clear a dead dabarat's listener from the port — never anything else.
 
-    A live dabarat answering /api/tabs is never killed — callers must route
-    around it (add to it or pick another port) before reaching this point.
+    Kills only PIDs matching the PID a previous dabarat recorded for this
+    port AND only when the port no longer answers /api/tabs. A responsive
+    dabarat or an unidentified holder aborts the launch with an
+    explanation instead of being terminated.
     """
-    import subprocess
-    try:
-        result = subprocess.run(
-            ["lsof", "-ti", f":{port}"],
-            capture_output=True, text=True, timeout=3,
-        )
-        if not result.stdout.strip():
-            return  # Port is free
-    except Exception:
-        return
+    pids = _port_listeners(port)
+    if not pids:
+        return  # Free — or lsof unavailable, in which case bind() will say so
     if _server_running(port):
         print(f"\033[38;2;243;139;168m✗\033[0m Port {port} is held by a live dabarat instance")
         sys.exit(1)
-    _kill_port(port)
+    recorded = _recorded_pid(port)
+    unknown = [p for p in pids if p != recorded]
+    if unknown:
+        print(f"\033[38;2;243;139;168m✗\033[0m Port {port} is held by non-dabarat process(es): {unknown}")
+        print(f"\033[38;2;88;91;112m  Stop that process or launch with --port <other>.\033[0m")
+        sys.exit(1)
+    _kill_pids(pids, port)
 
 
 def _get_open_filepaths(port):
@@ -437,6 +508,7 @@ def _ask_reuse_dialog(already_open, new_files):
             return "new_window"
         return "cancel"
     except Exception:
+        print("\033[38;2;88;91;112mNote: dialog unavailable — adding to the running instance\033[0m")
         return "add"
 
 

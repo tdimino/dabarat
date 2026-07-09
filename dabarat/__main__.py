@@ -98,6 +98,50 @@ def _live_instances():
     return live
 
 
+def _tab_state_path(port):
+    return os.path.join(_INSTANCE_DIR, f"{port}.tabs.json")
+
+
+def _save_tab_state(port):
+    """Persist current tab filepaths for crash recovery (atomic write)."""
+    import tempfile
+    _ensure_instance_dir()
+    with PreviewHandler._tabs_lock:
+        filepaths = [t["filepath"] for t in PreviewHandler._tabs.values()]
+    data = {
+        "port": port,
+        "pid": os.getpid(),
+        "started": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "tabs": filepaths,
+    }
+    try:
+        fd, tmp = tempfile.mkstemp(dir=_INSTANCE_DIR, suffix=".tmp", prefix=".tabs-")
+        try:
+            os.write(fd, json.dumps(data).encode())
+        finally:
+            os.close(fd)
+        os.replace(tmp, _tab_state_path(port))
+    except Exception:
+        pass
+
+
+def _load_tab_state(port):
+    """Return surviving tab filepaths from an uncleanly-dead instance, or []."""
+    try:
+        with open(_tab_state_path(port)) as f:
+            data = json.load(f)
+        return [p for p in data.get("tabs", []) if os.path.isfile(p)]
+    except Exception:
+        return []
+
+
+def _clear_tab_state(port):
+    try:
+        os.remove(_tab_state_path(port))
+    except OSError:
+        pass
+
+
 def _register_instance(port, server=None):
     """Write a PID file for this instance and register cleanup."""
     _ensure_instance_dir()
@@ -110,6 +154,7 @@ def _register_instance(port, server=None):
             os.remove(pidfile)
         except OSError:
             pass
+        _clear_tab_state(port)
 
     atexit.register(_cleanup)
 
@@ -268,6 +313,36 @@ def _server_running(port):
         return False
 
 
+def _find_free_port():
+    """Ask the OS for a free port (same pattern as cmd_export_pdf)."""
+    import socket
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def _kill_zombie_on_port(port):
+    """Kill whatever holds the port ONLY if it is not a responsive dabarat.
+
+    A live dabarat answering /api/tabs is never killed — callers must route
+    around it (add to it or pick another port) before reaching this point.
+    """
+    import subprocess
+    try:
+        result = subprocess.run(
+            ["lsof", "-ti", f":{port}"],
+            capture_output=True, text=True, timeout=3,
+        )
+        if not result.stdout.strip():
+            return  # Port is free
+    except Exception:
+        return
+    if _server_running(port):
+        print(f"\033[38;2;243;139;168m✗\033[0m Port {port} is held by a live dabarat instance")
+        sys.exit(1)
+    _kill_port(port)
+
+
 def _get_open_filepaths(port):
     """Get list of filepaths currently open in the running server."""
     import urllib.request
@@ -281,12 +356,16 @@ def _get_open_filepaths(port):
 
 
 def _ask_reuse_dialog(already_open, new_files):
-    """Show macOS native dialog asking to add to existing or open new window."""
+    """Show macOS native dialog asking what to do with a running instance.
+
+    Returns "add", "new_window", or "cancel". Every failure mode maps to a
+    non-destructive outcome — the running server is never killed from here.
+    """
     import platform
     import subprocess
 
     if platform.system() != "Darwin":
-        return True
+        return "add"
 
     parts = []
     if already_open:
@@ -300,17 +379,24 @@ def _ask_reuse_dialog(already_open, new_files):
     script = (
         f'display dialog "{msg}" '
         f'with title "Dabarat is already running" '
-        f'buttons {{"Open New Window", "Add to Existing"}} '
-        f'default button "Add to Existing"'
+        f'buttons {{"Cancel", "Open New Window", "Add to Existing"}} '
+        f'default button "Add to Existing" '
+        f'cancel button "Cancel"'
     )
     try:
         result = subprocess.run(
             ["osascript", "-e", script],
             capture_output=True, text=True, timeout=30,
         )
-        return "Add to Existing" in result.stdout
+        if result.returncode != 0:
+            return "cancel"  # Escape / Cancel button / dialog not shown
+        if "Add to Existing" in result.stdout:
+            return "add"
+        if "Open New Window" in result.stdout:
+            return "new_window"
+        return "cancel"
     except Exception:
-        return True
+        return "add"
 
 
 def _add_to_running(port, files):
@@ -473,25 +559,35 @@ def cmd_serve(argv):
         _srv._active_workspace = ws_data
         workspace.add_recent(ws_path, ws_data.get("name"))
 
+    # No files: attempt crash recovery from a persisted tab session
+    recovered = []
     if not files and not ws_path:
-        print("Error: no files specified")
-        sys.exit(1)
+        recovered = _load_tab_state(port)
+        if not recovered:
+            print("Error: no files specified")
+            sys.exit(1)
 
-    # Tab reuse: if a server is already running, ask what to do
+    # Tab reuse: if a server is already running, ask what to do.
+    # Every outcome here is non-destructive \u2014 the running server is never killed.
     if _server_running(port):
         open_paths = _get_open_filepaths(port)
         already_open = [f for f in files if f in open_paths]
         new_files = [f for f in files if f not in open_paths]
 
-        if _ask_reuse_dialog(already_open, new_files):
+        choice = _ask_reuse_dialog(already_open, new_files)
+        if choice == "add":
             results = _add_to_running(port, files)
             for name, status in results:
                 icon = "\033[38;2;166;227;161m\u2713\033[0m" if "fail" not in status else "\033[38;2;243;139;168m\u2717\033[0m"
                 print(f"{icon} {name} ({status})")
             print(f"\033[38;2;88;91;112mServer already running at http://127.0.0.1:{port}\033[0m")
             sys.exit(0)
-        else:
-            _kill_port(port)
+        elif choice == "cancel":
+            print("\033[38;2;88;91;112mCancelled.\033[0m")
+            sys.exit(0)
+        else:  # new_window \u2014 leave the running instance alone, take a free port
+            port = _find_free_port()
+            print(f"\033[38;2;88;91;112mOpening new window on port {port}\033[0m")
 
     # Instance limit: refuse to start if too many are already running
     live = _live_instances()
@@ -504,7 +600,7 @@ def cmd_serve(argv):
         sys.exit(1)
 
     _clear_pyc()
-    _kill_port(port)
+    _kill_zombie_on_port(port)
 
     PreviewHandler.default_author = default_author
     for fp in files:
@@ -513,12 +609,22 @@ def cmd_serve(argv):
         else:
             print(f"Warning: {fp} not found, skipping")
 
+    for fp in recovered:
+        PreviewHandler.add_tab(fp)
+    if recovered:
+        print(f"\033[38;2;166;227;161m✓\033[0m Restored {len(recovered)} tab(s) from previous session")
+
     if not PreviewHandler._tabs and not ws_path:
         print("Error: no valid files to open")
         sys.exit(1)
 
     server = start(port)
     _register_instance(port, server)
+
+    # Persist the tab session for crash recovery; updated on every add/close/rename
+    import dabarat.server as _srv
+    _srv._on_tabs_changed = lambda: _save_tab_state(port)
+    _save_tab_state(port)
 
     if PreviewHandler._tabs:
         filenames = [os.path.basename(t["filepath"]) for t in PreviewHandler._tabs.values()]

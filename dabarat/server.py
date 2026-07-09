@@ -26,6 +26,17 @@ _active_workspace_path = None  # Path to the active .dabarat-workspace file
 _active_workspace = None       # Parsed workspace dict (or None)
 _workspace_lock = threading.Lock()
 
+_on_tabs_changed = None  # Optional callback wired by __main__ — fires after tab add/close/rename
+
+
+def _notify_tabs_changed():
+    cb = _on_tabs_changed
+    if cb:
+        try:
+            cb()
+        except Exception:
+            pass
+
 
 class PreviewHandler(http.server.BaseHTTPRequestHandler):
     _tabs = {}
@@ -57,6 +68,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             recent.add_entry(filepath, content=content)
         except Exception:
             pass
+        _notify_tabs_changed()
         return tab_id
 
     def _read_body(self):
@@ -612,9 +624,14 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             with self._tabs_lock:
                 if tab_id in self._tabs:
                     del self._tabs[tab_id]
-                    self._json_response({"ok": True})
+                    found = True
                 else:
-                    self._json_response({"error": "tab not found"}, 404)
+                    found = False
+            if found:
+                _notify_tabs_changed()
+                self._json_response({"ok": True})
+            else:
+                self._json_response({"error": "tab not found"}, 404)
 
         elif parsed.path == "/api/rename":
             tab_id = body.get("tab", "")
@@ -650,6 +667,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     if os.path.exists(old_sc):
                         os.rename(old_sc, new_sc)
                 self._tabs[tab_id]["filepath"] = new_path
+                _notify_tabs_changed()
                 self._json_response({"ok": True, "filepath": new_path, "filename": new_name})
             except OSError as e:
                 self._json_response({"error": str(e)}, 500)

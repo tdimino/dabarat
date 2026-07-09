@@ -122,6 +122,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 return None
             filepath = tab["filepath"]
             change_key = tab.get("change_key")
+        file_missing = False
         try:
             st = os.stat(filepath)
             new_key = f"{st.st_mtime_ns}:{st.st_size}"
@@ -135,11 +136,19 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     tab["content"] = content
                     tab["mtime"] = st.st_mtime
                     tab["change_key"] = new_key
+        except FileNotFoundError:
+            # Deleted/moved underneath us — keep serving the cached content
+            # (a save can recreate the file) but tell the client
+            file_missing = True
         except Exception:
             pass
         with cls._tabs_lock:
             tab = cls._tabs.get(tab_id)
-            return dict(tab) if tab else None
+            if tab is None:
+                return None
+            snap = dict(tab)
+        snap["file_missing"] = file_missing
+        return snap
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
@@ -198,6 +207,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 }
                 if fm:
                     response["body"] = body
+                if tab.get("file_missing"):
+                    response["fileMissing"] = True
                 self._json_response(response)
             else:
                 self._json_response({"error": "tab not found"}, 404)

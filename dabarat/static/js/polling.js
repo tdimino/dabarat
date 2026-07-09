@@ -37,6 +37,7 @@ async function poll() {
     try {
       const res = await fetch('/api/content?tab=' + activeTabId);
       const data = await res.json();
+      if (!data.error) _setTabGhost(activeTabId, !!data.fileMissing);
       if (!data.error && data.changeKey !== tabs[activeTabId].changeKey) {
         tabs[activeTabId].content = data.content;
         tabs[activeTabId].body = data.body;
@@ -61,6 +62,7 @@ async function poll() {
           fetch('/api/content?tab=' + id)
             .then(r => r.json())
             .then(data => {
+              if (!data.error) _setTabGhost(id, !!data.fileMissing);
               if (!data.error && data.changeKey !== tabs[id].changeKey) {
                 tabs[id].content = data.content;
                 tabs[id].body = data.body;

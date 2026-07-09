@@ -212,6 +212,8 @@ function exitEditMode(force) {
     lastRenderedMd = '';
     if (activeTabId && tabs[activeTabId]) {
       render(tabBody(tabs[activeTabId]));
+      /* Pick up any external change made while polling was paused */
+      fetchTabContent(activeTabId);
     }
     if (window.Motion && !_prefersReducedMotion) {
       contentEl.style.opacity = '0';

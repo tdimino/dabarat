@@ -435,6 +435,49 @@ body.home-active.toc-collapsed #main-area {
   background: var(--body-bg, var(--ctp-base));
   border-bottom-color: transparent;
 }
+/* Ghost tab: file was deleted/moved on disk; content is served from cache.
+   Opacity + italic + strikethrough only — no colors, so no light-theme
+   override block is needed. */
+.tab.ghost > span:first-child {
+  opacity: 0.55;
+  font-style: italic;
+  text-decoration: line-through;
+}
+
+.status-banner {
+  position: fixed;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(560px, calc(100vw - 32px));
+  padding: 8px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--ctp-text);
+  background: var(--card-bg, var(--ctp-mantle));
+  border: 1px solid rgba(var(--ctp-yellow-rgb), 0.5);
+  border-radius: 8px;
+  box-shadow: var(--elevation-2);
+}
+.status-banner i { color: var(--ctp-yellow); font-size: 15px; flex-shrink: 0; }
+.status-banner button {
+  flex-shrink: 0;
+  padding: 3px 10px;
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--ctp-subtext0);
+  background: transparent;
+  border: 1px solid var(--ctp-surface1);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+.status-banner button:hover { color: var(--ctp-text); border-color: var(--ctp-overlay0); }
+
 .tab-close {
   display: none;
   flex-shrink: 0;   /* never collapse the close button */

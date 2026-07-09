@@ -125,7 +125,7 @@ function renderTabBar() {
   visibleIds.forEach(id => {
     const tab = tabs[id];
     const div = document.createElement('div');
-    div.className = 'tab' + (id === activeTabId ? ' active' : '');
+    div.className = 'tab' + (id === activeTabId ? ' active' : '') + (tab._missing ? ' ghost' : '');
     div.dataset.tab = id;
     div.title = tab.filepath;
 
@@ -274,6 +274,9 @@ function switchTab(id) {
   /* Update status bar and window title */
   document.getElementById('status-filepath').textContent = tabs[id].filepath;
   document.title = tabs[id].filename + ' — dabarat';
+
+  /* Ghost state follows the active tab */
+  if (tabs[id]._missing) _showFileMissingBanner(); else _hideFileMissingBanner();
 }
 
 /* Fetch content for a single tab and render if active */
@@ -593,6 +596,35 @@ function showAddFileInput() {
   bar.insertBefore(input, addBtn);
   bar.insertBefore(browseBtn, addBtn);
   input.focus();
+}
+
+/* ── Ghost tabs (file deleted/moved on disk) ──────────── */
+function _setTabGhost(id, missing) {
+  if (!tabs[id] || !!tabs[id]._missing === !!missing) return;
+  tabs[id]._missing = !!missing;
+  renderTabBar();
+  if (id === activeTabId) {
+    if (missing) _showFileMissingBanner(); else _hideFileMissingBanner();
+  }
+}
+
+function _showFileMissingBanner() {
+  if (document.getElementById('file-missing-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'file-missing-banner';
+  banner.className = 'status-banner';
+  banner.innerHTML = '<i class="ph ph-warning"></i>' +
+    '<span>File no longer exists on disk — showing last known content. Saving will recreate it.</span>' +
+    '<button data-action="dismiss">Dismiss</button>';
+  banner.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="dismiss"]')) _hideFileMissingBanner();
+  });
+  document.body.appendChild(banner);
+}
+
+function _hideFileMissingBanner() {
+  const b = document.getElementById('file-missing-banner');
+  if (b) b.remove();
 }
 
 /* ── Cross-file Link Interception ─────────────────────── */

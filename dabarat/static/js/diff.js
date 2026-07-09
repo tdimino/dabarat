@@ -54,10 +54,11 @@ function exitDiffMode() {
   if (toggle) toggle.style.display = '';
   document.getElementById('main-area').style.marginRight = '';
 
-  /* Force re-render */
+  /* Force re-render, then refresh from disk (polling was paused in diff mode) */
   lastRenderedMd = '';
   if (activeTabId && tabs[activeTabId] && tabs[activeTabId].content) {
     render(tabBody(tabs[activeTabId]));
+    fetchTabContent(activeTabId);
   }
 }
 

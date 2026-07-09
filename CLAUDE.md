@@ -10,7 +10,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - 8 themes: 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light). Ink + Vellum are The Scholar's Codex pair — parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 
 ## Structure
-- 11 Python modules in `dabarat/` — `server.py` (HTTP + 36 endpoints), `template.py` (HTML assembly), `annotations.py`, `bookmarks.py`, `frontmatter.py`, `diff.py`, `history.py`, `recent.py`, `workspace.py`, `pdf_export.py`, `__main__.py` (CLI entry)
+- 11 Python modules in `dabarat/` — `server.py` (HTTP + 37 endpoints), `template.py` (HTML assembly), `annotations.py`, `bookmarks.py`, `frontmatter.py`, `diff.py`, `history.py`, `recent.py`, `workspace.py`, `pdf_export.py`, `__main__.py` (CLI entry)
 - 16 JS modules in `static/js/` concatenated in dependency order — see `agent_docs/client-architecture.md`
 - 14 CSS modules in `static/css/` concatenated in dependency order — theme-variables, base-layout, typography, then feature-specific (annotations, editor, diff, home, etc.)
 - `static/palette.js` — Command palette + tag mode (Cmd+K) — loaded separately
@@ -49,7 +49,12 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **Workspace system**: See `@agent_docs/workspace-system.md` for full internals. Key state: server-side `_active_workspace`/`_active_workspace_path`, client-side in `state.js`
 - **PDF export**: `pdf_export.py` uses headless Chrome CDP with zero page margins (`@page { margin: 0 }`, CDP margins: 0). Visual spacing via `#content { padding: 0.6in }` in print mode. Export mode: `?theme=X&export=1` skips polling + emits render-complete sentinel. `print-color-adjust: exact` preserves dark backgrounds. `html` gets theme background in print to prevent outline artifacts on dark themes. Light themes override both `html` and `body` to `#fff`.
 - **Finder integration (macOS)**: `Dabarat.app` droplet at `~/Applications/`. Bundle ID: `com.minoanmystery.dabarat`. Rebuild after Python upgrade: `bash macos/build.sh`. Default handler: `duti -s com.minoanmystery.dabarat .md all`
-- **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection.
+- **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection. `_tabs` access goes through locked helpers — `_tab_filepath()`, `_tab_dirs()`, `_refresh_tab()`, `_update_tab_content()` — never index `self._tabs` directly in handlers.
+- **Change detection**: `changeKey = f"{st.st_mtime_ns}:{st.st_size}"` is the reload signal (float mtime equality misses sub-second rewrites). `/api/content`, `/api/save`, `/api/restore` return it; client compares/stores `tabs[id].changeKey`. `GET /api/mtime?tab=` is the stat-only probe (edit-mode watch).
+- **Content vs body**: `/api/content` returns `content` (always the raw file — the editor round-trips it) plus `body` (frontmatter-stripped) when fm exists. Render paths use `tabBody(tab)` (`render.js`); never render raw content or frontmatter leaks into the preview, never save the body or frontmatter is destroyed.
+- **Instance lifecycle**: launching `dabarat file.md` against a live server shows a tri-state dialog (Add to Existing / Open New Window / Cancel) — every failure mode is non-destructive; "Open New Window" takes a free port (socket bind-0). `_kill_port` refuses responsive dabarat instances; only unresponsive zombies are cleared. PID files are JSON `{pid, port, started}` with liveness verified via `/api/tabs` + 30s startup grace.
+- **Tab-session persistence**: `~/.dabarat/instances/<port>.tabs.json` (atomic write via `_on_tabs_changed` hook on add/close/rename), cleared on clean exit, restored by `dabarat --port <port>` with no file args after an unclean death.
+- **Ghost tabs**: deleted/moved files serve cached content with `fileMissing: true`; the tab name dims with strikethrough (`.tab.ghost`) and a `.status-banner` appears; saving recreates the file. Save conflicts: client sends `baseChangeKey`, server 409s if the disk changed, client confirms overwrite.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.
 - **WYSIWYG editing**: Tiptap/ProseMirror editor loaded from esm.sh CDN (pinned @2.27.2 + tiptap-markdown@0.8.10). Extensions: StarterKit, TaskList, TaskItem, Table (row/cell/header), Placeholder. Markdown configured with `html: false`. Frontmatter stripped before Tiptap (stashed in `_stashedFrontmatter`), prepended on save. Edit mode hides annotations UI and exits diff/home mode on enter. Falls back to raw textarea if CDN unavailable. `body.edit-mode` and `body.edit-dirty` classes control dirty-state indicator (yellow caret, badge border). Editor surface matches read-mode typography (DM Sans body, Cormorant Garamond h1-h2, same `--base-size` and `line-height: 1.65`). Floating pencil button (`#edit-toggle`) mirrors annotations toggle styling with halo-glow hover.
 - **Light-theme override convention**: All four light themes (Latte, Vellum, Rosé Pine Dawn, Tokyo Light) MUST appear together in every `[data-theme="..."]` override block across all CSS files (`editor.css`, `annotations.css`, `base-layout.css`, etc.). Omitting any light theme from a selector group causes silent contrast/styling regressions on that theme.
@@ -63,7 +68,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 Read these when relevant to the current task:
 
 - `agent_docs/architecture.md` — Data flow, component roles, design decisions
-- `agent_docs/api-reference.md` — All 36 REST API endpoints with JSON schemas
+- `agent_docs/api-reference.md` — All 37 REST API endpoints with JSON schemas
 - `agent_docs/client-architecture.md` — 16 JS modules: state, rendering pipeline, annotation system
 - `agent_docs/workspace-system.md` — Workspace CRUD, multi-root sidebar, CLI flag, quotes system
 - `agent_docs/motion-one.md` — Motion One call sites, guard pattern, animation principles

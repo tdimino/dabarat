@@ -75,7 +75,13 @@ def _pid_alive(pid):
 
 
 def _live_instances():
-    """Return list of (port, pid) for all live instances, cleaning stale ones."""
+    """Return list of (port, pid) for all live instances, cleaning stale ones.
+
+    PID files are JSON {pid, port, started} (legacy plain-int files still
+    parse). A PID being alive is not proof it is dabarat — PIDs get reused —
+    so instances must also answer /api/tabs, with a 30s startup grace period
+    before an unresponsive one is declared stale.
+    """
     _ensure_instance_dir()
     live = []
     for fname in os.listdir(_INSTANCE_DIR):
@@ -84,12 +90,34 @@ def _live_instances():
         fpath = os.path.join(_INSTANCE_DIR, fname)
         try:
             with open(fpath) as f:
-                pid = int(f.read().strip())
-            if _pid_alive(pid):
+                raw = f.read().strip()
+            started = None
+            try:
+                data = json.loads(raw)
+                pid = int(data["pid"])
+                port = int(data.get("port", fname.replace(".pid", "")))
+                started = data.get("started")
+            except (json.JSONDecodeError, TypeError, KeyError):
+                pid = int(raw)
                 port = int(fname.replace(".pid", ""))
-                live.append((port, pid))
-            else:
-                os.remove(fpath)
+
+            if _pid_alive(pid):
+                if _server_running(port):
+                    live.append((port, pid))
+                    continue
+                # Alive but not serving: PID reuse, or still starting up
+                if started:
+                    try:
+                        age = (
+                            datetime.datetime.now(datetime.timezone.utc)
+                            - datetime.datetime.fromisoformat(started)
+                        ).total_seconds()
+                        if age < 30:
+                            live.append((port, pid))
+                            continue
+                    except ValueError:
+                        pass
+            os.remove(fpath)
         except (ValueError, OSError):
             try:
                 os.remove(fpath)
@@ -147,7 +175,11 @@ def _register_instance(port, server=None):
     _ensure_instance_dir()
     pidfile = os.path.join(_INSTANCE_DIR, f"{port}.pid")
     with open(pidfile, "w") as f:
-        f.write(str(os.getpid()))
+        json.dump({
+            "pid": os.getpid(),
+            "port": port,
+            "started": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        }, f)
 
     def _cleanup(*_args):
         try:
@@ -268,10 +300,16 @@ def _clear_pyc():
 
 
 def _kill_port(port):
-    """Kill any process listening on the given port (SIGTERM then SIGKILL)."""
+    """Kill any process listening on the given port (SIGTERM then SIGKILL).
+
+    Defense-in-depth: refuses to kill a responsive dabarat — callers must
+    route around live instances (add to them or pick another port).
+    """
     import subprocess
     import time
 
+    if _server_running(port):
+        return
     try:
         result = subprocess.run(
             ["lsof", "-ti", f":{port}"],

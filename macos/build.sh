@@ -170,6 +170,21 @@ def main():
         )
         sys.exit(1)
 
+    # Serialize concurrent Finder opens: without this, two rapid
+    # double-clicks both see "server not running" and double-spawn dabarat.
+    # flock is advisory and auto-released on process death, so a stale
+    # lock file is harmless.
+    import fcntl
+    lock_path = os.path.expanduser("~/.dabarat/open-helper.lock")
+    os.makedirs(os.path.dirname(lock_path), exist_ok=True)
+    lock_fd = open(lock_path, "w")
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (IOError, OSError):
+        # Another helper is mid-launch — wait for it to finish, then
+        # re-probe (the winner has likely started the server by now)
+        fcntl.flock(lock_fd, fcntl.LOCK_EX)
+
     if _server_running():
         last_id = None
         for f in files:

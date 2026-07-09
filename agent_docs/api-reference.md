@@ -1,6 +1,6 @@
 # API Reference
 
-All endpoints served by `server.py:PreviewHandler`. 36 endpoints total (14 GET, 22 POST).
+All endpoints served by `server.py:PreviewHandler`. 37 endpoints total (15 GET, 22 POST).
 
 ## GET Endpoints
 
@@ -14,11 +14,24 @@ Returns JSON array of open tabs.
 ```
 
 ### `GET /api/content?tab={id}`
-Returns markdown content and modification time for a tab.
+Returns markdown content and change metadata for a tab.
 ```json
-{ "content": "# Hello\n...", "mtime": 1708099200.0 }
+{
+  "content": "---\ntitle: Doc\n---\n\n# Hello\n...",
+  "body": "# Hello\n...",
+  "frontmatter": { "title": "Doc" },
+  "mtime": 1708099200.0,
+  "changeKey": "1708099200123456789:3200",
+  "fileMissing": true
+}
 ```
-Client polls this every 500ms. Only re-renders if `mtime` changes.
+`content` is always the raw file (the editor round-trips it). `body` (frontmatter-stripped, for rendering) is present only when frontmatter exists. `changeKey` is `st_mtime_ns:size` — the client re-renders when it differs from its cached value (`mtime` is kept for compatibility). `fileMissing: true` appears when the file was deleted/moved; cached content is still served so a save can recreate it. Client polls every 500ms.
+
+### `GET /api/mtime?tab={id}`
+Stat-only change probe — no file read. Used by edit mode to watch for external modifications while full polling is paused.
+```json
+{ "changeKey": "1708099200123456789:3200", "fileMissing": false }
+```
 
 ### `GET /api/annotations?tab={id}`
 Loads annotations from sidecar JSON. Runs orphan cleanup against current markdown content.
@@ -207,11 +220,11 @@ Permanently deletes an annotation.
 Saves edited content to file (atomic write via tempfile + `os.replace`). Auto-commits to git version history.
 ```json
 // Request
-{ "tab": "abc123", "content": "# Updated content\n..." }
+{ "tab": "abc123", "content": "# Updated content\n...", "baseChangeKey": "1708099200123456789:3200" }
 // Response
-{ "ok": true, "mtime": 1708099200.0, "version": "abc123" }
+{ "ok": true, "mtime": 1708099200.0, "changeKey": "1708099201987654321:3210", "version": "abc123" }
 ```
-Max content size: 10 MB.
+Max content size: 10 MB. `baseChangeKey` is optional optimistic concurrency: when present and the file on disk no longer matches, the server answers `409 { "error": "conflict", "message": "...", "currentChangeKey": "..." }` instead of writing. Retry without `baseChangeKey` to force-overwrite. A missing file passes the check (save recreates it — ghost-tab recovery).
 
 ### `POST /api/restore`
 Restores file to a previous git version.
@@ -219,7 +232,7 @@ Restores file to a previous git version.
 // Request
 { "tab": "abc123", "hash": "abc123" }
 // Response
-{ "ok": true, "content": "# Restored content\n...", "mtime": 1708099200.0 }
+{ "ok": true, "content": "# Restored content\n...", "mtime": 1708099200.0, "changeKey": "1708099200123456789:3200" }
 ```
 
 ### `POST /api/recent/remove`

@@ -68,7 +68,7 @@ CLI (__main__.py)
 
 ### `server.py` (~791 lines)
 - `PreviewHandler(BaseHTTPRequestHandler)` — single handler class
-- 36 REST API endpoints (14 GET, 22 POST)
+- 37 REST API endpoints (15 GET, 22 POST)
 - Tab management via module-level dicts: `_tabs`, `_tab_files`, `_tab_order` (protected by `_tabs_lock`)
 - Tab IDs are SHA-256 hashes of absolute file paths
 - Content polling: client fetches `/api/content` every 500ms, server returns file mtime for change detection

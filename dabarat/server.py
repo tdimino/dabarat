@@ -53,15 +53,19 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         try:
             with open(filepath) as f:
                 content = f.read()
-            mtime = os.path.getmtime(filepath)
+            st = os.stat(filepath)
+            mtime = st.st_mtime
+            change_key = f"{st.st_mtime_ns}:{st.st_size}"
         except Exception:
             content = ""
             mtime = 0
+            change_key = "0:0"
         with cls._tabs_lock:
             cls._tabs[tab_id] = {
                 "filepath": filepath,
                 "content": content,
                 "mtime": mtime,
+                "change_key": change_key,
             }
         # Track in recent files
         try:
@@ -70,6 +74,72 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             pass
         _notify_tabs_changed()
         return tab_id
+
+    @classmethod
+    def _tab_filepath(cls, tab_id):
+        """Thread-safe filepath lookup. Returns None if the tab is gone."""
+        with cls._tabs_lock:
+            tab = cls._tabs.get(tab_id)
+            return tab["filepath"] if tab else None
+
+    @classmethod
+    def _tab_dirs(cls):
+        """Thread-safe snapshot of open-tab directories."""
+        with cls._tabs_lock:
+            return [os.path.dirname(t["filepath"]) for t in cls._tabs.values()]
+
+    @classmethod
+    def _update_tab_content(cls, tab_id, content, filepath):
+        """Write-back the tab cache after a successful save/restore.
+
+        Returns (mtime, change_key) from the freshly-written file.
+        """
+        try:
+            st = os.stat(filepath)
+            mtime, change_key = st.st_mtime, f"{st.st_mtime_ns}:{st.st_size}"
+        except Exception:
+            mtime, change_key = 0, "0:0"
+        with cls._tabs_lock:
+            tab = cls._tabs.get(tab_id)
+            if tab:
+                tab["content"] = content
+                tab["mtime"] = mtime
+                tab["change_key"] = change_key
+        return mtime, change_key
+
+    @classmethod
+    def _refresh_tab(cls, tab_id):
+        """Re-read the file into the tab cache if it changed on disk.
+
+        Change detection uses st_mtime_ns + size (float mtime equality can
+        miss sub-second rewrites). File I/O runs outside the lock; the
+        write-back re-checks the tab still exists. Returns a snapshot dict
+        of the tab, or None if the tab is gone.
+        """
+        with cls._tabs_lock:
+            tab = cls._tabs.get(tab_id)
+            if tab is None:
+                return None
+            filepath = tab["filepath"]
+            change_key = tab.get("change_key")
+        try:
+            st = os.stat(filepath)
+            new_key = f"{st.st_mtime_ns}:{st.st_size}"
+            if new_key != change_key:
+                with open(filepath) as f:
+                    content = f.read()
+                with cls._tabs_lock:
+                    tab = cls._tabs.get(tab_id)
+                    if tab is None:
+                        return None
+                    tab["content"] = content
+                    tab["mtime"] = st.st_mtime
+                    tab["change_key"] = new_key
+        except Exception:
+            pass
+        with cls._tabs_lock:
+            tab = cls._tabs.get(tab_id)
+            return dict(tab) if tab else None
 
     def _read_body(self):
         length = int(self.headers.get("Content-Length", 0))
@@ -115,50 +185,35 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         if parsed.path == "/api/content":
             tab_id = params.get("tab", [None])[0]
-            if tab_id and tab_id in self._tabs:
-                tab = self._tabs[tab_id]
-                try:
-                    mtime = os.path.getmtime(tab["filepath"])
-                    if mtime != tab["mtime"]:
-                        with open(tab["filepath"]) as f:
-                            tab["content"] = f.read()
-                        tab["mtime"] = mtime
-                except Exception:
-                    pass
+            tab = self._refresh_tab(tab_id) if tab_id else None
+            if tab:
                 # Parse frontmatter — strip from content, return as separate field
                 fm, body = frontmatter.get_frontmatter(tab["filepath"])
                 self._json_response({
                     "content": body if fm else tab["content"],
                     "frontmatter": fm,
                     "mtime": tab["mtime"],
+                    "changeKey": tab.get("change_key", "0:0"),
                 })
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
         elif parsed.path == "/api/tabs":
-            tabs_list = []
-            for tid in self._tabs:
-                tabs_list.append({
-                    "id": tid,
-                    "filename": os.path.basename(self._tabs[tid]["filepath"]),
-                    "filepath": self._tabs[tid]["filepath"],
-                })
+            with self._tabs_lock:
+                snapshot = [(tid, t["filepath"]) for tid, t in self._tabs.items()]
+            tabs_list = [{
+                "id": tid,
+                "filename": os.path.basename(fp),
+                "filepath": fp,
+            } for tid, fp in snapshot]
             self._json_response(tabs_list)
 
         elif parsed.path == "/api/annotations":
             tab_id = params.get("tab", [None])[0]
-            if tab_id and tab_id in self._tabs:
-                filepath = self._tabs[tab_id]["filepath"]
-                tab = self._tabs[tab_id]
-                # Ensure we have fresh content for orphan detection
-                try:
-                    mtime_file = os.path.getmtime(tab["filepath"])
-                    if mtime_file != tab["mtime"]:
-                        with open(tab["filepath"]) as f:
-                            tab["content"] = f.read()
-                        tab["mtime"] = mtime_file
-                except Exception:
-                    pass
+            # Refresh ensures fresh content for orphan detection
+            tab = self._refresh_tab(tab_id) if tab_id else None
+            if tab:
+                filepath = tab["filepath"]
                 # Auto-cleanup orphaned annotations
                 annotations.cleanup_orphans(filepath, tab["content"])
                 data, mtime = annotations.read(filepath)
@@ -171,8 +226,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/tags":
             tab_id = params.get("tab", [None])[0]
-            if tab_id and tab_id in self._tabs:
-                filepath = self._tabs[tab_id]["filepath"]
+            filepath = self._tab_filepath(tab_id) if tab_id else None
+            if filepath:
                 tags = annotations.read_tags(filepath)
                 self._json_response({"tags": tags})
             else:
@@ -425,8 +480,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/versions":
             tab_id = params.get("tab", [None])[0]
-            if tab_id and tab_id in self._tabs:
-                filepath = self._tabs[tab_id]["filepath"]
+            filepath = self._tab_filepath(tab_id) if tab_id else None
+            if filepath:
                 try:
                     versions = history.list_versions(filepath)
                     self._json_response({"versions": versions})
@@ -438,13 +493,13 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/version":
             tab_id = params.get("tab", [None])[0]
             commit_hash = params.get("hash", [None])[0]
-            if not tab_id or tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id) if tab_id else None
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
             if not commit_hash:
                 self._json_response({"error": "hash required"}, 400)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             try:
                 content = history.get_version_content(filepath, commit_hash)
                 if content is not None:
@@ -457,7 +512,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/diff":
             tab_id = params.get("tab", [None])[0]
             against = params.get("against", [None])[0]
-            if not tab_id or tab_id not in self._tabs:
+            tab = self._refresh_tab(tab_id) if tab_id else None
+            if not tab:
                 self._json_response({"error": "tab not found"}, 404)
                 return
             if not against:
@@ -466,7 +522,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             # Resolve relative paths from the tab's directory
             against_path = against
             if not os.path.isabs(against_path):
-                base_dir = os.path.dirname(self._tabs[tab_id]["filepath"])
+                base_dir = os.path.dirname(tab["filepath"])
                 against_path = os.path.join(base_dir, against_path)
             against_path = os.path.abspath(against_path)
             # Restrict to markdown/text files in open tab directories
@@ -474,14 +530,13 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if ext.lower() not in {".md", ".markdown", ".txt", ".mdown", ".mkd"}:
                 self._json_response({"error": "only markdown files allowed"}, 400)
                 return
-            tab_dirs = [os.path.dirname(t["filepath"]) for t in self._tabs.values()]
+            tab_dirs = self._tab_dirs()
             if not any(against_path.startswith(d + os.sep) or against_path == os.path.join(d, os.path.basename(against_path)) for d in tab_dirs):
                 self._json_response({"error": "path outside allowed directories"}, 403)
                 return
             if not os.path.isfile(against_path):
                 self._json_response({"error": "file not found: " + against_path}, 404)
                 return
-            tab = self._tabs[tab_id]
             left_content = tab["content"]
             try:
                 with open(against_path, encoding="utf-8") as f:
@@ -508,7 +563,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self.send_error(404)
                 return
             # Restrict to directories of open tabs or cached browse dirs
-            tab_dirs = [os.path.dirname(t["filepath"]) for t in self._tabs.values()]
+            tab_dirs = self._tab_dirs()
             with _browse_cache_lock:
                 browse_dirs = [k[0] for k in _browse_cache]
             allowed_dirs = tab_dirs + browse_dirs
@@ -536,8 +591,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             # Try to serve static files relative to open tab directories
             rel_path = unquote(parsed.path.lstrip("/"))
             served = False
-            for tab in self._tabs.values():
-                tab_dir = os.path.dirname(tab["filepath"])
+            for tab_dir in self._tab_dirs():
                 candidate = os.path.normpath(os.path.join(tab_dir, rel_path))
                 # Prevent directory traversal
                 if not candidate.startswith(tab_dir + os.sep):
@@ -567,8 +621,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             self._serve_html_shell()
 
     def _serve_html_shell(self):
-        first_tab = next(iter(self._tabs), "")
-        first_file = self._tabs[first_tab]["filepath"] if first_tab else ""
+        with self._tabs_lock:
+            first_tab = next(iter(self._tabs.values()), None)
+            first_file = first_tab["filepath"] if first_tab else ""
         title = os.path.basename(first_file) if first_file else "dabarat"
         html = get_html(title=title, default_author=self.default_author)
         self.send_response(200)
@@ -591,9 +646,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"error": "filepath required"}, 400)
                 return
             if not os.path.isabs(filepath):
-                first_tab = next(iter(self._tabs.values()), None)
-                if first_tab:
-                    base_dir = os.path.dirname(first_tab["filepath"])
+                with self._tabs_lock:
+                    first_tab = next(iter(self._tabs.values()), None)
+                    base_dir = os.path.dirname(first_tab["filepath"]) if first_tab else None
+                if base_dir:
                     filepath = os.path.join(base_dir, filepath)
             filepath = os.path.abspath(filepath)
 
@@ -601,16 +657,20 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"error": f"file not found: {filepath}"}, 400)
                 return
 
-            # Check if already open
-            for tid, tab in self._tabs.items():
-                if tab["filepath"] == filepath:
-                    self._json_response({
-                        "id": tid,
-                        "filename": os.path.basename(filepath),
-                        "filepath": filepath,
-                        "existing": True,
-                    })
-                    return
+            # Check if already open (snapshot — add_tab reacquires the lock)
+            with self._tabs_lock:
+                existing = next(
+                    (tid for tid, t in self._tabs.items() if t["filepath"] == filepath),
+                    None,
+                )
+            if existing:
+                self._json_response({
+                    "id": existing,
+                    "filename": os.path.basename(filepath),
+                    "filepath": filepath,
+                    "existing": True,
+                })
+                return
 
             tab_id = self.add_tab(filepath)
             self._json_response({
@@ -636,7 +696,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/rename":
             tab_id = body.get("tab", "")
             new_name = body.get("name", "").strip()
-            if tab_id not in self._tabs:
+            old_path = self._tab_filepath(tab_id)
+            if not old_path:
                 self._json_response({"error": "tab not found"}, 404)
                 return
             if not new_name:
@@ -648,7 +709,6 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not new_name.endswith(".md"):
                 new_name += ".md"
 
-            old_path = self._tabs[tab_id]["filepath"]
             new_path = os.path.join(os.path.dirname(old_path), new_name)
 
             if new_path == old_path:
@@ -666,7 +726,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     new_sc = new_path + suffix
                     if os.path.exists(old_sc):
                         os.rename(old_sc, new_sc)
-                self._tabs[tab_id]["filepath"] = new_path
+                with self._tabs_lock:
+                    if tab_id in self._tabs:
+                        self._tabs[tab_id]["filepath"] = new_path
                 _notify_tabs_changed()
                 self._json_response({"ok": True, "filepath": new_path, "filename": new_name})
             except OSError as e:
@@ -697,10 +759,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/annotate":
             tab_id = body.get("tab", "")
-            if tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             data, _ = annotations.read(filepath)
 
             ann = {
@@ -737,10 +799,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/resolve":
             tab_id = body.get("tab", "")
             ann_id = body.get("id", "")
-            if tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             data, _ = annotations.read(filepath)
             target = None
             for ann in data["annotations"]:
@@ -775,10 +837,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/reply":
             tab_id = body.get("tab", "")
             ann_id = body.get("id", "")
-            if tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             data, _ = annotations.read(filepath)
             for ann in data["annotations"]:
                 if ann["id"] == ann_id:
@@ -795,10 +857,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/delete-annotation":
             tab_id = body.get("tab", "")
             ann_id = body.get("id", "")
-            if tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             data, _ = annotations.read(filepath)
             data["annotations"] = [a for a in data["annotations"] if a["id"] != ann_id]
             annotations.write(filepath, data)
@@ -807,7 +869,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/save":
             tab_id = body.get("tab", "")
             content = body.get("content")
-            if tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
             if content is None:
@@ -816,7 +879,6 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if len(content) > 10 * 1024 * 1024:  # 10 MB limit
                 self._json_response({"error": "content too large"}, 413)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             try:
                 import tempfile
                 dir_name = os.path.dirname(filepath)
@@ -828,36 +890,42 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 finally:
                     os.close(fd)
                 os.replace(tmp_path, filepath)
-                mtime = os.path.getmtime(filepath)
-                self._tabs[tab_id]["content"] = content
-                self._tabs[tab_id]["mtime"] = mtime
+                mtime, change_key = self._update_tab_content(tab_id, content, filepath)
                 # Auto-commit to version history
                 version_hash = ""
                 try:
                     version_hash = history.commit(filepath)
                 except Exception:
                     pass
-                self._json_response({"ok": True, "mtime": mtime, "version": version_hash})
+                self._json_response({
+                    "ok": True,
+                    "mtime": mtime,
+                    "changeKey": change_key,
+                    "version": version_hash,
+                })
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)
 
         elif parsed.path == "/api/restore":
             tab_id = body.get("tab", "")
             commit_hash = body.get("hash", "")
-            if tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
             if not commit_hash:
                 self._json_response({"error": "hash required"}, 400)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             try:
                 content = history.restore(filepath, commit_hash)
                 if content is not None:
-                    mtime = os.path.getmtime(filepath)
-                    self._tabs[tab_id]["content"] = content
-                    self._tabs[tab_id]["mtime"] = mtime
-                    self._json_response({"ok": True, "content": content, "mtime": mtime})
+                    mtime, change_key = self._update_tab_content(tab_id, content, filepath)
+                    self._json_response({
+                        "ok": True,
+                        "content": content,
+                        "mtime": mtime,
+                        "changeKey": change_key,
+                    })
                 else:
                     self._json_response({"error": "version not found"}, 404)
             except ValueError as e:
@@ -880,13 +948,13 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             tab_id = body.get("tab", "")
             tag = body.get("tag", "").strip()
             action = body.get("action", "add")
-            if tab_id not in self._tabs:
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
             if not tag:
                 self._json_response({"error": "tag required"}, 400)
                 return
-            filepath = self._tabs[tab_id]["filepath"]
             if action == "remove":
                 tags = annotations.remove_tag(filepath, tag)
             else:

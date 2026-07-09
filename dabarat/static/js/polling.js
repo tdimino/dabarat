@@ -37,9 +37,10 @@ async function poll() {
     try {
       const res = await fetch('/api/content?tab=' + activeTabId);
       const data = await res.json();
-      if (!data.error && data.mtime !== tabs[activeTabId].mtime) {
+      if (!data.error && data.changeKey !== tabs[activeTabId].changeKey) {
         tabs[activeTabId].content = data.content;
         tabs[activeTabId].mtime = data.mtime;
+        tabs[activeTabId].changeKey = data.changeKey;
         currentFrontmatter = data.frontmatter || null;
         tabs[activeTabId].frontmatter = currentFrontmatter;
         render(data.content);
@@ -59,9 +60,10 @@ async function poll() {
           fetch('/api/content?tab=' + id)
             .then(r => r.json())
             .then(data => {
-              if (!data.error && data.mtime !== tabs[id].mtime) {
+              if (!data.error && data.changeKey !== tabs[id].changeKey) {
                 tabs[id].content = data.content;
                 tabs[id].mtime = data.mtime;
+                tabs[id].changeKey = data.changeKey;
                 tabs[id].frontmatter = data.frontmatter || null;
               }
             })

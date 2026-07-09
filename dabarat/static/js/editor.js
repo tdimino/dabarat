@@ -254,6 +254,7 @@ async function saveEdit() {
     if (data.ok && tabs[tabId]) {
       tabs[tabId].content = content;
       tabs[tabId].mtime = data.mtime;
+      tabs[tabId].changeKey = data.changeKey;
       editState.savedContent = content;
       editState.dirty = false;
       document.body.classList.remove('edit-dirty');

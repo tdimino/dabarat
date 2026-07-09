@@ -161,7 +161,10 @@ def _register_instance(port, server=None):
     def _sigterm_handler(*_args):
         _cleanup()
         if server:
-            server.shutdown()
+            # shutdown() must not run on the signal-handling (serve_forever)
+            # thread — it would deadlock waiting on the serve loop to stop.
+            import threading
+            threading.Thread(target=server.shutdown, daemon=True).start()
         else:
             sys.exit(0)
 

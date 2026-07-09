@@ -28,6 +28,7 @@ async function init() {
         .then(data => {
           tabs[id].content = data.content;
           tabs[id].mtime = data.mtime;
+          tabs[id].changeKey = data.changeKey;
           tabs[id].frontmatter = data.frontmatter || null;
           if (id === activeTabId) {
             currentFrontmatter = tabs[id].frontmatter;

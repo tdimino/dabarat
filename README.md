@@ -21,6 +21,10 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Auto-cleanup of orphaned annotations**—when anchor text is deleted, its annotations are removed on next load
 - **8 themes**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 - **Resizable TOC sidebar**—drag the right edge to adjust width (persisted across sessions)
+- **Deterministic TOC navigation**—clicks always jump (even re-clicks on the same heading), with scroll-spy highlighting, deep-link `#hash` support, and stale-hash cleanup across tabs and re-renders
+- **Conflict-safe editing**—saves carry a change key; external modifications during edit mode surface a reload banner instead of silently clobbering, and deleted files 409 before recreation
+- **Crash recovery**—tab sessions persist per port; an unclean exit restores your open tabs on the next launch, and a live server is never killed by a second launch (Add to Existing / Open New Window / Cancel)
+- **Ghost tabs**—deleted or moved files keep serving cached content with a dimmed strikethrough tab and status banner; saving recreates the file
 - **Switchable emoji styles**—Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji
 - **Command palette**—`Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
 - **File tagging**—predefined + custom tags as colored pills in palette header, status bar, and tab bar

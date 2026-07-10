@@ -18,11 +18,11 @@
 
 ### Rendering Pipeline
 1. `poll()` runs every 500ms, fetches `/api/content` for active tab
-2. If `mtime` changed, sets `currentFrontmatter` from response, calls `render(md)` which:
-   - Skips if `md === lastRenderedMd`
+2. If `changeKey` changed, sets `currentFrontmatter` from response, calls `render(md)` which:
+   - Skips if `md === lastRenderedMd` AND the composite `lastRenderKey` (md + frontmatter) is unchanged
+   - Reconciles TOC navigation state first: a tab switch cancels the previous tab's jump and clears its TOC-owned hash; a same-tab re-render re-resolves an in-flight jump's target against the new DOM (restart if the ID survives, cancel + clear hash if not)
    - Parses markdown via `marked.parse()` (GFM mode)
-   - Builds TOC from h1–h4 headings
-   - Assigns heading IDs (`slugify(text) + '-' + index`)
+   - Assigns heading IDs (`slugify(textContent) + '-' + index`) on the **live** h1–h4 headings, then passes the same collection to `buildToc(headings)` — one slug computation, before Twemoji rewrites heading text
    - Runs `hljs.highlightElement()` on code blocks
    - Calls `renderFrontmatterIndicator()` — clickable bar showing name, version, type, var count
    - Calls `applyVariableHighlights()` — wraps `{{var}}` and `${var}` in colored pills (BEFORE annotations)
@@ -30,7 +30,15 @@
    - Calls `applyAnnotationHighlights()` to wrap annotated text in `<mark>` elements
    - Wraps every `<table>` in a `<div class="table-scroll">` container (`overflow-x: auto`) for horizontal scrolling of wide tables; skip guard prevents double-wrapping
    - Calls `attachLightboxToContent()` — attaches click handlers to content images (excludes `.emoji` and `.tpl-var-img`), rebuilds `_lightboxImages` array
-3. Scroll spy updates active heading in TOC (throttled via `requestAnimationFrame`)
+3. Scroll spy updates active heading in TOC (throttled via `requestAnimationFrame`); threshold is the shared `--toc-heading-offset` (+2px landing epsilon), and sidebar centering goes through `centerTocLink()` which scrolls **only** `#toc-scroll` — `scrollIntoView` is banned in render.js because it can cancel the window's in-flight smooth scroll
+
+### TOC Navigation (render.js)
+- **Explicit jumps, not native hash navigation** — browsers only scroll on hash *change*, so TOC anchors get a delegated click handler on `#toc-list` (`handleTocClick`) that `preventDefault`s ordinary primary-button clicks and calls `navigateToTocHeading(targetId)`; modified/middle clicks pass through natively. The handler is bound once per `#toc-list` node, guarded by `_tocBoundList` node identity (home mode destroys/restores `#toc-scroll.innerHTML`, which silently drops listeners — a `data-*` marker would survive serialization while the listener wouldn't)
+- **Jump lifecycle** — every activation increments `_tocJumpGeneration` and records `{generation, targetId, tabId}` in `_tocActiveJump`; a newer click invalidates older completion monitors. The rAF monitor settles on |scrollTop − target| ≤ 2 or a 2s timeout, re-validating generation, tab, mode, and target connectivity each frame
+- **Hash ownership** — `history.replaceState` (no history spam) syncs the fragment and records `{targetId, tabId}` in `_tocHashOwner`; tab switches and vanished headings clear only hashes the TOC wrote. An exact heading hash on initial page load is honored as a deep link after the first full render
+- **Offset source of truth** — `--toc-heading-offset: 80px` on `#content` (typography.css) drives the JS jump offset (`getTocHeadingOffset()`), CSS `scroll-margin-top` on headings, and the scroll-spy threshold
+- **Mode guards** — `_tocNormalDocumentActive()` (not home/edit/diff) gates activation, the completion monitor, and scroll-spy
+- **Regression suite** — `scripts/verify/phase7_toc_navigation.py`: stdlib-only CDP harness (reuses `pdf_export.py` primitives) covering the V1–V20 matrix; reduced-motion is tested via a dedicated Chrome with `--force-prefers-reduced-motion` because `Emulation.setEmulatedMedia` dies with each per-command WebSocket
 
 ### Frontmatter System
 - **Indicator bar**: `renderFrontmatterIndicator(fm)` — compact bar above content with name + badge pills

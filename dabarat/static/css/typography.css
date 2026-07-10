@@ -2,11 +2,19 @@
    Content Typography
    ══════════════════════════════════════════════════════════ */
 #content {
+  --toc-heading-offset: 80px;
   max-width: 900px;
   margin-left: auto;
   margin-right: auto;
   padding: 48px 56px 80px;
   contain: content;
+}
+
+#content h1,
+#content h2,
+#content h3,
+#content h4 {
+  scroll-margin-top: var(--toc-heading-offset);
 }
 
 h1, h2, h3, h4, h5, h6 {

@@ -1,6 +1,6 @@
 # API Reference
 
-All endpoints served by `server.py:PreviewHandler`. 39 endpoints total (16 GET, 23 POST).
+All endpoints served by `server.py:PreviewHandler`. 41 endpoints total (17 GET, 24 POST).
 
 ## GET Endpoints
 
@@ -53,6 +53,12 @@ Returns tags array for a tab.
 Returns recently opened files list (max 20).
 ```json
 { "entries": [{ "path": "/path/to/file.md", "title": "My Document", "opened": "2026-02-18T..." }] }
+```
+
+### `GET /api/config`
+Returns user config from `~/.dabarat/config.json`. Empty object `{}` if no config exists.
+```json
+{ "theme": "ink" }
 ```
 
 ### `GET /api/versions?tab={id}`
@@ -234,6 +240,15 @@ Restores file to a previous git version.
 { "tab": "abc123", "hash": "abc123" }
 // Response
 { "ok": true, "content": "# Restored content\n...", "mtime": 1708099200.0, "changeKey": "1708099200123456789:3200" }
+```
+
+### `POST /api/config`
+Updates user config in `~/.dabarat/config.json`. Merges with existing config (atomic write via tempfile + `os.replace`). Currently accepts `theme` key only; unknown themes return 400.
+```json
+// Request
+{ "theme": "ink" }
+// Response
+{ "ok": true }
 ```
 
 ### `POST /api/recent/remove`

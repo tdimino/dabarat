@@ -29,6 +29,42 @@ _workspace_lock = threading.Lock()
 _on_tabs_changed = None  # Optional callback wired by __main__ — fires after tab add/close/rename
 _tabs_changed_warned = False
 
+_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".dabarat", "config.json")
+_VALID_THEMES = {
+    'ink', 'vellum', 'mocha', 'latte',
+    'rose-pine', 'rose-pine-dawn', 'tokyo-storm', 'tokyo-light', '_custom',
+}
+
+
+def _read_config():
+    try:
+        with open(_CONFIG_PATH) as f:
+            data = json.loads(f.read(8192))
+            return data if isinstance(data, dict) else {}
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return {}
+
+
+def _write_config(data):
+    import tempfile
+    config_dir = os.path.dirname(_CONFIG_PATH)
+    os.makedirs(config_dir, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=config_dir, suffix=".json")
+    try:
+        os.write(fd, json.dumps(data, indent=2).encode())
+        os.close(fd)
+        os.replace(tmp, _CONFIG_PATH)
+    except Exception:
+        try:
+            os.close(fd)
+        except OSError:
+            pass
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
 
 def _notify_tabs_changed():
     global _tabs_changed_warned
@@ -317,6 +353,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"entries": entries})
             except Exception as e:
                 self._json_response({"entries": [], "error": str(e)})
+
+        elif parsed.path == "/api/config":
+            self._json_response(_read_config())
 
         elif parsed.path == "/api/workspace":
             with _workspace_lock:
@@ -703,7 +742,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             first_tab = next(iter(self._tabs.values()), None)
             first_file = first_tab["filepath"] if first_tab else ""
         title = os.path.basename(first_file) if first_file else "dabarat"
-        html = get_html(title=title, default_author=self.default_author)
+        server_theme = _read_config().get("theme", "")
+        html = get_html(title=title, default_author=self.default_author,
+                        server_theme=server_theme)
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -744,6 +785,19 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if existing:
                 response["existing"] = True
             self._json_response(response)
+
+        elif parsed.path == "/api/config":
+            theme = body.get("theme")
+            if theme and theme not in _VALID_THEMES:
+                self._json_response({"error": "unknown theme"}, 400)
+                return
+            cfg = _read_config()
+            cfg.update({k: v for k, v in body.items() if k in ("theme",)})
+            try:
+                _write_config(cfg)
+                self._json_response({"ok": True})
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
 
         elif parsed.path == "/api/close":
             tab_id = body.get("id", "")

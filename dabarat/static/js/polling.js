@@ -4,11 +4,18 @@ const POLL_TABS_MS = 2000;
 let lastTabsCheck = 0;
 let _editProbeFailures = 0;
 
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    _editProbeFailures = 0;
+    _hideServerUnreachableBanner();
+  }
+});
+
 async function poll() {
   /* Full polling pauses during diff/edit mode, but edit mode keeps a
      lightweight stat-only watch so external changes surface immediately */
   if (diffState.active || editState.active) {
-    if (editState.active && activeTabId && tabs[activeTabId]) {
+    if (editState.active && activeTabId && tabs[activeTabId] && !document.hidden) {
       try {
         const res = await fetch('/api/mtime?tab=' + activeTabId);
         const data = await res.json();
@@ -28,6 +35,24 @@ async function poll() {
         _editProbeFailures++;
         if (_editProbeFailures >= 6) _showServerUnreachableBanner();
       }
+    }
+    /* Detect tabs added externally (e.g. via --add) even during edit mode */
+    const now = Date.now();
+    if (editState.active && now - lastTabsCheck >= POLL_TABS_MS) {
+      lastTabsCheck = now;
+      try {
+        const res = await fetch('/api/tabs');
+        const tabList = await res.json();
+        let changed = false;
+        tabList.forEach(t => {
+          if (!tabs[t.id]) {
+            tabs[t.id] = { filepath: t.filepath, filename: t.filename, content: '', mtime: 0, scrollY: 0 };
+            changed = true;
+            fetchTabContent(t.id);
+          }
+        });
+        if (changed) renderTabBar();
+      } catch(e) {}
     }
     setTimeout(poll, POLL_ACTIVE_MS);
     return;

@@ -467,7 +467,11 @@ def _get_open_filepaths(port):
         return []
 
 
-def _ask_reuse_dialog(already_open, new_files):
+def _applescript_escape(s):
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def _ask_reuse_dialog(already_open, new_files, open_names=None, inst_port=None):
     """Show macOS native dialog asking what to do with a running instance.
 
     Returns "add", "new_window", or "cancel". Every failure mode maps to a
@@ -480,11 +484,17 @@ def _ask_reuse_dialog(already_open, new_files):
         return "add"
 
     parts = []
+    if open_names:
+        listing = ", ".join(_applescript_escape(n) for n in open_names[:5])
+        if len(open_names) > 5:
+            listing += f" (+{len(open_names) - 5} more)"
+        port_label = f" (:{inst_port})" if inst_port else ""
+        parts.append(f"Open{port_label}: {listing}")
     if already_open:
-        names = ", ".join(os.path.basename(f) for f in already_open)
+        names = ", ".join(_applescript_escape(os.path.basename(f)) for f in already_open)
         parts.append(f"Already open: {names}")
     if new_files:
-        names = ", ".join(os.path.basename(f) for f in new_files)
+        names = ", ".join(_applescript_escape(os.path.basename(f)) for f in new_files)
         parts.append(f"New: {names}")
     msg = "\\n".join(parts) if parts else "Dabarat is already running."
 
@@ -501,7 +511,7 @@ def _ask_reuse_dialog(already_open, new_files):
             capture_output=True, text=True, timeout=30,
         )
         if result.returncode != 0:
-            return "cancel"  # Escape / Cancel button / dialog not shown
+            return "cancel"
         if "Add to Existing" in result.stdout:
             return "add"
         if "Open New Window" in result.stdout:
@@ -510,6 +520,72 @@ def _ask_reuse_dialog(already_open, new_files):
     except Exception:
         print("\033[38;2;88;91;112mNote: dialog unavailable — adding to the running instance\033[0m")
         return "add"
+
+
+def _ask_window_picker(instances_info, new_files):
+    """Show macOS list dialog to choose which window to add files to.
+
+    Returns a port number (int), "new_window", or "cancel".
+    """
+    import platform
+    import subprocess
+
+    if platform.system() != "Darwin":
+        return instances_info[0][0] if instances_info else "cancel"
+
+    items = []
+    port_map = {}
+    for inst_port, _pid, open_names, _paths in instances_info:
+        if open_names:
+            safe_names = [_applescript_escape(n) for n in open_names[:3]]
+            label = f":{inst_port} — {', '.join(safe_names)}"
+            if len(open_names) > 3:
+                label += f" (+{len(open_names) - 3} more)"
+        else:
+            label = f":{inst_port} — (empty)"
+        items.append(label)
+        port_map[label] = inst_port
+    items.append("Open New Window")
+
+    new_names = ", ".join(_applescript_escape(os.path.basename(f)) for f in new_files[:3])
+    if len(new_files) > 3:
+        new_names += f" (+{len(new_files) - 3} more)"
+    prompt = f"Add {new_names} to:" if new_names else "Choose a window:"
+
+    item_str = '", "'.join(items)
+    script = (
+        f'choose from list {{"{item_str}"}} '
+        f'with title "Dabarat" '
+        f'with prompt "{prompt}" '
+        f'default items {{"{items[0]}"}}'
+    )
+    try:
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            return "cancel"
+        chosen = result.stdout.strip()
+        if chosen == "false" or not chosen:
+            return "cancel"
+        if chosen == "Open New Window":
+            return "new_window"
+        return port_map.get(chosen, "cancel")
+    except Exception:
+        return instances_info[0][0] if instances_info else "cancel"
+
+
+def _activate_chrome():
+    """Bring Chrome to front after adding tabs to a running instance."""
+    import subprocess
+    try:
+        subprocess.run(
+            ["osascript", "-e", 'tell application "Google Chrome" to activate'],
+            capture_output=True, timeout=5,
+        )
+    except Exception:
+        pass
 
 
 def _add_to_running(port, files):
@@ -680,30 +756,49 @@ def cmd_serve(argv):
             print("Error: no files specified")
             sys.exit(1)
 
-    # Tab reuse: if a server is already running, ask what to do.
-    # Every outcome here is non-destructive \u2014 the running server is never killed.
-    if _server_running(port):
-        open_paths = _get_open_filepaths(port)
-        already_open = [f for f in files if f in open_paths]
-        new_files = [f for f in files if f not in open_paths]
+    # Tab reuse: if any instances are running, ask what to do.
+    # Every outcome here is non-destructive \u2014 running servers are never killed.
+    live = _live_instances()
+    if live and files:
+        instances_info = []
+        for inst_port, inst_pid in live:
+            open_paths = _get_open_filepaths(inst_port)
+            open_names = [os.path.basename(p) for p in open_paths]
+            instances_info.append((inst_port, inst_pid, open_names, open_paths))
 
-        choice = _ask_reuse_dialog(already_open, new_files)
+        if len(instances_info) == 1:
+            inst_port, inst_pid, open_names, open_paths = instances_info[0]
+            already_open = [f for f in files if f in open_paths]
+            new_files = [f for f in files if f not in open_paths]
+            choice = _ask_reuse_dialog(already_open, new_files, open_names, inst_port)
+            target_port = inst_port
+        else:
+            new_files = files
+            choice_port = _ask_window_picker(instances_info, files)
+            if choice_port == "cancel":
+                choice = "cancel"
+                target_port = None
+            elif choice_port == "new_window":
+                choice = "new_window"
+                target_port = None
+            else:
+                choice = "add"
+                target_port = choice_port
+
         if choice == "add":
-            results = _add_to_running(port, files)
+            results = _add_to_running(target_port, files)
             for name, status in results:
                 icon = "\033[38;2;166;227;161m\u2713\033[0m" if "fail" not in status else "\033[38;2;243;139;168m\u2717\033[0m"
                 print(f"{icon} {name} ({status})")
-            print(f"\033[38;2;88;91;112mServer already running at http://127.0.0.1:{port}\033[0m")
+            print(f"\033[38;2;88;91;112mServer already running at http://127.0.0.1:{target_port}\033[0m")
+            _activate_chrome()
             sys.exit(0)
         elif choice == "cancel":
             print("\033[38;2;88;91;112mCancelled.\033[0m")
             sys.exit(0)
-        else:  # new_window \u2014 leave the running instance alone, take a free port
+        else:  # new_window
             port = _find_free_port()
             print(f"\033[38;2;88;91;112mOpening new window on port {port}\033[0m")
-
-    # Instance limit: refuse to start if too many are already running
-    live = _live_instances()
     if len(live) >= max_inst:
         print(f"\033[38;2;243;139;168m\u2717 Instance limit reached ({len(live)}/{max_inst})\033[0m")
         for p, pid in sorted(live):

@@ -10,7 +10,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - 8 themes: 4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light). Ink + Vellum are The Scholar's Codex pair — parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 
 ## Structure
-- 11 Python modules in `dabarat/` — `server.py` (HTTP + 39 endpoints), `template.py` (HTML assembly), `annotations.py`, `bookmarks.py`, `frontmatter.py`, `diff.py`, `history.py`, `recent.py`, `workspace.py`, `pdf_export.py`, `__main__.py` (CLI entry)
+- 11 Python modules in `dabarat/` — `server.py` (HTTP + 41 endpoints), `template.py` (HTML assembly), `annotations.py`, `bookmarks.py`, `frontmatter.py`, `diff.py`, `history.py`, `recent.py`, `workspace.py`, `pdf_export.py`, `__main__.py` (CLI entry)
 - 16 JS modules in `static/js/` concatenated in dependency order — see `agent_docs/client-architecture.md`
 - 14 CSS modules in `static/css/` concatenated in dependency order — theme-variables, base-layout, typography, then feature-specific (annotations, editor, diff, home, etc.)
 - `static/palette.js` — Command palette + tag mode (Cmd+K) — loaded separately
@@ -38,7 +38,8 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - `{{variable}}` and `${variable}` template slots highlighted as colored pills with schema tooltips
 - Blockquotes: no italic (matches GitHub/VS Code/Typora convention) — `em` and `code` inside blockquotes reset to `font-style: normal` to prevent Victor Mono cursive rendering
 - Emoji style: 4 options (Twemoji, OpenMoji, Noto, Native) via `EMOJI_CDNS` in `theme.js`. `applyEmojiStyle()` runs after `marked.parse()`
-- **Config dir**: `~/.dabarat/` (history, instances, recent.json). Auto-migrates from `~/.mdpreview/` on first run.
+- **Config dir**: `~/.dabarat/` (history, instances, recent.json, config.json). Auto-migrates from `~/.mdpreview/` on first run.
+- **Config persistence**: `~/.dabarat/config.json` stores cross-window preferences (currently `theme`). Read by `_read_config()`, written atomically by `_write_config()` (tempfile + `os.replace`). Served via `GET /api/config`, updated via `POST /api/config`. Template injects server-side theme into the FOUC-prevention script as a fallback after localStorage.
 - **localStorage prefix**: `dabarat-*` keys. Migration IIFE in `state.js` copies `mdpreview-*` → `dabarat-*` on first load.
 - **Color convention**: Never use hardcoded rgba channel values—use `rgba(var(--ctp-*-rgb), alpha)` from `theme-variables.css`. RGB companions (`--ctp-yellow-rgb`, `--ctp-blue-rgb`, etc.) auto-switch per theme. Latte overrides only needed when alpha values differ from Mocha defaults. TAG_COLORS in `palette.js` also uses CSS variable references for theme-awareness.
 - **Vellum shadow exception**: Vellum uses warm umber shadows (`rgba(70, 48, 20, ...)`) instead of the neutral `rgba(0, 0, 0, ...)` used by every other theme. Pure-black shadows punch cold holes into its warm parchment base; the convention break is documented inline in `theme-variables.css` and should not be "normalized" back.
@@ -50,9 +51,9 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 - **PDF export**: `pdf_export.py` uses headless Chrome CDP with zero page margins (`@page { margin: 0 }`, CDP margins: 0). Visual spacing via `#content { padding: 0.6in }` in print mode. Export mode: `?theme=X&export=1` skips polling + emits render-complete sentinel. `print-color-adjust: exact` preserves dark backgrounds. `html` gets theme background in print to prevent outline artifacts on dark themes. Light themes override both `html` and `body` to `#fff`.
 - **Finder integration (macOS)**: `Dabarat.app` droplet at `~/Applications/`. Bundle ID: `com.minoanmystery.dabarat`. Rebuild after Python upgrade: `bash macos/build.sh`. Default handler: `duti -s com.minoanmystery.dabarat .md all`
 - **Thread safety**: `_browse_cache` in `server.py` protected by `threading.Lock()`. All shared module-level dicts under `ThreadingHTTPServer` require lock protection. `_tabs` access goes through locked helpers — `_tab_filepath()`, `_tab_dirs()`, `_refresh_tab()`, `_update_tab_content()` — never index `self._tabs` directly in handlers.
-- **Change detection**: `changeKey = f"{st.st_mtime_ns}:{st.st_size}"` is the reload signal (float mtime equality misses sub-second rewrites). `/api/content`, `/api/save`, `/api/restore` return it; client compares/stores `tabs[id].changeKey`. `GET /api/mtime?tab=` is the stat-only probe (edit-mode watch).
+- **Change detection**: `changeKey = f"{st.st_mtime_ns}:{st.st_size}"` is the reload signal (float mtime equality misses sub-second rewrites). `/api/content`, `/api/save`, `/api/restore` return it; client compares/stores `tabs[id].changeKey`. `GET /api/mtime?tab=` is the stat-only probe (edit-mode watch). Edit-mode probe skips when `document.hidden` (prevents false "Server unreachable" banners on sleep/wake); `visibilitychange` listener resets `_editProbeFailures` on page focus. Edit mode also polls `/api/tabs` at `POLL_TABS_MS` interval to detect externally added tabs (via `--add` or instance dialog).
 - **Content vs body**: `/api/content` returns `content` (always the raw file — the editor round-trips it) plus `body` (frontmatter-stripped) when fm exists. Render paths use `tabBody(tab)` (`render.js`); never render raw content or frontmatter leaks into the preview, never save the body or frontmatter is destroyed.
-- **Instance lifecycle**: launching `dabarat file.md` against a live server shows a tri-state dialog (Add to Existing / Open New Window / Cancel) — every failure mode is non-destructive; "Open New Window" takes a free port (socket bind-0). `_kill_port` refuses responsive dabarat instances; only unresponsive zombies are cleared. PID files are JSON `{pid, port, started}` with liveness verified via `/api/tabs` + 30s startup grace.
+- **Instance lifecycle**: launching `dabarat file.md` scans ALL live instances via `_live_instances()`. Single instance: enhanced dialog shows open files + Add to Existing / Open New Window / Cancel. Multiple instances: `choose from list` picker shows each window's open files, lets user choose which to add to. "Open New Window" takes a free port (socket bind-0). After adding, Chrome is activated via `_activate_chrome()`. `_kill_port` refuses responsive dabarat instances; only unresponsive zombies are cleared. PID files are JSON `{pid, port, started}` with liveness verified via `/api/tabs` + 30s startup grace.
 - **Tab-session persistence**: `~/.dabarat/instances/<port>.tabs.json` (atomic write via `_on_tabs_changed` hook on add/close/rename), cleared on clean exit, restored by `dabarat --port <port>` with no file args after an unclean death.
 - **Ghost tabs**: deleted/moved files serve cached content with `fileMissing: true`; the tab name dims with strikethrough (`.tab.ghost`) and a `.status-banner` appears; saving recreates the file. Save conflicts: client sends `baseChangeKey`, server 409s if the disk changed, client confirms overwrite.
 - **Size-gated extraction**: `_extract_word_count`, `_extract_summary`, `_extract_preview`, `_extract_preview_image` all gated behind 1MB file size check in browse-dir handler.
@@ -69,7 +70,7 @@ Part of the [Claudius](https://github.com/tdimino/claudius) ecosystem.
 Read these when relevant to the current task:
 
 - `agent_docs/architecture.md` — Data flow, component roles, design decisions
-- `agent_docs/api-reference.md` — All 37 REST API endpoints with JSON schemas
+- `agent_docs/api-reference.md` — All 41 REST API endpoints with JSON schemas
 - `agent_docs/client-architecture.md` — 16 JS modules: state, rendering pipeline, annotation system
 - `agent_docs/workspace-system.md` — Workspace CRUD, multi-root sidebar, CLI flag, quotes system
 - `agent_docs/motion-one.md` — Motion One call sites, guard pattern, animation principles

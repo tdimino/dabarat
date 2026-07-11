@@ -39,6 +39,7 @@ function _prepareEditMode() {
   editState.dirty = false;
   editState.tabId = activeTabId;
   editState.savedContent = tabs[activeTabId].content;
+  _editProbeFailures = 0;
 
   document.body.classList.add('edit-mode');
 

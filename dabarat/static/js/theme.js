@@ -55,17 +55,26 @@ const THEME_PAIRS = {
 };
 
 let currentTheme = (new URLSearchParams(window.location.search)).get('theme')
-  || localStorage.getItem('dabarat-theme') || 'mocha';
+  || localStorage.getItem('dabarat-theme')
+  || document.documentElement.getAttribute('data-theme')
+  || 'mocha';
 if (!THEME_META[currentTheme] && currentTheme !== '_custom') currentTheme = 'mocha';
 
-function applyTheme() {
+function applyTheme(persist) {
   document.documentElement.setAttribute('data-theme', currentTheme);
   const toggle = document.getElementById('theme-toggle');
   const meta = THEME_META[currentTheme];
   if (toggle && meta) toggle.checked = (meta.mode === 'light');
   localStorage.setItem('dabarat-theme', currentTheme);
+  if (persist !== false) {
+    fetch('/api/config', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({theme: currentTheme})
+    }).catch(() => {});
+  }
 }
-applyTheme();
+applyTheme(false);
 
 function toggleTheme(event) {
   const doToggle = () => {
@@ -662,5 +671,5 @@ function applyCustomTheme(variables, themeId) {
     if (t) { applyCustomTheme(t.variables, t.id); return; }
   }
   currentTheme = 'mocha';
-  applyTheme();
+  applyTheme(false);
 })();

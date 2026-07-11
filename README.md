@@ -12,18 +12,18 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 
 - **Live-reload preview**—500ms polling detects file changes automatically
 - **Multi-tab support**—open multiple `.md` files; cross-file linking via `--add`
-- **Tab reuse**—launching a new file while the server is running adds it as a tab instead of restarting
+- **Tab reuse with window picker**—launching a new file while the server is running shows a dialog with currently open files; when multiple windows are running, pick which window to add to
 - **5 annotation types**—Comment, Question, Suggestion, Important, Bookmark
 - **Selection-based carousel**—select any text, pick an annotation type from the floating UI
 - **Threaded replies**—reply to any annotation inline
 - **Resolve/archive workflow**—resolved annotations move to a separate archive file
 - **Global bookmark index**—bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
 - **Auto-cleanup of orphaned annotations**—when anchor text is deleted, its annotations are removed on next load
-- **8 themes**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
+- **8 themes with cross-window persistence**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Theme choice persists to `~/.dabarat/config.json` so new windows on different ports inherit the same theme. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
 - **Resizable TOC sidebar**—drag the right edge to adjust width (persisted across sessions)
 - **Deterministic TOC navigation**—clicks always jump (even re-clicks on the same heading), with scroll-spy highlighting, deep-link `#hash` support, and stale-hash cleanup across tabs and re-renders
-- **Conflict-safe editing**—saves carry a change key; external modifications during edit mode surface a reload banner instead of silently clobbering, and deleted files 409 before recreation
-- **Crash recovery**—tab sessions persist per port; an unclean exit restores your open tabs on the next launch, and a live server is never killed by a second launch (Add to Existing / Open New Window / Cancel)
+- **Conflict-safe editing**—saves carry a change key; external modifications during edit mode surface a reload banner instead of silently clobbering, deleted files 409 before recreation, and sleep/wake cycles no longer trigger false "server unreachable" warnings
+- **Crash recovery**—tab sessions persist per port; an unclean exit restores your open tabs on the next launch, and a live server is never killed by a second launch
 - **Ghost tabs**—deleted or moved files keep serving cached content with a dimmed strikethrough tab and status banner; saving recreates the file
 - **Switchable emoji styles**—Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji
 - **Command palette**—`Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
@@ -96,7 +96,7 @@ python3 -m dabarat --annotate document.md \
 | Multi-tab | Yes | No | Yes | No |
 | Threaded replies | Yes | No | No | No |
 | Bookmark persistence | Global index | No | No | No |
-| Tab reuse | Yes (automatic) | No | No | No |
+| Tab reuse + window picker | Yes (multi-instance) | No | No | No |
 | Multi-root workspaces | Yes (.dabarat-workspace) | No | No | No |
 | WYSIWYG editing | Yes (Tiptap) | No | No | No |
 | Cross-file links | Yes | No | No | No |
@@ -160,7 +160,7 @@ See [docs/finder-integration.md](docs/finder-integration.md) for details.
 ```
 dabarat/
 ├── __main__.py          # CLI entry point (serve, add, annotate, export-pdf, workspace)
-├── server.py            # HTTP server + 36 REST API endpoints
+├── server.py            # HTTP server + 41 REST API endpoints
 ├── template.py          # HTML shell assembly (inlines 16 JS + 14 CSS modules)
 ├── pdf_export.py        # CDP-based PDF export (stdlib WebSocket, zero deps)
 ├── annotations.py       # Sidecar JSON I/O + orphan cleanup + tag persistence

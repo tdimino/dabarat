@@ -149,7 +149,7 @@
 /* Panel content — inherit #content typography */
 .diff-panel-content {
   padding: 24px 32px 80px;
-  font-family: 'Cormorant Garamond', 'Georgia', serif;
+  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', 'Georgia', serif;
   font-size: var(--base-size, 15px);
   line-height: 1.65;
   color: var(--ctp-text);

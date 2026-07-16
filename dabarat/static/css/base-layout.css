@@ -7,7 +7,7 @@ html { scroll-behavior: smooth; overflow-x: hidden; }
 body {
   background: var(--body-bg, var(--ctp-base));
   color: var(--ctp-text);
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'DM Sans', 'Noto Sans Hebrew', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: var(--base-size);
   line-height: 1.65;
   display: flex;
@@ -231,7 +231,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 
 /* h1 — document title */
 #toc .toc-h1 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', Georgia, serif;
   font-weight: 600;
   font-style: italic;
   color: var(--ctp-lavender);

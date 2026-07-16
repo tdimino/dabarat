@@ -1324,7 +1324,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         elif parsed.path == "/api/export-pdf":
             import platform
             import subprocess as sp
-            _valid_themes = {"mocha", "latte", "rose-pine", "rose-pine-dawn", "tokyo-storm", "tokyo-light"}
+            _valid_themes = _VALID_THEMES - {"_custom"}
 
             tab_id = body.get("tab", "")
             theme = body.get("theme", "")

@@ -23,6 +23,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Resizable TOC sidebar**—drag the right edge to adjust width (persisted across sessions)
 - **Deterministic TOC navigation**—clicks always jump (even re-clicks on the same heading), with scroll-spy highlighting, deep-link `#hash` support, and stale-hash cleanup across tabs and re-renders
 - **Justified text mode**—floating mauve button toggles `text-align: justify` with auto-hyphenation on paragraphs and list items (headings, code, and tables untouched). Also via command palette. Preference persists across reloads and windows via localStorage and `~/.dabarat/config.json`
+- **Full biblical Hebrew rendering**—Noto Sans/Serif Hebrew fallback fonts cover the complete niqqud and cantillation range (including rarities like qamats qatan U+05C7) in every context: body, headings, blockquotes, and italics. Downloaded only when a page actually contains Hebrew
 - **Conflict-safe editing**—saves carry a change key; external modifications during edit mode surface a reload banner instead of silently clobbering, deleted files 409 before recreation, and sleep/wake cycles no longer trigger false "server unreachable" warnings
 - **Crash recovery**—tab sessions persist per port; an unclean exit restores your open tabs on the next launch, and a live server is never killed by a second launch
 - **Ghost tabs**—deleted or moved files keep serving cached content with a dimmed strikethrough tab and status banner; saving recreates the file

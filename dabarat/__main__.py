@@ -342,7 +342,7 @@ _CHROME_PATHS = [
     "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser",
 ]
 
-_VALID_THEMES = ["mocha", "latte", "rose-pine", "rose-pine-dawn", "tokyo-storm", "tokyo-light"]
+_VALID_THEMES = ["ink", "vellum", "mocha", "latte", "rose-pine", "rose-pine-dawn", "tokyo-storm", "tokyo-light"]
 
 
 def _find_chrome():

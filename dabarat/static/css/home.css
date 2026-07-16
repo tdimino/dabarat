@@ -26,7 +26,7 @@ body.home-active #content {
   justify-content: space-between;
 }
 .home-title {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', Georgia, serif;
   font-size: 28px;
   font-weight: 600;
   font-style: italic;
@@ -328,7 +328,7 @@ body.home-active #content {
 .home-card-preview-md h1,
 .home-card-preview-md h2,
 .home-card-preview-md h3 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', Georgia, serif;
   font-size: 14px;
   font-weight: 600;
   color: var(--ctp-text);
@@ -623,7 +623,7 @@ body.home-active #content {
   margin: 20px 0 14px;
 }
 .home-quote-text {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', Georgia, serif;
   font-size: 24px;
   font-style: italic;
   font-weight: 400;

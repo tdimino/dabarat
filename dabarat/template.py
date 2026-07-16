@@ -37,7 +37,7 @@ def _concat_modules(directory, modules):
     return "\n\n".join(parts)
 
 
-def get_html(title="dabarat", default_author="Tom", server_theme=""):
+def get_html(title="dabarat", default_author="Tom", server_theme="", server_justify=False):
     css = _concat_modules(_CSS_DIR, _CSS_MODULES)
     js = _concat_modules(_JS_DIR, _JS_MODULES)
     palette_js = _read_static("palette.js")
@@ -84,7 +84,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme=""):
 {css}
 </style>
 <script>
-  window.DABARAT_CONFIG = {{ defaultAuthor: {json.dumps(default_author)} }};
+  window.DABARAT_CONFIG = {{ defaultAuthor: {json.dumps(default_author)}, justify: {json.dumps(bool(server_justify))} }};
 </script>
 </head>
 <body>
@@ -218,6 +218,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme=""):
   </div>
   <button id="edit-toggle" title="Edit (⇧⌘E)" onclick="enterEditMode()"><i class="ph ph-pencil-simple"></i></button>
   <button id="annotations-toggle" title="Annotations"><i class="ph ph-chat-circle-dots"></i><span class="ann-count" id="ann-count-badge">0</span></button>
+  <button id="justify-toggle" title="Justify text" onclick="toggleJustify()"><i class="ph ph-text-align-justify"></i></button>
 
   <div id="version-panel">
     <div class="version-panel-header">

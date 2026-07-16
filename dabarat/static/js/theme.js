@@ -140,6 +140,32 @@ function toggleToc() {
   }
 })();
 
+/* ── Justify ─────────────────────────────────────────── */
+function applyJustify(on) {
+  document.body.classList.toggle('justify-mode', on);
+  const btn = document.getElementById('justify-toggle');
+  if (btn) btn.classList.toggle('active', on);
+}
+
+function toggleJustify() {
+  const on = !document.body.classList.contains('justify-mode');
+  applyJustify(on);
+  localStorage.setItem('dabarat-justify', on ? '1' : '');
+  fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({justify: on})
+  }).catch(() => {});
+}
+
+(function _restoreJustify() {
+  const stored = localStorage.getItem('dabarat-justify');
+  const on = stored !== null
+    ? stored === '1'
+    : !!(window.DABARAT_CONFIG && window.DABARAT_CONFIG.justify);
+  if (on) applyJustify(true);
+})();
+
 /* ── Opacity ─────────────────────────────────────────── */
 const OPACITY_STEPS = [1.0, 0.95, 0.90, 0.85, 0.80, 0.70];
 let opacityIndex = parseInt(localStorage.getItem('dabarat-opacity-idx') || '0');

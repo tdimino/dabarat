@@ -742,9 +742,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             first_tab = next(iter(self._tabs.values()), None)
             first_file = first_tab["filepath"] if first_tab else ""
         title = os.path.basename(first_file) if first_file else "dabarat"
-        server_theme = _read_config().get("theme", "")
+        cfg = _read_config()
         html = get_html(title=title, default_author=self.default_author,
-                        server_theme=server_theme)
+                        server_theme=cfg.get("theme", ""),
+                        server_justify=bool(cfg.get("justify")))
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -791,8 +792,12 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if theme and theme not in _VALID_THEMES:
                 self._json_response({"error": "unknown theme"}, 400)
                 return
+            justify = body.get("justify")
+            if justify is not None and not isinstance(justify, bool):
+                self._json_response({"error": "justify must be a boolean"}, 400)
+                return
             cfg = _read_config()
-            cfg.update({k: v for k, v in body.items() if k in ("theme",)})
+            cfg.update({k: v for k, v in body.items() if k in ("theme", "justify")})
             try:
                 _write_config(cfg)
                 self._json_response({"ok": True})

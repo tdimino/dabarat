@@ -156,6 +156,7 @@ const CommandPalette = {
         action: () => cycleTheme()
       },
       { id: 'toggle-toc', label: 'Toggle Sidebar', icon: 'ph-sidebar', shortcut: '⌘\\', action: () => toggleToc() },
+      { id: 'toggle-justify', label: 'Toggle Justified Text', icon: 'ph-text-align-justify', action: () => toggleJustify() },
       { id: 'font-up', label: 'Increase Font', icon: 'ph-text-aa', action: () => adjustFont(1) },
       { id: 'font-down', label: 'Decrease Font', icon: 'ph-text-aa', action: () => adjustFont(-1) },
       { id: 'toggle-ann', label: 'Toggle Annotations', icon: 'ph-chat-circle-dots', action: () => {

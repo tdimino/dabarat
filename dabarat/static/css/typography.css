@@ -17,6 +17,14 @@
   scroll-margin-top: var(--toc-heading-offset);
 }
 
+/* Justify mode — read-mode prose only; headings, code, tables untouched */
+body.justify-mode #content p,
+body.justify-mode #content li {
+  text-align: justify;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
 h1, h2, h3, h4, h5, h6 {
   color: var(--ctp-text);
   margin: 1.6em 0 0.6em;

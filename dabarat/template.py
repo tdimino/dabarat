@@ -75,8 +75,10 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
     const TableCell = (await import("https://esm.sh/@tiptap/extension-table-cell@2.27.2")).default;
     const TableHeader = (await import("https://esm.sh/@tiptap/extension-table-header@2.27.2")).default;
     const Placeholder = (await import("https://esm.sh/@tiptap/extension-placeholder@2.27.2")).default;
+    const Link = (await import("https://esm.sh/@tiptap/extension-link@2.27.2")).default;
+    const Image = (await import("https://esm.sh/@tiptap/extension-image@2.27.2")).default;
     window.Tiptap = {{ Editor, StarterKit, Markdown, TaskList, TaskItem,
-                       Table, TableRow, TableCell, TableHeader, Placeholder }};
+                       Table, TableRow, TableCell, TableHeader, Placeholder, Link, Image }};
   }} catch (e) {{ /* Tiptap unavailable — textarea fallback */ }}
 </script>
 <script>(function(){{var v=['ink','vellum','mocha','latte','rose-pine','rose-pine-dawn','tokyo-storm','tokyo-light','_custom'];var p=new URLSearchParams(window.location.search);var qt=p.get('theme');var st={json.dumps(server_theme)};var t=(qt&&v.indexOf(qt)!==-1)?qt:localStorage.getItem('dabarat-theme')||localStorage.getItem('mdpreview-theme')||(st&&v.indexOf(st)!==-1?st:'')||'mocha';if(v.indexOf(t)===-1)t='mocha';document.documentElement.setAttribute('data-theme',t);if(p.get('export')==='1')document.documentElement.dataset.export='1';var dd=p.get('date');if(dd)document.documentElement.dataset.date=dd;if(t==='_custom'){{try{{var a=localStorage.getItem('dabarat-custom-active')||localStorage.getItem('mdpreview-custom-active');if(a){{var th=JSON.parse(localStorage.getItem('dabarat-custom-themes')||localStorage.getItem('mdpreview-custom-themes')||'[]');for(var i=0;i<th.length;i++){{if(th[i].id===a&&th[i].variables){{var s=document.createElement('style');s.id='custom-theme-style';var r='';var vr=th[i].variables;for(var k in vr){{if(vr.hasOwnProperty(k))r+=k+':'+vr[k]+';'}}s.textContent='[data-theme="_custom"]{{'+r+'}}';document.head.appendChild(s);break}}}}}}}}catch(e){{document.documentElement.setAttribute('data-theme','mocha')}}}}}})()</script>
@@ -147,6 +149,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
         <button class="edit-fmt-btn" data-cmd="bold" title="Bold (Cmd+B)" aria-label="Bold"><i class="ph ph-text-bolder"></i></button>
         <button class="edit-fmt-btn" data-cmd="italic" title="Italic (Cmd+I)" aria-label="Italic"><i class="ph ph-text-italic"></i></button>
         <button class="edit-fmt-btn" data-cmd="strike" title="Strikethrough" aria-label="Strikethrough"><i class="ph ph-text-strikethrough"></i></button>
+        <button class="edit-fmt-btn" data-cmd="link" title="Link" aria-label="Link"><i class="ph ph-link"></i></button>
         <span class="edit-toolbar-sep" role="separator"></span>
         <button class="edit-fmt-btn" data-cmd="heading" title="Heading" aria-label="Heading"><i class="ph ph-text-h"></i></button>
         <button class="edit-fmt-btn" data-cmd="bulletList" title="Bullet List" aria-label="Bullet list"><i class="ph ph-list-bullets"></i></button>

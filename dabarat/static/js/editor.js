@@ -83,6 +83,8 @@ function enterWysiwygMode() {
           window.Tiptap.TableRow,
           window.Tiptap.TableCell,
           window.Tiptap.TableHeader,
+          window.Tiptap.Link.configure({ openOnClick: false, autolink: true, linkOnPaste: true }),
+          window.Tiptap.Image,
           window.Tiptap.Placeholder.configure({ placeholder: 'Start writing...' }),
         ],
         content: body,
@@ -387,7 +389,24 @@ const _CMD_MAP = {
   codeBlock:      e => e.chain().focus().toggleCodeBlock().run(),
   blockquote:     e => e.chain().focus().toggleBlockquote().run(),
   horizontalRule: e => e.chain().focus().setHorizontalRule().run(),
+  link:           e => _toggleLink(e),
 };
+
+function _toggleLink(e) {
+  if (e.isActive('link')) {
+    e.chain().focus().extendMarkRange('link').unsetLink().run();
+    return;
+  }
+  const prev = e.getAttributes('link').href || '';
+  const url = window.prompt('Link URL:', prev);
+  if (url === null) return;
+  const trimmed = url.trim();
+  if (!trimmed) {
+    e.chain().focus().extendMarkRange('link').unsetLink().run();
+    return;
+  }
+  e.chain().focus().extendMarkRange('link').setLink({ href: trimmed }).run();
+}
 
 function _updateToolbarState() {
   if (!_tiptapEditor) return;
@@ -405,6 +424,7 @@ function _updateToolbarState() {
     else if (cmd === 'code') active = _tiptapEditor.isActive('code');
     else if (cmd === 'codeBlock') active = _tiptapEditor.isActive('codeBlock');
     else if (cmd === 'blockquote') active = _tiptapEditor.isActive('blockquote');
+    else if (cmd === 'link') active = _tiptapEditor.isActive('link');
     btn.classList.toggle('active', active);
   });
 }

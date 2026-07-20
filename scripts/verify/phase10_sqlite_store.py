@@ -136,6 +136,15 @@ def main() -> int:
         report(ref_big == "" and len(history.list_versions(str(renamed))) == len(after_versions),
                "V10 oversized content skips versioning with empty ref")
 
+        # V11: a NEW file created at the pre-rename path gets a fresh
+        # identity — it must not inherit the renamed document's history
+        doc.write_text("a brand new unrelated file\n", encoding="utf-8")
+        history.commit(str(doc), content="a brand new unrelated file\n")
+        fresh = history.list_versions(str(doc))
+        report(len(fresh) == 1 and fresh[0]["source"] == "save",
+               "V11 path reuse after rename does not inherit old history",
+               f"got {len(fresh)} versions")
+
     print(f"PASS={PASS} FAIL={FAIL}")
     return 0 if FAIL == 0 else 1
 

@@ -31,10 +31,10 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Command palette**—`Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
 - **File tagging**—predefined + custom tags as colored pills in palette header, status bar, and tab bar
 - **Prompt engineering support**—`.prompt.md` files with YAML frontmatter render metadata indicator bars and variable highlighting
-- **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes—all rendered inline. Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
+- **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes, links, and images—all rendered inline. Links and images survive edit-save round-trips (Link extension with autolink + linkOnPaste, Image extension). Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
 - **Footnotes**—`[^ref]` syntax renders as superscript numbered links with a compact footnote section at the bottom (via `marked-footnote`). Auto-numbered, with backref arrows. Preserved through WYSIWYG editing round-trips
 - **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll
-- **Version history**—git-backed timeline panel with diff stats, compare any version, one-click restore
+- **Version history**—SQLite-backed timeline (`~/.dabarat/versions.db`) where every save and external edit is versioned automatically. Content-addressed zlib blobs with rename-surviving file identity. Pin, label, compare any version against current via `Cmd+Shift+H` or command palette, one-click restore. Day separators, source badges, delegated event handling. Legacy git history imported once on first run
 - **Workspace system**—VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
 - **Image lightbox**—click any content image for overlay with blur backdrop, keyboard nav, zoom
 - **Motion One animations**—staggered card entrance, sidebar cascade, view transitions; progressive enhancement
@@ -162,14 +162,14 @@ See [docs/finder-integration.md](docs/finder-integration.md) for details.
 ```
 dabarat/
 ├── __main__.py          # CLI entry point (serve, add, annotate, export-pdf, workspace)
-├── server.py            # HTTP server + 41 REST API endpoints
+├── server.py            # HTTP server + 44 REST API endpoints
 ├── template.py          # HTML shell assembly (inlines 16 JS + 14 CSS modules)
 ├── pdf_export.py        # CDP-based PDF export (stdlib WebSocket, zero deps)
 ├── annotations.py       # Sidecar JSON I/O + orphan cleanup + tag persistence
 ├── bookmarks.py         # Global ~/.claude/bookmarks/ persistence
 ├── frontmatter.py       # YAML frontmatter parser (stdlib, pyyaml fallback)
 ├── diff.py              # Side-by-side markdown diff engine (SequenceMatcher)
-├── history.py           # Git-backed version history (~/.dabarat/history/)
+├── history.py           # SQLite-backed version history (~/.dabarat/versions.db)
 ├── recent.py            # Recently opened files + metadata extraction
 ├── workspace.py         # .dabarat-workspace CRUD + recent workspaces
 └── static/
@@ -183,7 +183,7 @@ macos/
 └── INDEX.md
 ```
 
-**Data flow:** `__main__.py` → `server.py` → `template.py` assembles a single HTML document (all JS/CSS inlined) → client renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks persist via `bookmarks.py` → `~/.claude/bookmarks/`. Edit mode saves via `/api/save` (atomic write + auto-commit to `history.py`).
+**Data flow:** `__main__.py` → `server.py` → `template.py` assembles a single HTML document (all JS/CSS inlined) → client renders markdown via marked.js → annotations round-trip through `server.py` ↔ `annotations.py` sidecar JSON. Bookmarks persist via `bookmarks.py` → `~/.claude/bookmarks/`. Edit mode saves via `/api/save` (snapshots pre-existing disk state, atomic write, versions to `history.py` SQLite store).
 
 ## Origins
 

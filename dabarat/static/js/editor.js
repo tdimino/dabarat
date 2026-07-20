@@ -358,9 +358,11 @@ async function saveEdit() {
       editState.savedContent = content;
       editState.dirty = false;
       document.body.classList.remove('edit-dirty');
-      updateEditStatus(data.backedUp === false
-        ? 'Saved — version history unavailable'
-        : 'Saved');
+      updateEditStatus(data.preSnapshotFailed
+        ? 'Saved — WARNING: previous disk content could not be versioned'
+        : data.backedUp === false
+          ? 'Saved — version history unavailable'
+          : 'Saved');
     } else {
       updateEditStatus('Error: ' + (data.error || 'save failed'));
     }

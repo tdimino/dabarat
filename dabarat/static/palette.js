@@ -163,6 +163,9 @@ const CommandPalette = {
         const g = document.getElementById('annotations-gutter');
         g.classList.contains('overlay-open') ? closeGutterOverlay() : openGutterOverlay();
       }},
+      { id: 'version-history', label: 'Version History', icon: 'ph-clock-counter-clockwise', shortcut: '⇧⌘H', action: () => {
+        if (typeof openVersionPanel === 'function') openVersionPanel();
+      }},
       { id: 'show-variables', label: 'Show Variables', icon: 'ph-brackets-curly', action: () => {
         if (typeof diffState !== 'undefined' && diffState.active) return;
         if (window.innerWidth <= 1400) openGutterOverlay();

@@ -220,12 +220,13 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
     <button class="carousel-btn" data-type="bookmark"><i class="ph ph-bookmark-simple"></i><span>Bookmark</span></button>
   </div>
   <button id="edit-toggle" title="Edit (⇧⌘E)" onclick="enterEditMode()"><i class="ph ph-pencil-simple"></i></button>
+  <button id="history-toggle" title="Version History (⇧⌘H)" onclick="openVersionPanel()"><i class="ph ph-clock-counter-clockwise"></i></button>
   <button id="annotations-toggle" title="Annotations"><i class="ph ph-chat-circle-dots"></i><span class="ann-count" id="ann-count-badge">0</span></button>
   <button id="justify-toggle" title="Justify text" onclick="toggleJustify()"><i class="ph ph-text-align-justify"></i></button>
 
   <div id="version-panel">
     <div class="version-panel-header">
-      <span class="version-panel-label">History</span>
+      <span class="version-panel-label">History<span id="version-count-badge"></span></span>
       <button class="version-panel-close" onclick="closeVersionPanel()" title="Close"><i class="ph ph-x"></i></button>
     </div>
     <div class="version-timeline" id="version-timeline"></div>

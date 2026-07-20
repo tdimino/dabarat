@@ -28,6 +28,8 @@ function updateAnnotationsBadge(count) {
 let _gutterDismissCtrl = null;
 
 function openGutterOverlay() {
+  /* The two right-side panels are mutually exclusive — keep gutterMode honest */
+  if (typeof gutterMode !== 'undefined' && gutterMode === 'versions') closeVersionPanel();
   const gutter = document.getElementById('annotations-gutter');
   gutter.classList.add('overlay-open');
 

@@ -1,8 +1,15 @@
 /* ── Version History Browser ──────────────────────────── */
 let gutterMode = 'none'; // 'none' | 'annotations' | 'versions'
+let _versionsByRef = {}; // last-fetched versions keyed by ref, for labels/pins
 
 function openVersionPanel() {
-  if (gutterMode === 'annotations') closeGutterOverlay();
+  /* Blocked in edit mode: restoring under a live Tiptap surface would leave
+     the editor showing pre-restore content that silently wins the next save */
+  if (typeof editState !== 'undefined' && editState.active) return;
+  /* Check the DOM, not gutterMode — the annotations module manages its
+     overlay with its own class and never writes gutterMode */
+  const gutter = document.getElementById('annotations-gutter');
+  if (gutter && gutter.classList.contains('overlay-open')) closeGutterOverlay();
   gutterMode = 'versions';
   document.getElementById('version-panel').classList.add('open');
   loadVersionHistory();
@@ -16,6 +23,7 @@ function closeVersionPanel() {
 async function loadVersionHistory() {
   const list = document.getElementById('version-timeline');
   if (!list || !activeTabId) return;
+  const requestedTab = activeTabId;
 
   /* Show loading skeleton */
   list.innerHTML = Array.from({length: 3}, () =>
@@ -23,45 +31,78 @@ async function loadVersionHistory() {
   ).join('');
 
   try {
-    const res = await fetch('/api/versions?tab=' + activeTabId);
+    const res = await fetch('/api/versions?tab=' + requestedTab);
     const data = await res.json();
+    /* A tab switch or panel close during the fetch makes this response stale */
+    if (requestedTab !== activeTabId || gutterMode !== 'versions') return;
     renderVersionTimeline(data.versions || []);
   } catch (e) {
-    list.innerHTML = '<div class="version-empty">Could not load history</div>';
+    if (requestedTab === activeTabId) {
+      list.innerHTML = '<div class="version-empty">Could not load history</div>';
+    }
   }
 }
 
 /* Use shared formatTimeAgoShared from utils.js */
 const formatTimeAgo = formatTimeAgoShared;
 
+const _SOURCE_BADGES = { external: 'external', restore: 'restore', import: 'import' };
+
 function renderVersionTimeline(versions) {
   const list = document.getElementById('version-timeline');
   if (!list) return;
+
+  const badge = document.getElementById('version-count-badge');
+  if (badge) badge.textContent = versions.length ? ' · ' + versions.length : '';
 
   if (versions.length === 0) {
     list.innerHTML = '<div class="version-empty"><i class="ph ph-clock-counter-clockwise"></i><p>No version history yet</p><p class="version-empty-hint">Save in edit mode to start tracking</p></div>';
     return;
   }
 
-  list.innerHTML = versions.map((v, i) => {
+  _versionsByRef = {};
+  versions.forEach(v => { _versionsByRef[v.hash] = v; });
+
+  let lastDay = '';
+  const parts = [];
+  versions.forEach((v, i) => {
     const isCurrent = i === 0;
-    const dateStr = formatTimeAgo(v.date);
-    return `<div class="version-entry${isCurrent ? ' current' : ''}" tabindex="0" data-hash="${v.hash}">
-      <div class="version-date">${isCurrent ? 'Latest' : dateStr}</div>
+    const day = new Date(v.date).toLocaleDateString(undefined,
+      { month: 'short', day: 'numeric', year: 'numeric' });
+    if (day !== lastDay) {
+      parts.push(`<div class="version-day-sep">${day}</div>`);
+      lastDay = day;
+    }
+    const srcBadge = _SOURCE_BADGES[v.source]
+      ? `<span class="version-source-badge version-source-${v.source}">${_SOURCE_BADGES[v.source]}</span>`
+      : '';
+    const labelHtml = v.label
+      ? `<div class="version-label"><i class="ph ph-tag"></i> ${escapeHtml(v.label)}</div>`
+      : '';
+    parts.push(`<div class="version-entry${isCurrent ? ' current' : ''}${v.pinned ? ' pinned' : ''}" tabindex="0" data-hash="${v.hash}">
+      <div class="version-date">${isCurrent ? 'Latest' : formatTimeAgo(v.date)}${srcBadge}${v.pinned ? '<i class="ph-fill ph-push-pin version-pin-mark"></i>' : ''}</div>
+      ${labelHtml}
       <div class="version-stats">
         <span class="version-stat-add">+${v.added}</span>
         <span class="version-stat-del">-${v.removed}</span>
       </div>
       <div class="version-actions">
-        <button class="version-btn" onclick="compareVersion('${v.hash}'); event.stopPropagation();" title="Compare with current">
+        <button class="version-btn" data-action="compare" title="Compare with current">
           <i class="ph ph-git-diff"></i> Compare
         </button>
-        ${!isCurrent ? `<button class="version-btn version-btn-restore" onclick="restoreVersion('${v.hash}'); event.stopPropagation();" title="Restore this version">
+        ${!isCurrent ? `<button class="version-btn version-btn-restore" data-action="restore" title="Restore this version">
           <i class="ph ph-arrow-counter-clockwise"></i> Restore
         </button>` : ''}
+        <button class="version-btn version-btn-icon" data-action="pin" title="${v.pinned ? 'Unpin' : 'Pin (never pruned)'}">
+          <i class="ph${v.pinned ? '-fill' : ''} ph-push-pin"></i>
+        </button>
+        <button class="version-btn version-btn-icon" data-action="label" title="Name this version">
+          <i class="ph ph-tag"></i>
+        </button>
       </div>
-    </div>`;
-  }).join('');
+    </div>`);
+  });
+  list.innerHTML = parts.join('');
 
   /* Stagger-animate version entries */
   if (window.Motion && !_prefersReducedMotion) {
@@ -75,28 +116,49 @@ function renderVersionTimeline(versions) {
   }
 }
 
+/* Delegated actions — dynamic HTML carries data-* only, never inline handlers */
+document.getElementById('version-timeline')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('.version-btn');
+  const entry = e.target.closest('.version-entry');
+  if (!entry || !entry.dataset.hash) return;
+  const ref = entry.dataset.hash;
+  if (!btn) return;
+  e.stopPropagation();
+  switch (btn.dataset.action) {
+    case 'compare': compareVersion(ref); break;
+    case 'restore': restoreVersion(ref); break;
+    case 'pin': togglePinVersion(ref); break;
+    case 'label': labelVersion(ref); break;
+  }
+});
+
+function _versionDisplayLabel(ref) {
+  const v = _versionsByRef[ref];
+  if (!v) return 'Version ' + ref;
+  return v.label || new Date(v.date).toLocaleString(undefined,
+    { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
 async function compareVersion(hash) {
-  const tabId = activeTabId;
-  if (!tabId || !tabs[tabId]) return;
-  try {
-    closeVersionPanel();
-    /* Use the existing diff mode with the current file against itself —
-       the server-side diff endpoint compares tab content vs file on disk.
-       For version comparison, we write a temp reference (not ideal) so
-       instead just show an alert for now if enterDiffMode doesn't support
-       two-content comparison. The diff view is for file-vs-file. */
-    if (typeof enterDiffMode === 'function') {
-      /* enterDiffMode takes a file path to compare against */
-      enterDiffMode(tabs[tabId].filepath);
-    }
-  } catch (e) {
-    console.error('Compare failed:', e);
+  if (!activeTabId || !tabs[activeTabId]) return;
+  closeVersionPanel();
+  if (typeof enterVersionDiffMode === 'function') {
+    enterVersionDiffMode(hash, _versionDisplayLabel(hash));
   }
 }
 
 async function restoreVersion(hash) {
   const tabId = activeTabId;
   if (!tabId || !tabs[tabId]) return;
+  /* Never restore over an open editor or an in-flight save */
+  if (typeof editState !== 'undefined' && editState.active) {
+    alert('Close edit mode before restoring a version.');
+    return;
+  }
+  if (typeof _saveInFlight !== 'undefined' && _saveInFlight) {
+    alert('A save is in progress — try again in a moment.');
+    return;
+  }
   if (!confirm('Restore this version? Your current content will be saved first.')) return;
   try {
     const res = await fetch('/api/restore', {
@@ -105,6 +167,10 @@ async function restoreVersion(hash) {
       body: JSON.stringify({ tab: tabId, hash: hash })
     });
     const data = await res.json();
+    if (!data.ok) {
+      alert('Restore failed: ' + (data.error || 'unknown error'));
+      return;
+    }
     if (data.ok && tabs[tabId]) {
       tabs[tabId].content = data.content;
       tabs[tabId].mtime = data.mtime;
@@ -119,10 +185,56 @@ async function restoreVersion(hash) {
     }
   } catch (e) {
     console.error('Restore failed:', e);
+    alert('Restore failed: ' + e.message);
   }
 }
 
-/* ── Keyboard navigation ─────────────────────────────── */
+async function togglePinVersion(hash) {
+  const v = _versionsByRef[hash];
+  if (!activeTabId || !v) return;
+  try {
+    const res = await fetch('/api/version/pin', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ tab: activeTabId, hash: hash, pinned: !v.pinned })
+    });
+    if (!res.ok) throw new Error('server returned ' + res.status);
+    loadVersionHistory();
+  } catch (e) {
+    console.error('Pin failed:', e);
+    alert('Pin failed: ' + e.message);
+  }
+}
+
+async function labelVersion(hash) {
+  const v = _versionsByRef[hash];
+  if (!activeTabId || !v) return;
+  const label = prompt('Version name:', v.label || '');
+  if (label === null) return;
+  try {
+    const res = await fetch('/api/version/label', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ tab: activeTabId, hash: hash, label: label.trim() })
+    });
+    if (!res.ok) throw new Error('server returned ' + res.status);
+    loadVersionHistory();
+  } catch (e) {
+    console.error('Label failed:', e);
+    alert('Label failed: ' + e.message);
+  }
+}
+
+/* ── Keyboard ────────────────────────────────────────── */
+
+/* Cmd+Shift+H toggles the panel (mirrors Cmd+Shift+E for edit mode) */
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.shiftKey && (e.key === 'h' || e.key === 'H')) {
+    e.preventDefault();
+    gutterMode === 'versions' ? closeVersionPanel() : openVersionPanel();
+  }
+});
+
 document.addEventListener('keydown', (e) => {
   if (gutterMode !== 'versions') return;
 
@@ -136,24 +248,29 @@ document.addEventListener('keydown', (e) => {
   if (!focused || !focused.classList.contains('version-entry')) return;
 
   switch (e.key) {
-    case 'ArrowUp':
+    case 'ArrowUp': {
       e.preventDefault();
-      if (focused.previousElementSibling && focused.previousElementSibling.classList.contains('version-entry')) {
-        focused.previousElementSibling.focus();
-      }
+      let prev = focused.previousElementSibling;
+      while (prev && !prev.classList.contains('version-entry')) prev = prev.previousElementSibling;
+      if (prev) prev.focus();
       break;
-    case 'ArrowDown':
+    }
+    case 'ArrowDown': {
       e.preventDefault();
-      if (focused.nextElementSibling && focused.nextElementSibling.classList.contains('version-entry')) {
-        focused.nextElementSibling.focus();
-      }
+      let next = focused.nextElementSibling;
+      while (next && !next.classList.contains('version-entry')) next = next.nextElementSibling;
+      if (next) next.focus();
       break;
+    }
     case 'Enter':
     case 'c':
       compareVersion(focused.dataset.hash);
       break;
     case 'r':
       if (!e.metaKey && !e.ctrlKey) restoreVersion(focused.dataset.hash);
+      break;
+    case 'p':
+      togglePinVersion(focused.dataset.hash);
       break;
   }
 });

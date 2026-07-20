@@ -25,6 +25,7 @@ import json
 import os
 import sqlite3
 import subprocess
+import sys
 import time
 import zlib
 from contextlib import contextmanager
@@ -294,16 +295,26 @@ def restore(filepath, ref):
     content = get_version_content(filepath, ref)
     if content is None:
         return None
-    if os.path.exists(filepath):
-        commit(filepath)  # dedups if current state is already recorded
     fd, tmp_path = tempfile.mkstemp(
         dir=os.path.dirname(filepath), suffix=".tmp", prefix=".dabarat-"
     )
     try:
-        os.write(fd, content.encode("utf-8"))
+        raw = content.encode("utf-8")
+        while raw:  # os.write may return a short count under disk pressure
+            raw = raw[os.write(fd, raw):]
     finally:
         os.close(fd)
-    os.replace(tmp_path, filepath)
+    try:
+        if os.path.exists(filepath):
+            # mkstemp creates 0600 — carry the document's own mode across
+            os.chmod(tmp_path, os.stat(filepath).st_mode)
+            # Snapshot as late as possible: an external writer landing
+            # between an earlier snapshot and the replace would be lost
+            commit(filepath)  # dedups if current state is already recorded
+        os.replace(tmp_path, filepath)
+    except Exception:
+        os.unlink(tmp_path)
+        raise
     commit(filepath, content=content, source="restore")
     return content
 
@@ -320,6 +331,10 @@ def record_rename(old_path, new_path):
         conn.execute(
             "UPDATE files SET current_path = ? WHERE id = ?", (new_abs, file_id)
         )
+        # Retire the old-path alias: a NEW file created at the old path later
+        # must get a fresh identity, not inherit this document's history
+        # (restore would otherwise overwrite it with unrelated content)
+        conn.execute("DELETE FROM file_aliases WHERE path = ?", (old_abs,))
         conn.execute(
             "INSERT INTO file_aliases(file_id, path, first_seen_us, last_seen_us)"
             " VALUES (?, ?, ?, ?)"
@@ -332,6 +347,7 @@ def set_pinned(filepath, ref, pinned):
     """Pin/unpin a version (pinned versions are exempt from future pruning)."""
     version_id = _version_ref(ref)
     with _db() as conn:
+        conn.execute("BEGIN IMMEDIATE")
         file_id = _file_id(conn, filepath)
         if file_id is None:
             return False
@@ -346,6 +362,7 @@ def set_label(filepath, ref, label):
     """Name a version (empty label clears it)."""
     version_id = _version_ref(ref)
     with _db() as conn:
+        conn.execute("BEGIN IMMEDIATE")
         file_id = _file_id(conn, filepath)
         if file_id is None:
             return False
@@ -392,6 +409,76 @@ def _git_candidate_paths():
 _import_checked = False
 
 
+def _collect_git_history():
+    """Extract (path, [(raw_bytes, created_at_us), ...]) from the legacy repo.
+
+    Pure subprocess I/O — runs with no database lock held. One cat-file
+    --batch call streams every revision's content; per-commit `git show`
+    subprocesses would stall first launch for seconds on real histories.
+    """
+    collected = []
+    for path in sorted(_git_candidate_paths()):
+        key = hashlib.sha256(path.encode()).hexdigest()[:12]
+        tracked = f"{key}_{os.path.basename(path)}"
+        log = subprocess.run(
+            ["git", "log", "--reverse", "--format=%H|%aI", "--", tracked],
+            cwd=HISTORY_DIR, capture_output=True, text=True, timeout=30,
+        )
+        if log.returncode != 0 or not log.stdout.strip():
+            continue
+        revisions_meta = [tuple(line.split("|", 1))
+                          for line in log.stdout.strip().splitlines()
+                          if "|" in line]
+        if not revisions_meta:
+            continue
+        batch_input = "".join(f"{h}:{tracked}\n" for h, _ in revisions_meta)
+        batch = subprocess.run(
+            ["git", "cat-file", "--batch"],
+            cwd=HISTORY_DIR, input=batch_input.encode(),
+            capture_output=True, timeout=60,
+        )
+        if batch.returncode != 0:
+            continue
+        out = batch.stdout
+        pos = 0
+        revisions = []
+        for _, date_iso in revisions_meta:
+            nl = out.find(b"\n", pos)
+            if nl < 0:
+                break
+            header = out[pos:nl].split()
+            pos = nl + 1
+            if len(header) < 3 or header[1] != b"blob":
+                # "<sha> missing" carries no body; any other object type
+                # does — skip its content or the next header parse corrupts
+                if len(header) >= 3:
+                    pos += int(header[2]) + 1
+                continue
+            size = int(header[2])
+            raw = out[pos:pos + size]
+            pos += size + 1  # trailing newline after each object
+            try:
+                us = int(datetime.datetime.fromisoformat(date_iso)
+                         .timestamp() * 1_000_000)
+            except ValueError:
+                us = _now_us()
+            revisions.append((raw, us))
+        # Clamp timestamps monotonically non-decreasing (git author dates can
+        # be out of order) and never in the future — _latest() orders by
+        # created_at_us, so a stray future date would permanently occupy the
+        # head slot and break dedup for every later save
+        now = _now_us()
+        prev_us = 0
+        clamped = []
+        for raw, us in revisions:
+            us = max(prev_us + 1, min(us, now))
+            prev_us = us
+            clamped.append((raw, us))
+        if clamped:
+            collected.append((path, clamped))
+    return collected
+
+
 def _maybe_import_git(conn):
     """One-time, idempotent import of the legacy shadow git repo. The repo
     itself is left untouched as a read-only archive — unmappable paths
@@ -402,71 +489,37 @@ def _maybe_import_git(conn):
     if not os.path.isdir(os.path.join(HISTORY_DIR, ".git")):
         _import_checked = True
         return
-    # Cheap read first — only the losing race takes the write transaction
     if conn.execute(
         "SELECT 1 FROM meta WHERE key = 'git_import_done'"
     ).fetchone():
-        _import_checked = True
-        return
-    conn.execute("BEGIN IMMEDIATE")
-    if conn.execute(
-        "SELECT 1 FROM meta WHERE key = 'git_import_done'"
-    ).fetchone():
-        conn.execute("COMMIT")
         _import_checked = True
         return
     try:
-        for path in sorted(_git_candidate_paths()):
-            key = hashlib.sha256(path.encode()).hexdigest()[:12]
-            tracked = f"{key}_{os.path.basename(path)}"
-            log = subprocess.run(
-                ["git", "log", "--reverse", "--format=%H|%aI", "--", tracked],
-                cwd=HISTORY_DIR, capture_output=True, text=True, timeout=30,
-            )
-            if log.returncode != 0 or not log.stdout.strip():
-                continue
-            revisions = []
-            for line in log.stdout.strip().splitlines():
-                if "|" in line:
-                    revisions.append(tuple(line.split("|", 1)))
-            if not revisions:
-                continue
-            # One cat-file --batch call streams every revision's content —
-            # per-commit `git show` subprocesses would stall first launch
-            # for seconds on histories this size
-            batch_input = "".join(f"{h}:{tracked}\n" for h, _ in revisions)
-            batch = subprocess.run(
-                ["git", "cat-file", "--batch"],
-                cwd=HISTORY_DIR, input=batch_input.encode(),
-                capture_output=True, timeout=60,
-            )
-            if batch.returncode != 0:
-                continue
+        # Subprocess extraction runs before the write transaction so the
+        # database is never locked during multi-second git I/O
+        collected = _collect_git_history()
+        conn.execute("BEGIN IMMEDIATE")
+        # Another process may have finished the import while we collected
+        if conn.execute(
+            "SELECT 1 FROM meta WHERE key = 'git_import_done'"
+        ).fetchone():
+            conn.execute("COMMIT")
+            return
+        for path, revisions in collected:
             file_id = _file_id(conn, path, create=True)
-            out = batch.stdout
-            pos = 0
-            for _, date_iso in revisions:
-                nl = out.find(b"\n", pos)
-                if nl < 0:
-                    break
-                header = out[pos:nl].split()
-                pos = nl + 1
-                if len(header) < 3 or header[1] != b"blob":
-                    continue  # "<sha> missing" — nothing to consume
-                size = int(header[2])
-                raw = out[pos:pos + size]
-                pos += size + 1  # trailing newline after each object
-                try:
-                    us = int(datetime.datetime.fromisoformat(date_iso)
-                             .timestamp() * 1_000_000)
-                except ValueError:
-                    us = _now_us()
+            for raw, us in revisions:
                 _insert_version(conn, file_id, path, raw,
                                 "import", created_at_us=us)
         conn.execute(
             "INSERT INTO meta(key, value) VALUES ('git_import_done', '1')"
         )
         conn.execute("COMMIT")
+    except Exception as e:
+        if conn.in_transaction:
+            conn.execute("ROLLBACK")
+        print(f"Warning: legacy history import failed: {e!r}", file=sys.stderr)
+    finally:
+        # Never retry within this process — a failing import (corrupt repo,
+        # missing git binary) would otherwise tax every history operation
+        # with subprocess overhead. A restart retries the idempotent import.
         _import_checked = True
-    except Exception:
-        conn.execute("ROLLBACK")

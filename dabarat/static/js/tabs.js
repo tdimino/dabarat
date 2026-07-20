@@ -232,6 +232,9 @@ function switchTab(id) {
   /* Exit diff mode if active */
   if (diffState.active) exitDiffMode();
 
+  /* Close version panel — its timeline and refs belong to the previous tab */
+  if (typeof gutterMode !== 'undefined' && gutterMode === 'versions') closeVersionPanel();
+
   /* Cancel pending annotation */
   document.getElementById('annotation-form').style.display = 'none';
   document.getElementById('annotate-carousel').classList.remove('visible');

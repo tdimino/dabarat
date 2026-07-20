@@ -5,6 +5,7 @@ import http.server
 import json
 import mimetypes
 import os
+import sys
 import threading
 import uuid
 from urllib.parse import urlparse, parse_qs, unquote
@@ -201,10 +202,17 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         tab["content"] = content
                         tab["mtime"] = st.st_mtime
                         tab["change_key"] = new_key
+                        accepted = True
+                    else:
+                        # A concurrent refresh/save superseded this read —
+                        # versioning the stale content would create a phantom
+                        # entry timestamped after the version that replaced it
+                        accepted = False
                 # Externally-changed content becomes a version the moment
                 # polling observes it — every change to an open file is
                 # revertible no matter who wrote it (dedups by hash)
-                history.snapshot_external(filepath, content)
+                if accepted:
+                    history.snapshot_external(filepath, content)
         except FileNotFoundError:
             # Deleted/moved underneath us — keep serving the cached content
             # (a save can recreate the file) but tell the client
@@ -673,6 +681,32 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             result["right_filename"] = os.path.basename(against_path)
             self._json_response(result)
 
+        elif parsed.path == "/api/diff-version":
+            # Diff a historical version (left) against current content (right)
+            tab_id = params.get("tab", [None])[0]
+            ref = params.get("hash", [None])[0]
+            label = params.get("label", [None])[0]
+            tab = self._refresh_tab(tab_id) if tab_id else None
+            if not tab:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            if not ref:
+                self._json_response({"error": "hash required"}, 400)
+                return
+            try:
+                version_content = history.get_version_content(tab["filepath"], ref)
+            except ValueError as e:
+                self._json_response({"error": str(e)}, 400)
+                return
+            if version_content is None:
+                self._json_response({"error": "version not found"}, 404)
+                return
+            from . import diff
+            result = diff.prepare_diff(version_content, tab["content"])
+            result["left_filename"] = label or f"Version {ref}"
+            result["right_filename"] = os.path.basename(tab["filepath"]) + " (current)"
+            self._json_response(result)
+
         elif parsed.path == "/api/preview-image":
             # Serve images referenced in home screen cards
             img_path = params.get("path", [None])[0]
@@ -862,8 +896,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     # History follows the document across renames
                     try:
                         history.record_rename(old_path, new_path)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Warning: history rename tracking failed for "
+                              f"{old_path} -> {new_path}: {e!r}", file=sys.stderr)
                 _notify_tabs_changed()
                 self._json_response({"ok": True, "filepath": new_path, "filename": new_name})
             except OSError as e:
@@ -1048,11 +1083,16 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     # /api/save, so this is their only chance to be versioned.
                     # commit() dedups against its last copy, so this no-ops
                     # on the common path where disk state is already recorded.
+                    pre_snapshot_failed = False
                     try:
                         if os.path.exists(filepath):
                             history.commit(filepath, source="external")
-                    except Exception:
-                        pass
+                    except Exception as snap_err:
+                        # The save itself still proceeds — the user's intent
+                        # to save wins — but the loss must not be silent
+                        pre_snapshot_failed = True
+                        print(f"Warning: pre-save snapshot failed for "
+                              f"{filepath}: {snap_err!r}", file=sys.stderr)
                     dir_name = os.path.dirname(filepath)
                     fd, tmp_path = tempfile.mkstemp(
                         dir=dir_name, suffix=".tmp", prefix=".dabarat-"
@@ -1074,7 +1114,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     backed_up = False
                     try:
                         version_hash = history.commit(filepath, content=content)
-                        backed_up = True
+                        # commit returns '' when versioning was skipped
+                        # (oversized content) — that is not a backup
+                        backed_up = bool(version_hash)
                     except Exception:
                         pass
                 self._json_response({
@@ -1083,6 +1125,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     "changeKey": change_key,
                     "version": version_hash,
                     "backedUp": backed_up,
+                    "preSnapshotFailed": pre_snapshot_failed,
                 })
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)
@@ -1115,6 +1158,37 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"error": str(e)}, 400)
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)
+
+        elif parsed.path == "/api/version/pin":
+            tab_id = body.get("tab", "")
+            ref = body.get("hash", "")
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            try:
+                ok = history.set_pinned(filepath, ref, bool(body.get("pinned")))
+                self._json_response({"ok": ok} if ok
+                                    else {"error": "version not found"},
+                                    200 if ok else 404)
+            except ValueError as e:
+                self._json_response({"error": str(e)}, 400)
+
+        elif parsed.path == "/api/version/label":
+            tab_id = body.get("tab", "")
+            ref = body.get("hash", "")
+            filepath = self._tab_filepath(tab_id)
+            if not filepath:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            try:
+                label = str(body.get("label") or "")[:120]
+                ok = history.set_label(filepath, ref, label)
+                self._json_response({"ok": ok} if ok
+                                    else {"error": "version not found"},
+                                    200 if ok else 404)
+            except ValueError as e:
+                self._json_response({"error": str(e)}, 400)
 
         elif parsed.path == "/api/recent/remove":
             filepath = body.get("path", "")

@@ -476,6 +476,7 @@ body.edit-mode .edit-body {
   transform: scale(0.96);
 }
 body.edit-mode #edit-toggle { display: none; }
+body.edit-mode #history-toggle { display: none; }
 body.home-active #edit-toggle { display: none; }
 
 @media (min-width: 1401px) {

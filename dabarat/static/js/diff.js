@@ -1,33 +1,34 @@
 /* ── Diff Mode ───────────────────────────────────────── */
-let diffState = { active: false, leftTabId: null, rightPath: null };
+let diffState = { active: false, leftTabId: null, rightPath: null, versionRef: null };
 
-async function enterDiffMode(againstPath) {
-  if (!activeTabId || !tabs[activeTabId]) return;
-
-  diffState.active = true;
-  diffState.leftTabId = activeTabId;
-  diffState.rightPath = againstPath;
-
+function _showDiffView() {
   /* Hide normal content, show diff view */
   document.getElementById('content').style.display = 'none';
   const fmIndicator = document.getElementById('frontmatter-indicator');
   if (fmIndicator) fmIndicator.style.display = 'none';
-  const diffView = document.getElementById('diff-view');
-  diffView.style.display = 'flex';
+  document.getElementById('diff-view').style.display = 'flex';
 
   /* Hide annotations gutter in diff mode */
   const gutter = document.getElementById('annotations-gutter');
   const toggle = document.getElementById('annotations-toggle');
+  const histToggle = document.getElementById('history-toggle');
   if (gutter) gutter.style.display = 'none';
   if (toggle) toggle.style.display = 'none';
+  if (histToggle) histToggle.style.display = 'none';
   document.getElementById('main-area').style.marginRight = '0';
+}
 
-  /* Fetch diff from server */
+let _diffFetchGen = 0;
+
+async function _fetchAndRenderDiff(url) {
+  const gen = ++_diffFetchGen;
   try {
-    const url = '/api/diff?tab=' + activeTabId +
-      '&against=' + encodeURIComponent(againstPath);
     const res = await fetch(url);
     const data = await res.json();
+    /* Stale if the user exited diff mode (Escape, tab switch) OR a newer
+       diff was requested while this fetch was in flight — rendering now
+       would paint the wrong comparison over the live one */
+    if (!diffState.active || gen !== _diffFetchGen) return;
     if (data.error) {
       console.error('Diff error:', data.error);
       exitDiffMode();
@@ -36,22 +37,55 @@ async function enterDiffMode(againstPath) {
     renderDiff(data);
   } catch (e) {
     console.error('Diff fetch failed:', e);
-    exitDiffMode();
+    if (diffState.active && gen === _diffFetchGen) exitDiffMode();
   }
+}
+
+async function enterDiffMode(againstPath) {
+  if (!activeTabId || !tabs[activeTabId]) return;
+
+  diffState.active = true;
+  diffState.leftTabId = activeTabId;
+  diffState.rightPath = againstPath;
+  diffState.versionRef = null;
+
+  _showDiffView();
+  await _fetchAndRenderDiff('/api/diff?tab=' + activeTabId +
+    '&against=' + encodeURIComponent(againstPath));
+}
+
+async function enterVersionDiffMode(ref, label) {
+  if (!activeTabId || !tabs[activeTabId]) return;
+
+  diffState.active = true;
+  diffState.leftTabId = activeTabId;
+  diffState.rightPath = null;
+  diffState.versionRef = ref;
+
+  _showDiffView();
+  await _fetchAndRenderDiff('/api/diff-version?tab=' + activeTabId +
+    '&hash=' + encodeURIComponent(ref) +
+    '&label=' + encodeURIComponent(label || ''));
 }
 
 function exitDiffMode() {
   diffState.active = false;
   diffState.leftTabId = null;
   diffState.rightPath = null;
+  diffState.versionRef = null;
+
+  /* Release the document-level mousemove/mouseup listeners the resizer holds */
+  if (_diffResizeCtrl) { _diffResizeCtrl.abort(); _diffResizeCtrl = null; }
 
   /* Restore normal view */
   document.getElementById('content').style.display = '';
   document.getElementById('diff-view').style.display = 'none';
   const gutter = document.getElementById('annotations-gutter');
   const toggle = document.getElementById('annotations-toggle');
+  const histToggle = document.getElementById('history-toggle');
   if (gutter) gutter.style.display = '';
   if (toggle) toggle.style.display = '';
+  if (histToggle) histToggle.style.display = '';
   document.getElementById('main-area').style.marginRight = '';
 
   /* Force re-render, then refresh from disk (polling was paused in diff mode) */

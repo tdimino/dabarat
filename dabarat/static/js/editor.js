@@ -358,7 +358,9 @@ async function saveEdit() {
       editState.savedContent = content;
       editState.dirty = false;
       document.body.classList.remove('edit-dirty');
-      updateEditStatus('Saved');
+      updateEditStatus(data.backedUp === false
+        ? 'Saved — version history unavailable'
+        : 'Saved');
     } else {
       updateEditStatus('Error: ' + (data.error || 'save failed'));
     }

@@ -50,8 +50,13 @@ def _tracked_name(filepath):
     return f"{key}_{basename}"
 
 
-def commit(filepath):
-    """Copy file into history repo, commit with embedded diff stats. Returns commit hash."""
+def commit(filepath, content=None):
+    """Copy file into history repo, commit with embedded diff stats. Returns commit hash.
+
+    When `content` is given it is recorded verbatim — callers that just wrote
+    the file pass the exact string so a concurrent save can never be
+    misattributed by re-reading the file after the fact.
+    """
     _ensure_repo()
     dest = os.path.join(HISTORY_DIR, _tracked_name(filepath))
 
@@ -61,8 +66,11 @@ def commit(filepath):
         with open(dest, encoding="utf-8", errors="replace") as f:
             old_content = f.read()
 
-    with open(filepath, encoding="utf-8", errors="replace") as src:
-        new_content = src.read()
+    if content is not None:
+        new_content = content
+    else:
+        with open(filepath, encoding="utf-8", errors="replace") as src:
+            new_content = src.read()
 
     # Skip if content unchanged
     if old_content == new_content:
@@ -162,11 +170,20 @@ def get_version_content(filepath, commit_hash):
 
 def restore(filepath, commit_hash):
     """Restore file to a specific version. Auto-commits current first."""
+    import tempfile
+
     _validate_hash(commit_hash)
     commit(filepath)  # Save current state before restoring
     content = get_version_content(filepath, commit_hash)
     if content is not None:
-        with open(filepath, "w", encoding="utf-8") as f:
-            f.write(content)
-        commit(filepath)  # Commit the restore as a new version
+        # Atomic replace — a crash mid-restore must never leave a torn file
+        fd, tmp_path = tempfile.mkstemp(
+            dir=os.path.dirname(filepath), suffix=".tmp", prefix=".dabarat-"
+        )
+        try:
+            os.write(fd, content.encode("utf-8"))
+        finally:
+            os.close(fd)
+        os.replace(tmp_path, filepath)
+        commit(filepath, content=content)  # Commit the restore as a new version
     return content

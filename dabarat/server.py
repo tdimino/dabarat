@@ -1033,6 +1033,17 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                                 "fileMissing": True,
                             }, 409)
                             return
+                    # Snapshot whatever is on disk before we overwrite it:
+                    # external edits (and forced conflict overwrites, which
+                    # arrive without baseChangeKey) never passed through
+                    # /api/save, so this is their only chance to be versioned.
+                    # commit() dedups against its last copy, so this no-ops
+                    # on the common path where disk state is already recorded.
+                    try:
+                        if os.path.exists(filepath):
+                            history.commit(filepath)
+                    except Exception:
+                        pass
                     dir_name = os.path.dirname(filepath)
                     fd, tmp_path = tempfile.mkstemp(
                         dir=dir_name, suffix=".tmp", prefix=".dabarat-"
@@ -1048,17 +1059,21 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     mtime, change_key = self._update_tab_content(
                         tab_id, content, filepath, st=st_written
                     )
-                # Auto-commit to version history
-                version_hash = ""
-                try:
-                    version_hash = history.commit(filepath)
-                except Exception:
-                    pass
+                    # Version the exact content we just wrote, inside the
+                    # write lock so concurrent saves keep history ordering
+                    version_hash = ""
+                    backed_up = False
+                    try:
+                        version_hash = history.commit(filepath, content=content)
+                        backed_up = True
+                    except Exception:
+                        pass
                 self._json_response({
                     "ok": True,
                     "mtime": mtime,
                     "changeKey": change_key,
                     "version": version_hash,
+                    "backedUp": backed_up,
                 })
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)

@@ -92,6 +92,7 @@ def main() -> int:
                 "import sys, webbrowser\n"
                 "import dabarat.history as h\n"
                 f"h.HISTORY_DIR = {str(history_dir)!r}\n"
+                f"h.DB_PATH = {str(work / 'versions.db')!r}\n"
                 "import dabarat.__main__ as m\n"
                 "m._find_chrome = lambda: None\n"
                 "m._live_instances = lambda: []\n"

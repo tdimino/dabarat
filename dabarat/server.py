@@ -201,6 +201,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         tab["content"] = content
                         tab["mtime"] = st.st_mtime
                         tab["change_key"] = new_key
+                # Externally-changed content becomes a version the moment
+                # polling observes it — every change to an open file is
+                # revertible no matter who wrote it (dedups by hash)
+                history.snapshot_external(filepath, content)
         except FileNotFoundError:
             # Deleted/moved underneath us — keep serving the cached content
             # (a save can recreate the file) but tell the client
@@ -855,6 +859,11 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     with self._tabs_lock:
                         if tab_id in self._tabs:
                             self._tabs[tab_id]["filepath"] = new_path
+                    # History follows the document across renames
+                    try:
+                        history.record_rename(old_path, new_path)
+                    except Exception:
+                        pass
                 _notify_tabs_changed()
                 self._json_response({"ok": True, "filepath": new_path, "filename": new_name})
             except OSError as e:
@@ -1041,7 +1050,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     # on the common path where disk state is already recorded.
                     try:
                         if os.path.exists(filepath):
-                            history.commit(filepath)
+                            history.commit(filepath, source="external")
                     except Exception:
                         pass
                     dir_name = os.path.dirname(filepath)

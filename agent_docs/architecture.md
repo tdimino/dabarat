@@ -2,7 +2,7 @@
 
 ## Overview
 
-A zero-dependency Python markdown previewer that runs entirely from stdlib. Seven CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap/ProseMirror) load on first page view and are browser-cached thereafter. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable.
+A zero-dependency Python markdown previewer that runs entirely from stdlib. Eight CDN scripts (marked.js, marked-footnote, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap/ProseMirror) load on first page view and are browser-cached thereafter. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable.
 
 ## Data Flow
 
@@ -15,28 +15,34 @@ CLI (__main__.py)
   │            │           (inlines 16 JS modules + palette.js + 14 CSS modules)
   │            │
   │            ├─ GET /api/tabs → list open tabs
-  │            ├─ GET /api/content → reads .md file, returns content + mtime + frontmatter
+  │            ├─ GET /api/content → reads .md file, returns content + changeKey + frontmatter
+  │            ├─ GET /api/mtime → stat-only probe for edit-mode change detection
   │            ├─ GET /api/annotations → annotations.py loads sidecar JSON, runs orphan cleanup
   │            ├─ GET /api/tags → tag array for a tab
+  │            ├─ GET /api/config → cross-window preferences (theme, etc.)
   │            ├─ GET /api/recent → recent.py returns recently opened files
   │            ├─ GET /api/browse-dir → enriched directory listing (word counts, summaries,
   │            │                        preview images, annotation/version counts, badges)
   │            ├─ GET /api/preview-image → serves image files from tab/browse directories
-  │            ├─ GET /api/versions → history.py lists git-backed version history
-  │            ├─ GET /api/version → history.py retrieves content at a specific commit
+  │            ├─ GET /api/versions → history.py lists SQLite-backed version history
+  │            ├─ GET /api/version → history.py retrieves content at a specific version
   │            ├─ GET /api/diff → diff.py compares two markdown files
+  │            ├─ GET /api/diff-version → diff a specific version against current content
   │            ├─ GET /api/workspace → active workspace JSON
   │            ├─ GET /api/workspaces/recent → recently opened workspaces
   │            ├─ GET /api/file-metadata → enriched metadata for a single file
   │            ├─ POST /api/add → open file as new tab
+  │            ├─ POST /api/config → update cross-window preferences
   │            ├─ POST /api/close → close a tab
   │            ├─ POST /api/annotate → annotations.py writes sidecar JSON
   │            │                       (bookmark type also → bookmarks.py → ~/.claude/bookmarks/)
   │            ├─ POST /api/resolve → toggle resolved state, archive to .resolved.json
   │            ├─ POST /api/reply → threaded reply to annotation
   │            ├─ POST /api/delete-annotation → permanently delete annotation
-  │            ├─ POST /api/save → atomic write + auto-commit to history.py
+  │            ├─ POST /api/save → snapshot pre-existing state, atomic write, version to history.py
   │            ├─ POST /api/restore → history.py restores file to a previous version
+  │            ├─ POST /api/version/pin → toggle pin on a version
+  │            ├─ POST /api/version/label → set/clear label on a version
   │            ├─ POST /api/rename → renames file + sidecar files on disk
   │            ├─ POST /api/browse → macOS file picker (osascript)
   │            ├─ POST /api/browse-folder → macOS folder picker
@@ -59,27 +65,34 @@ CLI (__main__.py)
 
 ## Component Roles
 
-### `__main__.py` (~448 lines)
+### `__main__.py` (~899 lines)
 - CLI argument parsing (argparse)
 - Three modes: `serve` (default), `--add` (tab reuse), `--annotate` (CLI write)
 - Tab reuse detection: tries GET to existing server before starting new one
+- Multi-instance management: enhanced dialog shows open files per window, window picker for multiple instances
 - Chrome `--app` mode launch with fallback to `webbrowser.open()`
+- JSON PID files with liveness verification, tab-session persistence and crash recovery
 - Blocks on `server.serve_forever()` with `KeyboardInterrupt` handler
 
-### `server.py` (~791 lines)
+### `server.py` (~1509 lines)
 - `PreviewHandler(BaseHTTPRequestHandler)` — single handler class
-- 37 REST API endpoints (15 GET, 22 POST)
+- 44 REST API endpoints (16 GET, 26 POST, plus root `/` and static serving)
 - Tab management via module-level dicts: `_tabs`, `_tab_files`, `_tab_order` (protected by `_tabs_lock`)
 - Tab IDs are SHA-256 hashes of absolute file paths
-- Content polling: client fetches `/api/content` every 500ms, server returns file mtime for change detection
-- Inline editing: `/api/save` writes content atomically (tempfile + `os.replace`), auto-commits to history
-- Version history: `/api/versions`, `/api/version`, `/api/restore` backed by `history.py`
-- File management: `/api/rename` (renames file + sidecars), `/api/browse` (macOS file picker)
+- Change detection: `changeKey = f"{st.st_mtime_ns}:{st.st_size}"` (ns-precision mtime + size)
+- Content polling: client fetches `/api/content` every 500ms, server returns changeKey for reload signals
+- Edit-mode probes: `/api/mtime` stat-only endpoint with sleep/wake resilience
+- Inline editing: `/api/save` snapshots pre-existing disk state, writes atomically (tempfile + `os.replace`), versions to SQLite
+- Conflict detection: saves carry `baseChangeKey`, server 409s if disk changed, client confirms overwrite
+- Version history: `/api/versions`, `/api/version`, `/api/diff-version`, `/api/version/pin`, `/api/version/label`, `/api/restore` backed by `history.py`
+- File management: `/api/rename` (renames file + sidecars + version aliases), `/api/browse` (macOS file picker)
+- Ghost tabs: deleted/moved files serve cached content with `fileMissing: true`
 - Workspace browsing: `/api/browse-dir` returns enriched directory listings with thread-safe `_browse_cache` + `_browse_cache_lock`
 - Preview images: `/api/preview-image` serves images restricted to tab/browse directories
+- Cross-window config: `/api/config` GET/POST for theme and other preferences persisted to `~/.dabarat/config.json`
 - Static file serving for assets referenced by markdown content (images, etc.)
 
-### `template.py` (~258 lines)
+### `template.py` (~264 lines)
 - Reads `static/` files at import time, inlines them into a single HTML document
 - Concatenates 16 JS modules + 14 CSS modules with `/* ── module.js ── */` delimiters
 - CDN dependencies: marked.js (markdown), highlight.js (syntax), Phosphor Icons, Twemoji (emoji), Vibrant.js (color extraction), Motion One (animations, optional), Tiptap/ProseMirror (WYSIWYG editing, optional)
@@ -121,14 +134,20 @@ CLI (__main__.py)
 - `prepare_diff()` returns structured block list with insert/delete/change/equal types
 - Called by server for `/api/diff` endpoint
 
-### `history.py` (172 lines)
-- Git-backed version history stored in `~/.dabarat/history/`
-- Files tracked by SHA-256 hash of absolute path (collision-resistant)
-- `commit(filepath)` — auto-commits current content after each save
-- `list_versions(filepath)` — returns commit log with hashes, timestamps, diffs
-- `get_version_content(filepath, hash)` — retrieves content at a specific commit
-- `restore(filepath, hash)` — writes historical content back to file + commits
-- Git hash validation via regex to prevent command injection
+### `history.py` (~525 lines)
+- SQLite-backed version history stored in `~/.dabarat/versions.db`
+- Content-addressed zlib blobs — identical content dedups by SHA-256 hash
+- WAL mode with synchronous=FULL, BEGIN IMMEDIATE writes
+- Rename-surviving file identity via `files` + `file_aliases` tables
+- Source tags: `save`, `restore`, `external`, `import`
+- Pin/label columns for user-marked versions
+- `snapshot(filepath, content, source)` — records a version with source tag
+- `snapshot_external(filepath)` — captures externally-detected changes
+- `list_versions(filepath)` — returns version timeline with metadata
+- `get_version_content(filepath, version_id)` — retrieves content at a specific version
+- `restore(filepath, version_id)` — mode-preserving atomic restore with pre-replace snapshot
+- `record_rename(old, new)` — retires old-path alias, carries history forward
+- One-time legacy git importer: `cat-file --batch` extraction (~3.2s for 854 commits)
 
 ### `recent.py` (~118 lines)
 - Recently opened files persisted to `~/.dabarat/recent.json`
@@ -154,3 +173,7 @@ CLI (__main__.py)
 - **Progressive enhancement** — Motion One loaded as optional ES module; all call sites guarded with `if (window.Motion)`
 - **Thread-safe shared state** — `_tabs_lock`, `_browse_cache_lock`, `recent._lock` protect module-level dicts under `ThreadingHTTPServer`
 - **Size-gated metadata extraction** — all file-reading helpers gated behind 1MB size check in browse-dir handler
+- **SQLite over git for version history** — content-addressed zlib blobs, WAL mode, rename-surviving identity via aliases, atomic transactions, ~10x faster than subprocess git for large histories
+- **Append-only versioning** — no coalescing, no pruning; a save is a checkpoint. Identical content dedups by hash
+- **changeKey = mtime_ns + size** — nanosecond-precision mtime catches sub-second rewrites that float mtime equality misses
+- **Pre-overwrite snapshots** — `/api/save` snapshots whatever is on disk before writing, so external edits and conflict overwrites are always versioned

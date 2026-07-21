@@ -120,6 +120,8 @@ Mount Tabor itself carries the root in Ethiopic: Ge'ez *dabêr* = "mountain," wh
 
 *Dāberaṯ* was a **place**. A Levitical place—one of the cities set apart, marked off, consecrated. The same *dabbari* "to mark off sacred territory" that yields Amharic *dabêr* "shrine." The city is a shrine. The shrine is a pasture. The pasture is where the bees swarm and the flocks are driven and the priestess delivers her judgment beneath the oak.
 
+The root surfaces in Minoan itself. In *Ya Diktu* (di Mino 2026), the Linear A sequence DU-PU₂-RE—independently read as "sanctuary" by both Davis and the present author—finds its nearest Semitic analog in Hebrew *Dāberaṯ* and Ge'ez *dabr* ("mountain, shrine"). A related sign, \*307, functions as a logogram for Semitic *dubur* on Hagia Triada administrative tablets, following the theonym TI-NI-TA on HT27a to denote a *dəḇîr* of the serpent goddess. The D-B-R sanctuary sense is not a late Hebrew coinage. It is attested in the Minoan script, on the island of the "labyrinth," a millennium before Solomon's Temple.
+
 The "word" sense of D-B-R is what everyone knows. But the root remembers what it was before it learned to speak.
 
 ---
@@ -146,4 +148,5 @@ Dabarat is a place too.
 - Vainstub, Daniel. "Some Points of Contact between the Biblical Deborah War Traditions and Some Greek Mythologies." *Vetus Testamentum* 61 (2011): 1–11.
 - Gesenius, W., E. Kautzsch, and A. E. Cowley. *Gesenius' Hebrew Grammar*. 28th ed. Oxford, 1910. §90.3a.
 - Cook, A. B. "The Bee in Greek Mythology." *JHS* 15 (1895): 1–24.
+- di Mino, Tom. "*Ya Diktu*: Grammar of the Minoan Peak Sanctuary Libation Formula." July 2026.
 - Starostin, S. A. "Semitic Etymology" in *The Tower of Babel: Etymological Databases*. Starling Database.

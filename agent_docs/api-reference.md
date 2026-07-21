@@ -62,15 +62,33 @@ Returns user config from `~/.dabarat/config.json`. Empty object `{}` if no confi
 ```
 
 ### `GET /api/versions?tab={id}`
-Returns git-backed version history for a tab's file.
+Returns SQLite-backed version history for a tab's file. Content-addressed zlib blobs with rename-surviving file identity.
 ```json
-{ "versions": [{ "hash": "abc123", "date": "2026-02-18T...", "message": "...", "diff_stats": {...} }] }
+{ "versions": [{ "hash": "42", "date": "2026-02-18T...", "source": "save", "pinned": false, "label": null }] }
 ```
 
-### `GET /api/version?tab={id}&hash={commit}`
-Returns file content at a specific git commit.
+### `GET /api/version?tab={id}&hash={version_id}`
+Returns file content at a specific version. Version refs are decimal IDs serialized under the legacy `"hash"` field.
 ```json
 { "content": "# Hello\n..." }
+```
+
+### `GET /api/diff-version?tab={id}&hash={version_id}`
+Returns a side-by-side diff of a specific version against the current file content.
+```json
+{ "blocks": [{ "type": "change", "left": "old line", "right": "new line" }] }
+```
+
+### `POST /api/version/pin`
+Toggles the pinned state on a version.
+```json
+{ "tab": "abc123", "hash": "42" }
+```
+
+### `POST /api/version/label`
+Sets or clears a label on a version.
+```json
+{ "tab": "abc123", "hash": "42", "label": "before refactor" }
 ```
 
 ### `GET /api/browse-dir?path={dir}`

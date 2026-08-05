@@ -166,6 +166,9 @@ const CommandPalette = {
       { id: 'version-history', label: 'Version History', icon: 'ph-clock-counter-clockwise', shortcut: '⇧⌘H', action: () => {
         if (typeof openVersionPanel === 'function') openVersionPanel();
       }},
+      { id: 'activity', label: 'Activity (All Files)', icon: 'ph-pulse', action: () => {
+        if (typeof openVersionPanel === 'function') openVersionPanel({ mode: 'global' });
+      }},
       { id: 'show-variables', label: 'Show Variables', icon: 'ph-brackets-curly', action: () => {
         if (typeof diffState !== 'undefined' && diffState.active) return;
         if (window.innerWidth <= 1400) openGutterOverlay();

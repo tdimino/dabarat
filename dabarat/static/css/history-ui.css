@@ -282,6 +282,94 @@
 #history-toggle:active {
   transform: scale(0.96);
 }
+/* Home surfaces history through the header Activity button instead —
+   the floating circle is document-scoped, like the edit toggle */
+body.home-active #history-toggle {
+  display: none;
+}
+
+/* ── Save pulse + transient version chip ─────────────── */
+#history-toggle.pulse {
+  animation: historyPulse 0.6s ease-out;
+}
+@keyframes historyPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(var(--ctp-blue-rgb), 0.45); }
+  100% { box-shadow: 0 0 0 16px rgba(var(--ctp-blue-rgb), 0); }
+}
+.history-chip {
+  position: absolute;
+  top: -7px;
+  right: -8px;
+  background: var(--ctp-blue);
+  color: var(--ctp-crust);
+  font-family: 'Victor Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 8px;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+.history-chip.out {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+/* Light themes: crust is near-white and their blues are mid-tone, so solid
+   blue fails contrast (Dawn 2.86:1) — use the pill idiom instead */
+[data-theme="latte"] .history-chip,
+[data-theme="vellum"] .history-chip,
+[data-theme="rose-pine-dawn"] .history-chip,
+[data-theme="tokyo-light"] .history-chip {
+  background: rgba(var(--ctp-blue-rgb), 0.18);
+  color: var(--ctp-text);
+  border: 1px solid rgba(var(--ctp-blue-rgb), 0.45);
+}
+
+/* ── Unseen external snapshot — peach matches the 'external' badge ── */
+#history-toggle.has-unseen::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ctp-peach);
+  border: 2px solid var(--ctp-base);
+}
+.home-card-versions.unseen {
+  position: relative;
+}
+.home-card-versions.unseen::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ctp-peach);
+}
+
+/* ── Global activity entries ─────────────────────────── */
+.version-entry.global .version-file {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  color: var(--ctp-text);
+  margin: 1px 0 2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.version-entry.global .version-file i {
+  font-size: 12px;
+  color: var(--ctp-overlay1);
+  flex-shrink: 0;
+}
 
 /* ── Day separators ──────────────────────────────────── */
 .version-day-sep {
@@ -344,6 +432,34 @@
 .version-label i {
   font-size: 10px;
   color: var(--ctp-overlay1);
+}
+
+/* Inline label editing */
+.version-label-edit {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 3px 0;
+}
+.version-label-edit i {
+  font-size: 10px;
+  color: var(--ctp-overlay1);
+  flex-shrink: 0;
+}
+.version-label-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--ctp-surface0);
+  border: 1px solid var(--ctp-surface1);
+  border-radius: 4px;
+  color: var(--ctp-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  padding: 2px 6px;
+  outline: none;
+}
+.version-label-input:focus {
+  border-color: var(--ctp-blue);
 }
 
 .version-btn-icon {

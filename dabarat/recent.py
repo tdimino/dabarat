@@ -169,13 +169,45 @@ def _count_annotations(filepath):
         return 0
 
 
-def _count_versions(filepath):
-    """Count version history entries for a file."""
+def _version_info(filepath):
+    """Version count plus newest version ref for a file."""
     try:
         from . import history as _hist_mod
-        return len(_hist_mod.list_versions(filepath))
+        versions = _hist_mod.list_versions(filepath)
+        return len(versions), (versions[0]["hash"] if versions else None)
     except Exception:
-        return 0
+        return 0, None
+
+
+def _count_versions(filepath):
+    """Count version history entries for a file."""
+    return _version_info(filepath)[0]
+
+
+def touch_entry(filepath, content=None):
+    """Refresh volatile metadata on an existing recent entry after a save.
+
+    Unlike add_entry this neither reorders entries nor rewrites identity
+    fields (tags, lastOpened) — it only keeps the home cards' counts,
+    preview, and headVersion honest for files edited in-session.
+    """
+    path = os.path.abspath(filepath)
+    with _lock:
+        entries = load()
+        entry = next((e for e in entries if e["path"] == path), None)
+        if entry is None:
+            return
+        try:
+            entry["mtime"] = os.stat(path).st_mtime
+        except Exception:
+            pass
+        if content is not None:
+            entry["wordCount"] = len(content.split())
+        entry["annotationCount"] = _count_annotations(path)
+        entry["versionCount"], entry["headVersion"] = _version_info(path)
+        entry["summary"] = _extract_summary(path)
+        entry["preview"] = _extract_preview(path)
+        save(entries)
 
 
 def remove_entry(filepath):
@@ -230,6 +262,7 @@ def add_entry(filepath, content=None, tags=None):
             file_mtime = None
             file_birthtime = None
 
+        version_count, head_version = _version_info(path)
         entry = {
             "path": path,
             "filename": os.path.basename(path),
@@ -238,7 +271,8 @@ def add_entry(filepath, content=None, tags=None):
             "birthtime": file_birthtime,
             "wordCount": len((content or "").split()),
             "annotationCount": _count_annotations(path),
-            "versionCount": _count_versions(path),
+            "versionCount": version_count,
+            "headVersion": head_version,
             "tags": tags or [],
             "summary": _extract_summary(path),
             "preview": _extract_preview(path),

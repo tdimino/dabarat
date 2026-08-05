@@ -450,9 +450,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 except Exception:
                     pass
             try:
-                vc = recent._count_versions(file_path)
+                vc, head = recent._version_info(file_path)
                 if vc:
                     entry["versionCount"] = vc
+                    entry["headVersion"] = head
             except Exception:
                 pass
             self._json_response(entry)
@@ -578,9 +579,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                                 except Exception:
                                     pass
                             try:
-                                vc = recent._count_versions(full)
+                                vc, head = recent._version_info(full)
                                 if vc:
                                     entry["versionCount"] = vc
+                                    entry["headVersion"] = head
                             except Exception:
                                 pass
                             entries.append(entry)
@@ -606,6 +608,17 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"error": "permission denied"}, 403)
             except Exception as e:
                 self._json_response({"error": str(e)}, 500)
+
+        elif parsed.path == "/api/versions/recent":
+            try:
+                limit = max(1, min(int(params.get("limit", ["50"])[0]), 50))
+            except ValueError:
+                limit = 50
+            try:
+                versions = history.list_recent_versions(limit)
+                self._json_response({"versions": versions})
+            except Exception as e:
+                self._json_response({"versions": [], "error": str(e)})
 
         elif parsed.path == "/api/versions":
             tab_id = params.get("tab", [None])[0]
@@ -1117,8 +1130,16 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         # commit returns '' when versioning was skipped
                         # (oversized content) — that is not a backup
                         backed_up = bool(version_hash)
-                    except Exception:
-                        pass
+                    except Exception as commit_err:
+                        print(f"Warning: version commit failed for "
+                              f"{filepath}: {commit_err!r}", file=sys.stderr)
+                # Metadata enrichment re-reads the file and queries SQLite —
+                # no integrity stake, so it runs outside the write lock
+                try:
+                    recent.touch_entry(filepath, content=content)
+                except Exception as touch_err:
+                    print(f"Warning: recent-entry refresh failed for "
+                          f"{filepath}: {touch_err!r}", file=sys.stderr)
                 self._json_response({
                     "ok": True,
                     "mtime": mtime,

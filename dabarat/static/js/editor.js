@@ -207,6 +207,18 @@ function exitEditMode(force) {
   editState.active = false;
   editState.dirty = false;
   document.body.classList.remove('edit-mode', 'edit-dirty');
+
+  /* The toggle was hidden while editing — announce the session's versions now.
+     Capture-then-clear before scheduling, so an in-flight save response can't
+     bleed a ghost version count into the next session */
+  const sessionVersionsSaved = editState.versionsSaved;
+  const sessionLastVersion = editState.lastVersion;
+  editState.versionsSaved = 0;
+  editState.lastVersion = null;
+  if (sessionVersionsSaved && typeof pulseHistoryToggle === 'function') {
+    const chipLabel = sessionLastVersion ? 'v' + sessionLastVersion : null;
+    setTimeout(() => pulseHistoryToggle(chipLabel), 350);
+  }
   const editView = document.getElementById('edit-view');
   const contentEl = document.getElementById('content');
 
@@ -358,11 +370,20 @@ async function saveEdit() {
       editState.savedContent = content;
       editState.dirty = false;
       document.body.classList.remove('edit-dirty');
+      /* Track versions created this session; own saves are by definition seen.
+         editState.active guards a response landing after exitEditMode */
+      if (editState.active && data.version && data.version !== editState.lastVersion) {
+        editState.lastVersion = data.version;
+        editState.versionsSaved = (editState.versionsSaved || 0) + 1;
+      }
+      if (typeof historySeen !== 'undefined' && data.version) {
+        historySeen.markSeen(tabs[tabId].filepath, data.version);
+      }
       updateEditStatus(data.preSnapshotFailed
         ? 'Saved — WARNING: previous disk content could not be versioned'
         : data.backedUp === false
           ? 'Saved — version history unavailable'
-          : 'Saved');
+          : 'Saved' + (data.version ? ' · v' + data.version : ''));
     } else {
       updateEditStatus('Error: ' + (data.error || 'save failed'));
     }

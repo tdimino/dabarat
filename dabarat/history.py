@@ -71,6 +71,8 @@ CREATE TABLE IF NOT EXISTS versions (
 );
 CREATE INDEX IF NOT EXISTS idx_versions_file_time
     ON versions(file_id, created_at_us DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_versions_time
+    ON versions(created_at_us DESC, id DESC);
 CREATE INDEX IF NOT EXISTS idx_versions_hash ON versions(blob_hash);
 """
 
@@ -253,6 +255,34 @@ def list_versions(filepath, limit=50):
             "date": stamp.isoformat(),
             "message": f"{basename} | +{added}/-{removed} | "
                        f"{stamp.strftime('%Y-%m-%d %H:%M:%S')}",
+            "added": added,
+            "removed": removed,
+            "label": label,
+            "pinned": bool(pinned),
+            "source": source,
+        })
+    return versions
+
+
+def list_recent_versions(limit=50):
+    """Return newest-first versions across every file:
+    [{hash, path, name, date, added, removed, label, pinned, source}]."""
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT v.id, v.created_at_us, v.source, v.added, v.removed,"
+            " v.label, v.pinned, f.current_path"
+            " FROM versions v JOIN files f ON f.id = v.file_id"
+            " ORDER BY v.created_at_us DESC, v.id DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    versions = []
+    for vid, us, source, added, removed, label, pinned, path in rows:
+        stamp = datetime.datetime.fromtimestamp(us / 1e6).astimezone()
+        versions.append({
+            "hash": str(vid),
+            "path": path,
+            "name": os.path.basename(path),
+            "date": stamp.isoformat(),
             "added": added,
             "removed": removed,
             "label": label,

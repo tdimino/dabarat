@@ -4,9 +4,15 @@ function slugify(text) {
 }
 
 function escapeHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+  /* Explicit table, not the textContent/innerHTML trick — that never escapes
+     quotes, so values landing in attributes stay injectable via hostile
+     filenames like `x" onfocus="...` */
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /* Shared relative time formatter */

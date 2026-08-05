@@ -97,9 +97,13 @@ async function poll() {
         currentFrontmatter = data.frontmatter || null;
         tabs[activeTabId].frontmatter = currentFrontmatter;
         render(tabBody(tabs[activeTabId]));
+        /* The server snapshotted this external change — flag it unseen */
+        historySeen.markUnseen(tabs[activeTabId].filepath);
       }
     } catch (e) { /* ignore */ }
   }
+  /* Keep the toggle's unseen dot in sync with the active tab */
+  _updateHistoryDot();
 
   /* Check for new/removed tabs and poll inactive tab mtimes less frequently */
   if (now - lastTabsCheck >= POLL_TABS_MS) {
@@ -120,6 +124,7 @@ async function poll() {
                 tabs[id].mtime = data.mtime;
                 tabs[id].changeKey = data.changeKey;
                 tabs[id].frontmatter = data.frontmatter || null;
+                historySeen.markUnseen(tabs[id].filepath);
               }
             })
             .catch(() => {})

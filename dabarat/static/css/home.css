@@ -372,6 +372,46 @@ body.home-active #content {
   overflow-wrap: anywhere;
 }
 
+/* ── Hero "continue" card — most recent file, full width ── */
+.home-card-hero {
+  margin-bottom: 8px;
+}
+.home-card-hero .home-card-preview-md {
+  height: 160px;
+}
+.home-hero-kicker {
+  font-family: 'Victor Mono', monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ctp-overlay0);
+  padding: 12px 18px 0;
+}
+
+/* ── Day separators — same register as the version timeline ── */
+.home-day-sep {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ctp-overlay0);
+  margin: 20px 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.home-day-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: rgba(var(--ctp-surface1-rgb), 0.5);
+}
+.home-day-sep + .home-grid {
+  margin-bottom: 4px;
+}
+
 /* ── Card Footer ────────────────────────────────────────── */
 .home-card-footer {
   display: flex;
@@ -396,6 +436,26 @@ body.home-active #content {
 .home-card-footer i {
   font-size: 13px;
   /* Icon inherits height from span; align-items: center handles vertical */
+}
+/* Version counter is a live control — click opens the file's timeline */
+.home-card-versions {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  color: var(--ctp-overlay1);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  padding: 2px 5px;
+  margin: 0 -5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.home-card-versions:hover {
+  color: var(--ctp-blue);
+  background: rgba(var(--ctp-blue-rgb), 0.12);
 }
 .home-card-tags {
   display: flex;

@@ -574,8 +574,29 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
     _stopQuoteCycling();
   }
 
-  const cards = entries.map((e, i) => _buildCard(e, i)).join('');
+  /* Recent view gets a hero "continue" card + day-grouped grid; the
+     workspace (browse) view keeps its flat grid of the folder's files */
   const isEmptyState = entries.length === 0;
+  let gridHtml;
+  if (!browseData && entries.length) {
+    const heroHtml = _buildCard(entries[0], 0, { hero: true });
+    const parts = [];
+    let lastDay = '', open = false;
+    entries.slice(1).forEach((e, i) => {
+      const day = _cardDayLabel(e);
+      if (day !== lastDay || !open) {
+        if (open) parts.push('</div>');
+        parts.push(`${day ? `<div class="home-day-sep">${day}</div>` : ''}<div class="home-grid">`);
+        open = true;
+        lastDay = day;
+      }
+      parts.push(_buildCard(e, i + 1));
+    });
+    if (open) parts.push('</div>');
+    gridHtml = heroHtml + parts.join('');
+  } else {
+    gridHtml = `<div class="home-grid">${entries.map((e, i) => _buildCard(e, i)).join('')}</div>`;
+  }
 
   /* Recent workspaces bar (only when no workspace active) */
   let recentWsHtml = '';
@@ -594,26 +615,36 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
     </div>`;
   }
 
+  /* Recent view has no browse path — its subtitle is aggregate stats */
+  let recentStatsHtml = '';
+  if (!browseData && entries.length) {
+    const totalWords = entries.reduce((sum, e) => sum + (e.wordCount || 0), 0);
+    recentStatsHtml = `<div class="home-workspace-path">${entries.length} file${entries.length === 1 ? '' : 's'}${totalWords ? ' &middot; ' + totalWords.toLocaleString() + ' words' : ''}<span id="home-last-save"></span></div>`;
+  }
+
   content.innerHTML = `<div class="home-screen">
     <div class="home-header">
       <div>
         <h1 class="home-title">${escapeHtml(title)}</h1>
-        ${pathDisplay ? `<div class="home-workspace-path">${escapeHtml(pathDisplay)} ${statsHtml}</div>` : ''}
+        ${pathDisplay ? `<div class="home-workspace-path">${escapeHtml(pathDisplay)} ${statsHtml}</div>` : recentStatsHtml}
       </div>
       ${!isEmptyState ? `<div class="home-actions">
+        <button class="home-action-btn" data-action="open-activity">
+          <i class="ph ph-clock-counter-clockwise"></i> Activity
+        </button>
         <button class="home-action-btn" data-action="create-workspace">
           <i class="ph ph-plus-circle"></i> New Workspace
         </button>
       </div>` : ''}
     </div>
     ${recentWsHtml}
-    ${emptyState || `<div class="home-grid">${cards}</div>`}
+    ${emptyState || gridHtml}
   </div>`;
 
   /* Attach card event listeners via delegation (avoids XSS from inline onclick) */
   content.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.home-card-remove')) return;
+      if (e.target.closest('.home-card-remove') || e.target.closest('.home-card-versions')) return;
       openRecentFile(card.dataset.filepath);
     });
   });
@@ -622,6 +653,13 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       removeRecentFile(card.dataset.filepath, card);
+    });
+  });
+  content.querySelectorAll('.home-card-versions').forEach(btn => {
+    const card = btn.closest('.home-card');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRecentFile(card.dataset.filepath, { openHistory: true });
     });
   });
 
@@ -639,6 +677,11 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
   /* Attach create workspace button */
   const createWsBtn = content.querySelector('[data-action="create-workspace"]');
   if (createWsBtn) createWsBtn.addEventListener('click', () => createWorkspace());
+
+  /* Attach activity button + fill the last-save stat asynchronously */
+  const activityBtn = content.querySelector('[data-action="open-activity"]');
+  if (activityBtn) activityBtn.addEventListener('click', () => openVersionPanel({ mode: 'global' }));
+  _fillLastSaveStat();
 
   /* Attach recent workspace cards */
   content.querySelectorAll('.home-ws-card').forEach(card => {
@@ -668,8 +711,34 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
   }
 }
 
+/* Day-group label for a card — mirrors the version timeline's separators */
+function _cardDayLabel(e) {
+  const ts = e.mtime ? new Date(e.mtime * 1000) : (e.lastOpened ? new Date(e.lastOpened) : null);
+  if (!ts || isNaN(ts)) return '';
+  const now = new Date();
+  const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const diffDays = Math.round((startOfDay(now) - startOfDay(ts)) / 86400000);
+  if (diffDays <= 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  return ts.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* Patch the header's "last save" stat once the activity endpoint answers —
+   rendering never waits on it, and a failed fetch just leaves the stat off */
+async function _fillLastSaveStat() {
+  if (!document.getElementById('home-last-save')) return;
+  try {
+    const res = await fetch('/api/versions/recent?limit=1');
+    const data = await res.json();
+    const v = (data.versions || [])[0];
+    const el = document.getElementById('home-last-save');
+    if (v && el) el.innerHTML = ' &middot; last save ' + _homeTimeAgo(v.date);
+  } catch (_) {}
+}
+
 /* ── Card Builder ────────────────────────────────────── */
-function _buildCard(e, i) {
+function _buildCard(e, i, opts) {
+  const hero = !!(opts && opts.hero);
   const ext = (e.filename || e.name || '').split('.').pop().toLowerCase();
   const accentColor = _accentColors[ext] || 'var(--ctp-blue)';
 
@@ -722,12 +791,13 @@ function _buildCard(e, i) {
     ? created.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
     : '';
 
-  return `<article class="home-card" style="animation-delay:${i * 40}ms" data-filepath="${escapeHtml(e.path)}">
+  return `<article class="home-card${hero ? ' home-card-hero' : ''}" style="animation-delay:${i * 40}ms" data-filepath="${escapeHtml(e.path)}">
     <div class="home-card-accent" style="--accent: ${accentColor}"></div>
     <button class="home-card-remove" title="Remove from recent">
       <i class="ph ph-x"></i>
     </button>
     <div class="home-card-body">
+      ${hero ? '<div class="home-hero-kicker">Continue where you left off</div>' : ''}
       <div class="home-card-header">
         <div class="home-card-title-row">
           <i class="ph ph-file-md home-card-icon"></i>
@@ -739,9 +809,9 @@ function _buildCard(e, i) {
       ${fmBadges ? `<div class="home-card-badges">${fmBadges}</div>` : ''}
       ${previewHtml}
       <div class="home-card-footer">
-        ${e.wordCount ? `<span class="home-card-wordcount"><i class="ph ph-article"></i> ${e.wordCount.toLocaleString()}</span>` : ''}
-        ${e.annotationCount ? `<span><i class="ph ph-chat-dots"></i> ${e.annotationCount}</span>` : ''}
-        ${e.versionCount ? `<span><i class="ph ph-clock-counter-clockwise"></i> ${e.versionCount}</span>` : ''}
+        ${e.wordCount ? `<span class="home-card-wordcount" title="${e.wordCount.toLocaleString()} words"><i class="ph ph-article"></i> ${e.wordCount.toLocaleString()}</span>` : ''}
+        ${e.annotationCount ? `<span title="${e.annotationCount} annotation${e.annotationCount === 1 ? '' : 's'}"><i class="ph ph-chat-dots"></i> ${e.annotationCount}</span>` : ''}
+        ${e.versionCount ? `<button class="home-card-versions${typeof historySeen !== 'undefined' && historySeen.isUnseenFor(e.path, e.headVersion) ? ' unseen' : ''}" title="${e.versionCount} version${e.versionCount === 1 ? '' : 's'} — view history"><i class="ph ph-clock-counter-clockwise"></i> ${e.versionCount}</button>` : ''}
         ${tagPills ? `<div class="home-card-tags">${tagPills}</div>` : ''}
         ${dateCreated ? `<span class="home-card-created"><i class="ph ph-calendar-blank"></i> ${dateCreated}</span>` : ''}
       </div>
@@ -858,7 +928,7 @@ function _formatSize(bytes) {
 }
 
 let _recentFileOpening = false;
-async function openRecentFile(filepath) {
+async function openRecentFile(filepath, opts) {
   if (_recentFileOpening) return;
   _recentFileOpening = true;
   try {
@@ -878,6 +948,10 @@ async function openRecentFile(filepath) {
       await fetchTabContent(data.id);
       document.getElementById('status-filepath').textContent = tabs[data.id].filepath;
       localStorage.setItem('dabarat-active-tab', data.id);
+      /* Deep-link from activity feed or card version counter */
+      if (opts && opts.openHistory && typeof openVersionPanel === 'function') {
+        openVersionPanel({ mode: 'file' });
+      }
     }
   } catch (e) {
     console.error('Failed to open file:', e);
@@ -1149,6 +1223,9 @@ async function _loadWorkspaceMultiRoot() {
         <h1 class="home-title">${escapeHtml(_activeWorkspace.name || 'Workspace')}</h1>
       </div>
       <div class="home-actions">
+        <button class="home-action-btn" data-action="open-activity">
+          <i class="ph ph-clock-counter-clockwise"></i> Activity
+        </button>
         <button class="home-action-btn" data-action="add-folder-ws">
           <i class="ph ph-folder-plus"></i> Add Folder
         </button>
@@ -1161,6 +1238,9 @@ async function _loadWorkspaceMultiRoot() {
   </div>`;
 
   /* Attach action button listeners */
+  content.querySelectorAll('[data-action="open-activity"]').forEach(btn =>
+    btn.addEventListener('click', () => openVersionPanel({ mode: 'global' }))
+  );
   content.querySelectorAll('[data-action="add-folder-ws"]').forEach(btn =>
     btn.addEventListener('click', () => addFolderToWorkspace())
   );
@@ -1179,8 +1259,15 @@ async function _loadWorkspaceMultiRoot() {
   /* Attach card event listeners */
   content.querySelectorAll('.home-card').forEach(card => {
     card.addEventListener('click', (e) => {
-      if (e.target.closest('.home-card-remove')) return;
+      if (e.target.closest('.home-card-remove') || e.target.closest('.home-card-versions')) return;
       openRecentFile(card.dataset.filepath);
+    });
+  });
+  content.querySelectorAll('.home-card-versions').forEach(btn => {
+    const card = btn.closest('.home-card');
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openRecentFile(card.dataset.filepath, { openHistory: true });
     });
   });
 

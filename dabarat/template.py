@@ -1,5 +1,6 @@
 """HTML template assembly — reads static CSS/JS and builds the page shell."""
 
+import html
 import json
 import os
 
@@ -47,7 +48,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{title}</title>
+<title>{html.escape(title)}</title>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked-footnote@1.4.0/dist/index.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
@@ -226,7 +227,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
 
   <div id="version-panel">
     <div class="version-panel-header">
-      <span class="version-panel-label">History<span id="version-count-badge"></span></span>
+      <span class="version-panel-label"><span id="version-panel-title">History</span><span id="version-count-badge"></span></span>
       <button class="version-panel-close" onclick="closeVersionPanel()" title="Close"><i class="ph ph-x"></i></button>
     </div>
     <div class="version-timeline" id="version-timeline"></div>

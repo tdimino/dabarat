@@ -1,0 +1,226 @@
+Color audit — 8 themes × markdown elements
+  P0=8  P1=111  P2=82  P3=14
+
+── P0 ──────────────────────────────────────────────────
+  latte                  italic                   contrast            4.34:1 (needs 4.5:1, APCA Lc 65) [var(--italic-color) on var(--ctp-base)]
+  latte                  link                     contrast            4.34:1 (needs 4.5:1, APCA Lc 65) [var(--ctp-blue) on var(--ctp-base)]
+  latte                  link hover               contrast            2.81:1 (needs 4.5:1, APCA Lc 50) [var(--ctp-lavender) on var(--ctp-base)]
+  rose-pine-dawn         blockquote               contrast            3.50:1 (needs 4.5:1, APCA Lc 60) [var(--blockquote-color) on var(--ctp-base) over var(--blockquote-bg)]
+  rose-pine-dawn         italic                   contrast            3.30:1 (needs 4.5:1, APCA Lc 59) [var(--italic-color) on var(--ctp-base)]
+  rose-pine-dawn         link                     contrast            3.30:1 (needs 4.5:1, APCA Lc 59) [var(--ctp-blue) on var(--ctp-base)]
+  rose-pine-dawn         link hover               contrast            3.65:1 (needs 4.5:1, APCA Lc 63) [var(--ctp-lavender) on var(--ctp-base)]
+  vellum                 link hover               contrast            4.44:1 (needs 4.5:1, APCA Lc 67) [var(--ctp-lavender) on var(--ctp-base)]
+
+── P1 ──────────────────────────────────────────────────
+  ink                    card meta                contrast            2.89:1 (needs 4.5:1, APCA Lc 22) [var(--ctp-overlay1) on var(--card-bg)]
+  ink                    external badge           contrast            4.44:1 (needs 4.5:1, APCA Lc 36) [var(--ctp-peach) on var(--ctp-mantle) over rgba(var(--ctp-peach-rgb), 0.12)]
+  ink                    figcaption               contrast            3.18:1 (needs 4.5:1, APCA Lc 23) [var(--ctp-overlay1) on var(--ctp-base)]
+  ink                    footnote backref         contrast            3.18:1 (needs 4.5:1, APCA Lc 23) [var(--ctp-overlay1) on var(--ctp-base)]
+  ink                    hljs built_in            contrast            3.47:1 (needs 4.5:1, APCA Lc 25) [var(--ctp-red) on var(--ctp-mantle)]
+  ink                    hljs comment             contrast            2.36:1 (needs 4.5:1, APCA Lc 14) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  ink                    hljs params              contrast            3.36:1 (needs 4.5:1, APCA Lc 24) [var(--ctp-maroon) on var(--ctp-mantle)]
+  ink                    template pill ${}        contrast            3.67:1 (needs 4.5:1, APCA Lc 32) [var(--ctp-teal) on var(--ctp-base) over rgba(var(--ctp-teal-rgb), 0.18)]
+  ink                    template pill {{}}       contrast            3.55:1 (needs 4.5:1, APCA Lc 31) [var(--ctp-mauve) on var(--ctp-base) over rgba(var(--ctp-mauve-rgb), 0.18)]
+  ink                    timeline -stat           contrast            3.47:1 (needs 4.5:1, APCA Lc 25) [var(--ctp-red) on var(--ctp-mantle)]
+  latte                  card meta                contrast            3.20:1 (needs 4.5:1, APCA Lc 59) [var(--ctp-overlay1) on var(--card-bg)]
+  latte                  external badge           contrast            2.18:1 (needs 4.5:1, APCA Lc 35) [var(--ctp-peach) on var(--ctp-mantle) over rgba(var(--ctp-peach-rgb), 0.12)]
+  latte                  figcaption               contrast            2.83:1 (needs 4.5:1, APCA Lc 51) [var(--ctp-overlay1) on var(--ctp-base)]
+  latte                  footnote backref         contrast            2.83:1 (needs 4.5:1, APCA Lc 51) [var(--ctp-overlay1) on var(--ctp-base)]
+  latte                  footnote text            contrast            4.37:1 (needs 4.5:1, APCA Lc 66) [var(--ctp-subtext0) on var(--ctp-base)]
+  latte                  h3                       contrast            2.96:1 (needs 3.0:1, APCA Lc 52) [var(--ctp-green) on var(--ctp-base)]
+  latte                  h4                       contrast            2.31:1 (needs 3.0:1, APCA Lc 42) [var(--ctp-yellow) on var(--ctp-base)]
+  latte                  h5                       contrast            2.64:1 (needs 3.0:1, APCA Lc 47) [var(--ctp-peach) on var(--ctp-base)]
+  latte                  history chip             contrast            3.71:1 (needs 4.5:1, APCA Lc 58) [var(--ctp-crust) on var(--ctp-blue)]
+  latte                  hljs built_in            contrast            4.46:1 (needs 4.5:1, APCA Lc 62) [var(--ctp-red) on var(--ctp-mantle)]
+  latte                  hljs comment             contrast            2.14:1 (needs 4.5:1, APCA Lc 38) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  latte                  hljs function            contrast            4.04:1 (needs 4.5:1, APCA Lc 60) [var(--ctp-blue) on var(--ctp-mantle)]
+  latte                  hljs keyword             contrast            4.45:1 (needs 4.5:1, APCA Lc 63) [var(--ctp-mauve) on var(--ctp-mantle)]
+  latte                  hljs meta                contrast            2.17:1 (needs 4.5:1, APCA Lc 38) [var(--ctp-pink) on var(--ctp-mantle)]
+  latte                  hljs number              contrast            2.45:1 (needs 4.5:1, APCA Lc 42) [var(--ctp-peach) on var(--ctp-mantle)]
+  latte                  hljs operator            contrast            2.30:1 (needs 4.5:1, APCA Lc 40) [var(--ctp-sky) on var(--ctp-mantle)]
+  latte                  hljs params              contrast            3.23:1 (needs 4.5:1, APCA Lc 52) [var(--ctp-maroon) on var(--ctp-mantle)]
+  latte                  hljs property            contrast            2.30:1 (needs 4.5:1, APCA Lc 40) [var(--ctp-sky) on var(--ctp-mantle)]
+  latte                  hljs punctuation         contrast            3.25:1 (needs 4.5:1, APCA Lc 54) [var(--ctp-overlay2) on var(--ctp-mantle)]
+  latte                  hljs string              contrast            2.75:1 (needs 4.5:1, APCA Lc 47) [var(--ctp-green) on var(--ctp-mantle)]
+  latte                  hljs symbol              contrast            2.46:1 (needs 4.5:1, APCA Lc 43) [var(--ctp-flamingo) on var(--ctp-mantle)]
+  latte                  hljs type                contrast            2.15:1 (needs 4.5:1, APCA Lc 38) [var(--ctp-yellow) on var(--ctp-mantle)]
+  latte                  list marker              contrast            2.83:1 (needs 3.0:1, APCA Lc 51) [var(--ctp-overlay1) on var(--ctp-base)]
+  latte                  table header             contrast            4.04:1 (needs 4.5:1, APCA Lc 60) [var(--ctp-blue) on var(--ctp-mantle)]
+  latte                  template pill ${}        contrast            2.72:1 (needs 4.5:1, APCA Lc 44) [var(--ctp-teal) on var(--ctp-base) over rgba(var(--ctp-teal-rgb), 0.18)]
+  latte                  template pill {{}}       contrast            3.71:1 (needs 4.5:1, APCA Lc 52) [var(--ctp-mauve) on var(--ctp-base) over rgba(var(--ctp-mauve-rgb), 0.18)]
+  latte                  timeline +stat           contrast            2.75:1 (needs 4.5:1, APCA Lc 47) [var(--ctp-green) on var(--ctp-mantle)]
+  latte                  timeline -stat           contrast            4.46:1 (needs 4.5:1, APCA Lc 62) [var(--ctp-red) on var(--ctp-mantle)]
+  latte                  timeline date            contrast            4.06:1 (needs 4.5:1, APCA Lc 61) [var(--ctp-subtext0) on var(--ctp-mantle)]
+  mocha                  card meta                contrast            3.40:1 (needs 4.5:1, APCA Lc 31) [var(--ctp-overlay1) on var(--card-bg)]
+  mocha                  figcaption               contrast            4.44:1 (needs 4.5:1, APCA Lc 35) [var(--ctp-overlay1) on var(--ctp-base)]
+  mocha                  footnote backref         contrast            4.44:1 (needs 4.5:1, APCA Lc 35) [var(--ctp-overlay1) on var(--ctp-base)]
+  mocha                  hljs comment             contrast            3.59:1 (needs 4.5:1, APCA Lc 27) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  rose-pine              card meta                contrast            3.20:1 (needs 4.5:1, APCA Lc 24) [var(--ctp-overlay1) on var(--card-bg)]
+  rose-pine              figcaption               contrast            3.42:1 (needs 4.5:1, APCA Lc 25) [var(--ctp-overlay1) on var(--ctp-base)]
+  rose-pine              footnote backref         contrast            3.42:1 (needs 4.5:1, APCA Lc 25) [var(--ctp-overlay1) on var(--ctp-base)]
+  rose-pine              hljs comment             contrast            2.33:1 (needs 4.5:1, APCA Lc 14) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  rose-pine              template pill ${}        contrast            2.86:1 (needs 4.5:1, APCA Lc 23) [var(--ctp-teal) on var(--ctp-base) over rgba(var(--ctp-teal-rgb), 0.18)]
+  rose-pine-dawn         card meta                contrast            2.98:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-overlay1) on var(--card-bg)]
+  rose-pine-dawn         card summary             contrast            4.39:1 (needs 4.5:1, APCA Lc 70) [var(--ctp-subtext0) on var(--card-bg)]
+  rose-pine-dawn         external badge           contrast            1.89:1 (needs 4.5:1, APCA Lc 32) [var(--ctp-peach) on var(--ctp-mantle) over rgba(var(--ctp-peach-rgb), 0.12)]
+  rose-pine-dawn         figcaption               contrast            2.87:1 (needs 4.5:1, APCA Lc 54) [var(--ctp-overlay1) on var(--ctp-base)]
+  rose-pine-dawn         footnote backref         contrast            2.87:1 (needs 4.5:1, APCA Lc 54) [var(--ctp-overlay1) on var(--ctp-base)]
+  rose-pine-dawn         footnote text            contrast            4.23:1 (needs 4.5:1, APCA Lc 68) [var(--ctp-subtext0) on var(--ctp-base)]
+  rose-pine-dawn         h4                       contrast            2.16:1 (needs 3.0:1, APCA Lc 41) [var(--ctp-yellow) on var(--ctp-base)]
+  rose-pine-dawn         h5                       contrast            2.16:1 (needs 3.0:1, APCA Lc 41) [var(--ctp-peach) on var(--ctp-base)]
+  rose-pine-dawn         history chip             contrast            2.86:1 (needs 4.5:1, APCA Lc 54) [var(--ctp-crust) on var(--ctp-blue)]
+  rose-pine-dawn         hljs built_in            contrast            3.84:1 (needs 4.5:1, APCA Lc 63) [var(--ctp-red) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs comment             contrast            2.13:1 (needs 4.5:1, APCA Lc 40) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs function            contrast            3.14:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-blue) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs keyword             contrast            3.47:1 (needs 4.5:1, APCA Lc 59) [var(--ctp-mauve) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs meta                contrast            3.84:1 (needs 4.5:1, APCA Lc 63) [var(--ctp-pink) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs number              contrast            2.05:1 (needs 4.5:1, APCA Lc 38) [var(--ctp-peach) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs operator            contrast            3.14:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-sky) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs params              contrast            3.84:1 (needs 4.5:1, APCA Lc 63) [var(--ctp-maroon) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs property            contrast            3.14:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-sky) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs punctuation         contrast            3.51:1 (needs 4.5:1, APCA Lc 60) [var(--ctp-overlay2) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs string              contrast            3.14:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-green) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs symbol              contrast            2.60:1 (needs 4.5:1, APCA Lc 48) [var(--ctp-flamingo) on var(--ctp-mantle)]
+  rose-pine-dawn         hljs type                contrast            2.05:1 (needs 4.5:1, APCA Lc 38) [var(--ctp-yellow) on var(--ctp-mantle)]
+  rose-pine-dawn         list marker              contrast            2.87:1 (needs 3.0:1, APCA Lc 54) [var(--ctp-overlay1) on var(--ctp-base)]
+  rose-pine-dawn         table header             contrast            3.14:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-blue) on var(--ctp-mantle)]
+  rose-pine-dawn         template pill {{}}       contrast            3.00:1 (needs 4.5:1, APCA Lc 50) [var(--ctp-mauve) on var(--ctp-base) over rgba(var(--ctp-mauve-rgb), 0.18)]
+  rose-pine-dawn         timeline +stat           contrast            3.14:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-green) on var(--ctp-mantle)]
+  rose-pine-dawn         timeline -stat           contrast            3.84:1 (needs 4.5:1, APCA Lc 63) [var(--ctp-red) on var(--ctp-mantle)]
+  rose-pine-dawn         timeline date            contrast            4.02:1 (needs 4.5:1, APCA Lc 64) [var(--ctp-subtext0) on var(--ctp-mantle)]
+  tokyo-light            card meta                contrast            4.04:1 (needs 4.5:1, APCA Lc 68) [var(--ctp-overlay1) on var(--card-bg)]
+  tokyo-light            external badge           contrast            3.86:1 (needs 4.5:1, APCA Lc 52) [var(--ctp-peach) on var(--ctp-mantle) over rgba(var(--ctp-peach-rgb), 0.12)]
+  tokyo-light            figcaption               contrast            3.27:1 (needs 4.5:1, APCA Lc 54) [var(--ctp-overlay1) on var(--ctp-base)]
+  tokyo-light            footnote backref         contrast            3.27:1 (needs 4.5:1, APCA Lc 54) [var(--ctp-overlay1) on var(--ctp-base)]
+  tokyo-light            history chip             contrast            4.26:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-crust) on var(--ctp-blue)]
+  tokyo-light            hljs comment             contrast            2.53:1 (needs 4.5:1, APCA Lc 42) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  tokyo-light            hljs number              contrast            4.49:1 (needs 4.5:1, APCA Lc 60) [var(--ctp-peach) on var(--ctp-mantle)]
+  tokyo-light            hljs operator            contrast            4.47:1 (needs 4.5:1, APCA Lc 60) [var(--ctp-sky) on var(--ctp-mantle)]
+  tokyo-light            hljs property            contrast            4.47:1 (needs 4.5:1, APCA Lc 60) [var(--ctp-sky) on var(--ctp-mantle)]
+  tokyo-light            hljs punctuation         contrast            3.78:1 (needs 4.5:1, APCA Lc 56) [var(--ctp-overlay2) on var(--ctp-mantle)]
+  tokyo-light            hljs type                contrast            4.13:1 (needs 4.5:1, APCA Lc 58) [var(--ctp-yellow) on var(--ctp-mantle)]
+  tokyo-light            template pill ${}        contrast            4.31:1 (needs 4.5:1, APCA Lc 55) [var(--ctp-teal) on var(--ctp-base) over rgba(var(--ctp-teal-rgb), 0.18)]
+  tokyo-light            template pill {{}}       contrast            3.96:1 (needs 4.5:1, APCA Lc 52) [var(--ctp-mauve) on var(--ctp-base) over rgba(var(--ctp-mauve-rgb), 0.18)]
+  tokyo-storm            card meta                contrast            2.17:1 (needs 4.5:1, APCA Lc 16) [var(--ctp-overlay1) on var(--card-bg)]
+  tokyo-storm            figcaption               contrast            2.35:1 (needs 4.5:1, APCA Lc 17) [var(--ctp-overlay1) on var(--ctp-base)]
+  tokyo-storm            footnote backref         contrast            2.35:1 (needs 4.5:1, APCA Lc 17) [var(--ctp-overlay1) on var(--ctp-base)]
+  tokyo-storm            hljs comment             contrast            1.74:1 (needs 4.5:1, APCA Lc 9) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  tokyo-storm            hljs punctuation         contrast            3.73:1 (needs 4.5:1, APCA Lc 30) [var(--ctp-overlay2) on var(--ctp-mantle)]
+  tokyo-storm            list marker              contrast            2.35:1 (needs 3.0:1, APCA Lc 17) [var(--ctp-overlay1) on var(--ctp-base)]
+  tokyo-storm            template pill {{}}       contrast            3.38:1 (needs 4.5:1, APCA Lc 33) [var(--ctp-mauve) on var(--ctp-base) over rgba(var(--ctp-mauve-rgb), 0.18)]
+  vellum                 card meta                contrast            2.57:1 (needs 4.5:1, APCA Lc 49) [var(--ctp-overlay1) on var(--card-bg)]
+  vellum                 external badge           contrast            3.40:1 (needs 4.5:1, APCA Lc 52) [var(--ctp-peach) on var(--ctp-mantle) over rgba(var(--ctp-peach-rgb), 0.12)]
+  vellum                 figcaption               contrast            2.42:1 (needs 4.5:1, APCA Lc 45) [var(--ctp-overlay1) on var(--ctp-base)]
+  vellum                 footnote backref         contrast            2.42:1 (needs 4.5:1, APCA Lc 45) [var(--ctp-overlay1) on var(--ctp-base)]
+  vellum                 h4                       contrast            2.90:1 (needs 3.0:1, APCA Lc 52) [var(--ctp-yellow) on var(--ctp-base)]
+  vellum                 hljs comment             contrast            1.78:1 (needs 4.5:1, APCA Lc 30) [var(--ctp-overlay0) on var(--ctp-mantle)]
+  vellum                 hljs meta                contrast            3.61:1 (needs 4.5:1, APCA Lc 58) [var(--ctp-pink) on var(--ctp-mantle)]
+  vellum                 hljs number              contrast            3.92:1 (needs 4.5:1, APCA Lc 60) [var(--ctp-peach) on var(--ctp-mantle)]
+  vellum                 hljs punctuation         contrast            3.10:1 (needs 4.5:1, APCA Lc 53) [var(--ctp-overlay2) on var(--ctp-mantle)]
+  vellum                 hljs string              contrast            4.10:1 (needs 4.5:1, APCA Lc 62) [var(--ctp-green) on var(--ctp-mantle)]
+  vellum                 hljs symbol              contrast            2.95:1 (needs 4.5:1, APCA Lc 51) [var(--ctp-flamingo) on var(--ctp-mantle)]
+  vellum                 hljs type                contrast            2.72:1 (needs 4.5:1, APCA Lc 48) [var(--ctp-yellow) on var(--ctp-mantle)]
+  vellum                 list marker              contrast            2.42:1 (needs 3.0:1, APCA Lc 45) [var(--ctp-overlay1) on var(--ctp-base)]
+  vellum                 template pill ${}        contrast            3.50:1 (needs 4.5:1, APCA Lc 53) [var(--ctp-teal) on var(--ctp-base) over rgba(var(--ctp-teal-rgb), 0.18)]
+  vellum                 timeline +stat           contrast            4.10:1 (needs 4.5:1, APCA Lc 62) [var(--ctp-green) on var(--ctp-mantle)]
+
+── P2 ──────────────────────────────────────────────────
+  ink                    accents mauve/lavender   accent-collision    ΔE 7.0 — visually adjacent
+  ink                    accents sky/blue         accent-collision    ΔE 6.4 — visually adjacent
+  ink                    accents sky/sapphire     accent-collision    ΔE 8.1 — visually adjacent
+  latte                  base-layout.css:171      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  base-layout.css:172      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  base-layout.css:227      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  diff.css:258             incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  diff.css:265             incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  diff.css:269             incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  diff.css:273             incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  diff.css:277             incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:129      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:134      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:149      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:153      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:169      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:175      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:179      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:184      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:189      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:194      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:199      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:204      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:486      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:492      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:496      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:540      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  frontmatter.css:546      incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  lightbox.css:22          incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  typography.css:184       incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  typography.css:188       incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:298  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:301  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:302  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:303  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:304  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:305  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:306  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte                  variables-panel.css:307  incomplete-override light-theme override missing ['rose-pine-dawn', 'tokyo-light', 'vellum']
+  latte,rose-pine-dawn,tokyo-light annotations.css:72       incomplete-override light-theme override missing ['vellum']
+  latte,rose-pine-dawn,tokyo-light status-print.css:172     incomplete-override light-theme override missing ['vellum']
+  latte,rose-pine-dawn,tokyo-light variables-panel.css:49   incomplete-override light-theme override missing ['vellum']
+  latte,rose-pine-dawn,tokyo-light variables-panel.css:55   incomplete-override light-theme override missing ['vellum']
+  mocha                  accents rosewater/flamingo accent-collision    ΔE 8.3 — visually adjacent
+  mocha                  accents sky/sapphire     accent-collision    ΔE 7.6 — visually adjacent
+  mocha↔latte            accent chroma parity     chroma-drift        mean accent chroma 31 (dark) vs 62 (light) — Δ31
+  rose-pine              accents green/blue       accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents green/sky        accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents mauve/lavender   accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents peach/yellow     accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents pink/maroon      accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents pink/red         accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents red/maroon       accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents rosewater/flamingo accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents sky/blue         accent-collision    ΔE 0.0 — visually identical
+  rose-pine              accents teal/sapphire    accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents green/blue       accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents green/sky        accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents mauve/lavender   accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents peach/yellow     accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents pink/maroon      accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents pink/red         accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents red/maroon       accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents rosewater/flamingo accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents sky/blue         accent-collision    ΔE 0.0 — visually identical
+  rose-pine-dawn         accents teal/sapphire    accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents flamingo/maroon  accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents flamingo/pink    accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents flamingo/red     accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents pink/maroon      accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents pink/red         accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents red/maroon       accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents rosewater/peach  accent-collision    ΔE 0.0 — visually identical
+  tokyo-light            accents sky/sapphire     accent-collision    ΔE 0.0 — visually identical
+  tokyo-storm            accents flamingo/peach   accent-collision    ΔE 0.0 — visually identical
+  tokyo-storm            accents pink/lavender    accent-collision    ΔE 0.0 — visually identical
+  tokyo-storm            accents red/maroon       accent-collision    ΔE 0.0 — visually identical
+  tokyo-storm            accents rosewater/flamingo accent-collision    ΔE 0.0 — visually identical
+  tokyo-storm            accents rosewater/peach  accent-collision    ΔE 0.0 — visually identical
+  vellum                 accents rosewater/flamingo accent-collision    ΔE 9.0 — visually adjacent
+  vellum                 accents sapphire/blue    accent-collision    ΔE 0.0 — visually identical
+  vellum                 surface ramp             ramp-order          luminance not monotonic in depth order: base=0.898, mantle=0.840, crust=0.760, surface0=0.792, surface1=0.654, surface2=0.522
+
+── P3 ──────────────────────────────────────────────────
+  ink                    hljs keyword             contrast-margin     4.75:1 — passes 4.5:1 by <0.35
+  ink                    list marker              contrast-margin     3.18:1 — passes 3.0:1 by <0.35
+  latte                  blockquote               contrast-margin     4.52:1 — passes 4.5:1 by <0.35
+  rose-pine-dawn         h1/h2                    contrast-margin     3.30:1 — passes 3.0:1 by <0.35
+  rose-pine-dawn         h3                       contrast-margin     3.30:1 — passes 3.0:1 by <0.35
+  rose-pine-dawn         template pill ${}        contrast-margin     4.55:1 — passes 4.5:1 by <0.35
+  tokyo-light            blockquote               contrast-margin     4.73:1 — passes 4.5:1 by <0.35
+  tokyo-light            hljs keyword             contrast-margin     4.65:1 — passes 4.5:1 by <0.35
+  tokyo-light            inline code              contrast-margin     4.64:1 — passes 4.5:1 by <0.35
+  tokyo-light            list marker              contrast-margin     3.27:1 — passes 3.0:1 by <0.35
+  tokyo-storm            hljs keyword             contrast-margin     4.67:1 — passes 4.5:1 by <0.35
+  vellum                 hljs operator            contrast-margin     4.77:1 — passes 4.5:1 by <0.35
+  vellum                 hljs property            contrast-margin     4.77:1 — passes 4.5:1 by <0.35
+  vellum                 timeline date            contrast-margin     4.80:1 — passes 4.5:1 by <0.35
+

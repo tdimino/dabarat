@@ -67,6 +67,33 @@
   --interactive-hover-bg: var(--ctp-surface1);
   --interactive-muted-bg: rgba(var(--ctp-surface1-rgb), 0.85);
 
+  /* Color-role tokens — default to raw accents; themes override any slot
+     whose accent fails 4.5:1 (or 3:1 for headings) on its real surface.
+     hljs tokens are named for their primary syntax role; classes sharing
+     an accent share the token (tag→built-in, selector-id→type, …). */
+  --hljs-keyword: var(--ctp-mauve);
+  --hljs-string: var(--ctp-green);
+  --hljs-number: var(--ctp-peach);
+  --hljs-comment: #8589a0;  /* lifted overlay0 — 5.11:1 on mantle */
+  --hljs-function: var(--ctp-blue);
+  --hljs-built-in: var(--ctp-red);
+  --hljs-type: var(--ctp-yellow);
+  --hljs-operator: var(--ctp-sky);
+  --hljs-punctuation: var(--ctp-overlay2);
+  --hljs-symbol: var(--ctp-flamingo);
+  --hljs-params: var(--ctp-maroon);
+  --hljs-meta: var(--ctp-pink);
+  --tpl-pill-mustache: var(--ctp-mauve);
+  --tpl-pill-dollar: var(--ctp-teal);
+  --h3-color: var(--ctp-green);
+  --h4-color: var(--ctp-yellow);
+  --h5-color: var(--ctp-peach);
+  --link-visited: var(--ctp-mauve);
+  --stat-add: var(--ctp-green);
+  --stat-del: var(--ctp-red);
+  --stat-chg: var(--ctp-yellow);
+  --external-badge-fg: var(--ctp-peach);
+
   /* Elevation tokens — shadows use black with theme-tuned alpha.
      Intentional exception to palette-only convention: shadows are
      inherently dark; using surface-RGB for shadows produces invisible
@@ -127,8 +154,8 @@
   --ctp-mantle-rgb: 230, 233, 239;
 
   --ctp-text: #4c4f69;
-  --ctp-subtext1: #5c5f77;
-  --ctp-subtext0: #6c6f85;
+  --ctp-subtext1: #54566e;  /* darkened to keep the ramp distinct below subtext0 */
+  --ctp-subtext0: #5c5f74;  /* darkened — 5.16:1 on mantle (was 4.06) */
   --ctp-overlay2: #7c7f93;
   --ctp-overlay1: #8c8fa1;
   --ctp-overlay0: #9ca0b0;
@@ -141,7 +168,7 @@
 
   --bold-color: #2c2d3a;
   --italic-color: #1a5cd7;  /* tracks the darkened blue */
-  --blockquote-color: #8839ef;
+  --blockquote-color: #7d2fe5;  /* darkened mauve — clears the 4.5:1 margin */
   --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
@@ -152,6 +179,29 @@
   --card-border: rgba(var(--ctp-surface1-rgb), 0.8);
   --interactive-hover-bg: var(--ctp-crust);
   --interactive-muted-bg: rgba(0, 0, 0, 0.06);
+
+  /* Role-token overrides — raw accents fall below 4.5:1 on mantle */
+  --hljs-keyword: #7c2de3;
+  --hljs-string: #007100;
+  --hljs-number: #ae3800;
+  --hljs-comment: #5c606f;
+  --hljs-built-in: #c30032;
+  --hljs-type: #8d5300;
+  --hljs-operator: #006793;
+  --hljs-punctuation: #5d6073;
+  --hljs-symbol: #9f4245;
+  --hljs-params: #bd1735;
+  --hljs-meta: #a33289;
+  --tpl-pill-mustache: #6c1dd5;
+  --tpl-pill-dollar: #006368;
+  --h3-color: #2d9019;
+  --h4-color: #b36d00;
+  --h5-color: #dd4c00;
+  --link-visited: #8233e9;
+  --stat-add: #006b00;
+  --stat-del: #b9002e;
+  --stat-chg: #854d00;
+  --external-badge-fg: #a33100;
 
   --elevation-1:
     0 2px 6px -1px rgba(0, 0, 0, 0.10),
@@ -225,6 +275,11 @@
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
   --code-fg: #5aacca;  /* brightened pine — 6.43:1 on RP surface0 */
+
+  /* Role-token overrides — muted accents fall below 4.5:1 on mantle */
+  --hljs-comment: #89859f;
+  --tpl-pill-dollar: #61a0bd;
+
   --card-bg: var(--ctp-surface0);
   --card-bg-rgb: var(--ctp-surface0-rgb);
   --card-border: rgba(var(--ctp-surface1-rgb), 0.5);
@@ -284,7 +339,7 @@
 
   --ctp-text: #575279;
   --ctp-subtext1: #625e80;
-  --ctp-subtext0: #797593;
+  --ctp-subtext0: #676481;  /* darkened — 5.19:1 on mantle (was 4.02) */
   --ctp-overlay2: #847f99;
   --ctp-overlay1: #9893a5;
   --ctp-overlay0: #aca8b8;
@@ -303,6 +358,32 @@
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
   --code-fg: #085570;  /* darkened sapphire — 5.96:1 on RP Dawn surface0 */
+
+  /* Role-token overrides — raw accents fall below 4.5:1 on mantle.
+     Dawn merges yellow/peach and red/maroon/pink, so their role
+     tokens converge on the same solved values by design. */
+  --hljs-keyword: #735f8c;
+  --hljs-string: #30707b;
+  --hljs-number: #945a00;
+  --hljs-comment: #696574;
+  --hljs-built-in: #9e4f66;
+  --hljs-type: #945a00;
+  --hljs-operator: #30707b;
+  --hljs-punctuation: #69657e;
+  --hljs-symbol: #9f504e;
+  --hljs-params: #9e4f66;
+  --hljs-meta: #9e4f66;
+  --tpl-pill-mustache: #695581;
+  --tpl-pill-dollar: #1c607a;
+  --h3-color: #4e8c97;
+  --h4-color: #b97400;
+  --h5-color: #b97400;
+  --link-visited: #776290;
+  --stat-add: #296a75;
+  --stat-del: #974960;
+  --stat-chg: #8c5500;
+  --external-badge-fg: #8c5500;
+
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
   --card-border: rgba(var(--ctp-surface1-rgb), 0.8);
@@ -387,6 +468,13 @@
   --interactive-hover-bg: var(--ctp-surface1);
   --interactive-muted-bg: rgba(var(--ctp-surface1-rgb), 0.85);
 
+  /* Role-token overrides — Storm's dim overlays fall below 4.5:1 on mantle */
+  --hljs-keyword: #a584e1;
+  --hljs-comment: #8c92b6;
+  --hljs-punctuation: #8c92bc;
+  --tpl-pill-mustache: #c19efd;
+  --link-visited: #ab89e6;
+
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.18),
     0 1px 2px -1px rgba(0, 0, 0, 0.12);
@@ -470,6 +558,18 @@
   --row-even-bg:      rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg:     rgba(var(--ctp-yellow-rgb), 0.04);
   --code-fg:          var(--ctp-sky);                      /* iron-gall blue */
+
+  /* Role-token overrides — earthed pigments fall below 4.5:1 on mantle */
+  --hljs-keyword:     #9380a7;
+  --hljs-comment:     #8d867e;  /* warm slate, not periwinkle */
+  --hljs-built-in:    #d0676d;
+  --hljs-params:      #c17076;
+  --tpl-pill-mustache: #a996be;
+  --tpl-pill-dollar:  #74a8a4;
+  --link-visited:     #9784ab;
+  --stat-del:         #d0676d;
+  --external-badge-fg: #d77955;
+
   --card-bg:          var(--ctp-surface0);
   --card-bg-rgb:      var(--ctp-surface0-rgb);
   --card-border:      rgba(var(--ctp-surface1-rgb), 0.5);
@@ -529,7 +629,7 @@
   --ctp-blue-rgb:      61, 77, 106;
   --ctp-lavender-rgb:  113, 97, 127;
 
-  --ctp-surface0-rgb: 238, 230, 206;
+  --ctp-surface0-rgb: 230, 220, 187;
   --ctp-surface1-rgb: 221, 211, 183;
   --ctp-overlay0-rgb: 184, 179, 160;
   --ctp-base-rgb:     250, 243, 223;
@@ -538,15 +638,17 @@
   /* Text ramp — iron-gall ink, warm near-black */
   --ctp-text:     #262526;
   --ctp-subtext1: #4a4742;
-  --ctp-subtext0: #6b6758;
+  --ctp-subtext0: #666253;  /* nudged past the 4.5:1 margin on mantle */
   --ctp-overlay2: #8a8674;
   --ctp-overlay1: #a39e8c;
   --ctp-overlay0: #b8b3a0;
 
-  /* Surface spine — warm parchment, aged vellum */
+  /* Surface spine — warm parchment, aged vellum.
+     surface0 sits below crust (lum 0.716 < 0.760) so raised surfaces
+     recede correctly — the old #eee6ce inverted the depth ramp. */
   --ctp-surface2: #c9bf9f;
   --ctp-surface1: #ddd3b7;
-  --ctp-surface0: #eee6ce;
+  --ctp-surface0: #e6dcbb;
   --ctp-base:     #faf3df;
   --ctp-mantle:   #f4ecd4;
   --ctp-crust:    #ebe2c4;
@@ -558,7 +660,23 @@
   --toc-active-bg:    rgba(var(--ctp-blue-rgb), 0.10);
   --row-even-bg:      rgba(var(--ctp-surface0-rgb), 0.5);
   --row-hover-bg:     rgba(var(--ctp-peach-rgb), 0.06);    /* rubricated row hover */
-  --code-fg:          var(--ctp-sapphire);                 /* iron-gall blue, 7:1 on surface0 */
+  --code-fg:          var(--ctp-sapphire);                 /* iron-gall blue, 6.2:1 on surface0 */
+
+  /* Role-token overrides — pigments fall below 4.5:1 on mantle */
+  --hljs-string:      #4b6b44;
+  --hljs-number:      #a14718;
+  --hljs-comment:     #676352;  /* faded iron-gall */
+  --hljs-type:        #845a00;
+  --hljs-operator:    #456587;
+  --hljs-punctuation: #676352;
+  --hljs-symbol:      #8d5345;
+  --hljs-meta:        #8b515b;
+  --tpl-pill-dollar:  #33605a;
+  --h4-color:         #a57717;  /* darkened orpiment — 3.62:1 on base */
+  --stat-add:         #45653e;
+  --stat-chg:         #7c5500;
+  --external-badge-fg: #963d0e;
+
   --card-bg:          #fffaec;                             /* warm paper highlight — NOT pure white */
   --card-bg-rgb:      255, 250, 236;
   --card-border:      rgba(var(--ctp-surface1-rgb), 0.7);
@@ -633,12 +751,27 @@
 
   --bold-color: #24293f;
   --italic-color: #2959aa;
-  --blockquote-color: #7b43ba;
+  --blockquote-color: #743db3;  /* darkened mauve — clears the 4.5:1 margin */
   --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
-  --code-fg: #085570;  /* darkened sapphire — 4.64:1 on Tokyo Light surface0 */
+  --code-fg: #004e69;  /* darkened sapphire — 5.16:1 on Tokyo Light surface0 */
+
+  /* Role-token overrides — raw accents fall below 4.5:1 on mantle */
+  --hljs-keyword: #743db3;
+  --hljs-number: #8c481f;
+  --hljs-comment: #565961;
+  --hljs-type: #7e5002;
+  --hljs-operator: #00627b;
+  --hljs-punctuation: #575960;
+  --tpl-pill-mustache: #6831a7;
+  --tpl-pill-dollar: #275750;
+  --external-badge-fg: #7f3d15;
+  --stat-add: #325905;
+  --stat-del: #803847;
+  --stat-chg: #724500;
+
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
   --card-border: rgba(var(--ctp-surface1-rgb), 0.8);

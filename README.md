@@ -19,7 +19,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Resolve/archive workflow**—resolved annotations move to a separate archive file
 - **Global bookmark index**—bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
 - **Auto-cleanup of orphaned annotations**—when anchor text is deleted, its annotations are removed on next load
-- **8 themes with cross-window persistence**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Theme choice persists to `~/.dabarat/config.json` so new windows on different ports inherit the same theme. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents.
+- **8 themes with cross-window persistence**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Theme choice persists to `~/.dabarat/config.json` so new windows on different ports inherit the same theme. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents. Every theme is contrast-audited (WCAG AA) by `scripts/color-audit/`—zero failures across all 8, enforced by a color-role token layer.
 - **Resizable TOC sidebar**—drag the right edge to adjust width (persisted across sessions)
 - **Deterministic TOC navigation**—clicks always jump (even re-clicks on the same heading), with scroll-spy highlighting, deep-link `#hash` support, and stale-hash cleanup across tabs and re-renders
 - **Justified text mode**—floating mauve button toggles `text-align: justify` with auto-hyphenation on paragraphs and list items (headings, code, and tables untouched). Also via command palette. Preference persists across reloads and windows via localStorage and `~/.dabarat/config.json`
@@ -154,6 +154,7 @@ See [docs/finder-integration.md](docs/finder-integration.md) for details.
 | [docs/command-palette.md](docs/command-palette.md) | Commands, tag mode, custom registration |
 | [docs/workspaces.md](docs/workspaces.md) | Schema, creation, management, home page |
 | [docs/finder-integration.md](docs/finder-integration.md) | macOS .app bundle, default handler, troubleshooting |
+| [docs/color-audit-2026-08.md](docs/color-audit-2026-08.md) | Contrast audit: methodology, findings, role-token remediation |
 | [docs/backstory.md](docs/backstory.md) | Name etymology: D-B-R root, Lady of the Labyrinth |
 | [docs/ecosystem.md](docs/ecosystem.md) | The ~/.claude/ directory and Claude Code integration |
 

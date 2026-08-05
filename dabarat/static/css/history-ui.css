@@ -134,12 +134,12 @@
   margin-top: 2px;
 }
 .version-stat-add {
-  color: var(--ctp-green);
+  color: var(--stat-add);
   font-family: 'Victor Mono', monospace;
   font-size: 11px;
 }
 .version-stat-del {
-  color: var(--ctp-red);
+  color: var(--stat-del);
   font-family: 'Victor Mono', monospace;
   font-size: 11px;
 }
@@ -397,7 +397,7 @@ body.home-active #history-toggle {
   vertical-align: 1px;
 }
 .version-source-external {
-  color: var(--ctp-peach);
+  color: var(--external-badge-fg);
   background: rgba(var(--ctp-peach-rgb), 0.12);
 }
 .version-source-restore {

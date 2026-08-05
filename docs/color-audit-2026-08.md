@@ -5,7 +5,8 @@
 **Tooling**: `scripts/color-audit/audit.py` (rerunnable, exits 1 on any P0) · full machine-readable inventory in `scripts/color-audit/findings.txt` · kitchen-sink fixture at `scripts/color-audit/fixture.md` · 8-theme screenshot matrix in `scripts/color-audit/shots/` (via `shots.py`).
 
 **Totals at audit time**: **P0 = 8 · P1 = 111 · P2 = 82 · P3 = 14**
-**After the 2026-08-05 fix pass**: **P0 = 0 · P1 = 76 · P2 = 83 · P3 = 11 · waived = 28** — see the addendum at the end. `audit.py` now exits 0.
+**After the 2026-08-05 fix pass**: **P0 = 0 · P1 = 76 · P2 = 83 · P3 = 11 · waived = 28** — see the first addendum.
+**After the 2026-08-05 role-token pass**: **P0 = 0 · P1 = 0 · P2 = 80 · P3 = 0 · waived = 28** — every contrast pair in the matrix now passes or is deliberately waived; see the second addendum. `audit.py` exits 0.
 
 The body below is the original point-in-time audit, kept as the record; the addendum tracks what changed.
 
@@ -136,3 +137,30 @@ RGB companions (`--ctp-blue-rgb`, `--ctp-lavender-rgb`) updated in lockstep. Sid
 **History chip**: light themes now render text-on-blue-wash (pill idiom) instead of crust-on-blue; the audit models the two variants per theme mode.
 
 **Still open** (unchanged priorities): light-theme hljs token set (~40 P1), the `--hljs-comment` token (worst offender on all 8 themes), template pills, external badge, Latte/Dawn/Vellum heading accents (h3–h5), Vellum `--ctp-surface0` ramp order, and the structural observations (`a:visited`, `::selection`, h6, warning-hue split).
+
+---
+
+## Addendum 2 — role-token pass applied 2026-08-05
+
+This pass closed everything the previous addendum left open. **P1 = 0, P3 = 0**; the only remaining findings are the 80 structural P2s (accent collisions, the legacy latte-only override backlog, chroma parity) and the 28 whisper-tier waivers.
+
+**Mechanism** — a color-role token layer in `theme-variables.css`, following the `--code-fg` precedent. `:root` defines each token as an alias of its raw accent (`--hljs-keyword: var(--ctp-mauve)`, `--h4-color: var(--ctp-yellow)`, …); a theme overrides only the slots whose accent fails on the element's real surface. Raw accents are untouched, so everything that passes keeps its exact palette color. Replacement values came from the new `scripts/color-audit/solve.py`, which walks the failing foreground's CIE Lab lightness away from the surface (hue fixed, chroma relaxed only at the sRGB gamut edge) until it clears the threshold with ≥0.6 headroom — nothing lands back on the P3 margin list.
+
+**Token set** (defaults in `:root`, overrides per theme):
+- `--hljs-keyword/string/number/comment/function/built-in/type/operator/punctuation/symbol/params/meta` — syntax on mantle. Classes sharing an accent share a token (tag→built-in, selector-id→type, regexp→number, attr/name→function). `--hljs-comment` is a concrete value in all 8 themes (the old overlay0 bottomed out at 1.74:1 on Tokyo Storm); the rest are overridden per theme as needed: Latte 11 slots, Dawn 11, Vellum 8, Tokyo Light 6 (+`--code-fg` margin fix), Ink 4, Tokyo Storm 3+keyword-margin, Rosé Pine 1.
+- `--tpl-pill-mustache` / `--tpl-pill-dollar` — pill text over its 0.18 wash; overridden on the 7 failing themes. The latte-only 0.12-alpha pill block in `frontmatter.css` is gone — all themes share the audited 0.18 wash.
+- `--h3-color` / `--h4-color` / `--h5-color` — heading accents on base; overridden on Latte (h3/h4/h5), Dawn (h3 margin + h4/h5, which converge on one value because Dawn merges yellow/peach), Vellum (h4).
+- `--stat-add` / `--stat-del` / `--external-badge-fg` — version-timeline chrome on mantle; overridden where green/red/peach fail (Latte, Dawn, Vellum, Ink, Tokyo Light).
+- `--link-visited` — see structural fixes below.
+
+**Palette-slot changes** (the only non-token edits): Latte `--ctp-subtext0` `#6c6f85`→`#5c5f74` and `--ctp-subtext1` `#5c5f77`→`#54566e` (ramp kept distinct), Dawn `--ctp-subtext0` `#797593`→`#676481`, Vellum `--ctp-subtext0` `#6b6758`→`#666253` — clears footnote text, timeline dates, and Dawn's card summary at their worst surface (mantle). Latte `--blockquote-color` `#8839ef`→`#7d2fe5` and Tokyo Light `#7b43ba`→`#743db3` clear the last P3 margins. **Vellum `--ctp-surface0` `#eee6ce`→`#e6dcbb`** (lum 0.792→0.716) restores depth-ramp monotonicity — raised surfaces no longer render lighter than crust — and the ramp-order P2 is gone; inline code on the new surface0 improves to 6.2:1.
+
+**Structural fixes**:
+- `a:visited` — new `--link-visited` token (mauve family), applied only to `#content a:visited:not([href^="#"])` so footnote/TOC fragment anchors don't drift mauve as a document is read. Audited at 4.5:1 as a P0 pair; Latte/Dawn/Storm/Ink carry concrete overrides.
+- `::selection` — global theme wash (`rgba(var(--ctp-blue-rgb), 0.25)`, 0.15 on the four light themes), mirroring the editor's ProseMirror selection alphas; no more OS-default blue against Vellum parchment.
+- `h6` — structure through type: 0.8em DM Sans, uppercase, 0.08em tracking, `--ctp-subtext1`. No new accent slot.
+- Warning-hue split adjudicated as deliberate (yellow = pending user work, peach = provenance/awareness) and recorded in `CLAUDE.md`.
+
+**Audit engine changes**: `parse_themes` now seeds `:root` tokens into every theme (mirroring the CSS cascade) so alias tokens resolve per-theme; USED_PAIRS tracks the role tokens plus the new `link visited` pair; `solve.py` added as the standing remediation companion. Screenshot matrix re-shot post-pass.
+
+**Review follow-up (four-agent pass over this commit)**: the diff view's stat classes (`.diff-stat-add/del/chg`, `.diff-fm-add/del` in `diff.css`) had been left on raw accents and outside the audit. They now bind to the stat role tokens — including a new `--stat-chg` (yellow family) — and three `diff stat` pairs audit them on crust, the diff bar's actual surface and the harder one in light themes. Solving for crust retightened `--stat-add`/`--stat-del` on Latte, Dawn, and Vellum, and gave Tokyo Light its first stat overrides; the shared tokens still clear mantle (timeline) with more headroom than before. Also from review: `h6 code` gets a `text-transform: none` reset so inline code in h6 headings isn't uppercased, and `parse_themes`' reliance on the `:root` block preceding all theme blocks is now documented in the source.

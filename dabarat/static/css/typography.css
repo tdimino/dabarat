@@ -49,21 +49,35 @@ h2 {
 }
 h3 {
   font-size: calc(1.2em * var(--heading-scale));
-  color: var(--ctp-green);
+  color: var(--h3-color);
   font-weight: 600;
   font-family: 'DM Sans', sans-serif;
 }
 h4 {
   font-size: calc(1.05em * var(--heading-scale));
-  color: var(--ctp-yellow);
+  color: var(--h4-color);
   font-weight: 600;
   font-family: 'DM Sans', sans-serif;
 }
 h5 {
   font-size: calc(0.95em * var(--heading-scale));
-  color: var(--ctp-peach);
+  color: var(--h5-color);
   font-weight: 600;
   font-family: 'DM Sans', sans-serif;
+}
+/* h6 — structure through type, not color: uppercase + tracking keeps it
+   distinct from the paragraph it heads without another accent slot */
+h6 {
+  font-size: calc(0.8em * var(--heading-scale));
+  color: var(--ctp-subtext1);
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+h6 code {
+  text-transform: none;
+  letter-spacing: normal;
 }
 
 p { margin: 0.75em 0; }
@@ -86,6 +100,10 @@ blockquote em, blockquote code {
 
 a { color: var(--ctp-blue); text-decoration: none; }
 a:hover { color: var(--ctp-lavender); text-decoration: underline; }
+/* Visited shift — external links in prose only; same-page anchors
+   (footnotes, TOC) are exempt or the apparatus drifts mauve as it's read */
+#content a:visited:not([href^="#"]) { color: var(--link-visited); }
+#content a:visited:not([href^="#"]):hover { color: var(--ctp-lavender); }
 
 hr {
   border: none;
@@ -215,26 +233,26 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
 /* ══════════════════════════════════════════════════════════
    highlight.js — Catppuccin token colors
    ══════════════════════════════════════════════════════════ */
-.hljs-keyword { color: var(--ctp-mauve); }
-.hljs-string, .hljs-doctag { color: var(--ctp-green); }
-.hljs-number, .hljs-literal { color: var(--ctp-peach); }
-.hljs-comment { color: var(--ctp-overlay0); font-style: italic; }
-.hljs-function, .hljs-title { color: var(--ctp-blue); }
-.hljs-built_in { color: var(--ctp-red); }
-.hljs-type, .hljs-title.class_ { color: var(--ctp-yellow); }
-.hljs-attr, .hljs-attribute { color: var(--ctp-blue); }
-.hljs-selector-class { color: var(--ctp-green); }
-.hljs-selector-id { color: var(--ctp-yellow); }
-.hljs-tag { color: var(--ctp-red); }
-.hljs-name { color: var(--ctp-blue); }
-.hljs-meta { color: var(--ctp-pink); }
-.hljs-regexp { color: var(--ctp-peach); }
+.hljs-keyword { color: var(--hljs-keyword); }
+.hljs-string, .hljs-doctag { color: var(--hljs-string); }
+.hljs-number, .hljs-literal { color: var(--hljs-number); }
+.hljs-comment { color: var(--hljs-comment); font-style: italic; }
+.hljs-function, .hljs-title { color: var(--hljs-function); }
+.hljs-built_in { color: var(--hljs-built-in); }
+.hljs-type, .hljs-title.class_ { color: var(--hljs-type); }
+.hljs-attr, .hljs-attribute { color: var(--hljs-function); }
+.hljs-selector-class { color: var(--hljs-string); }
+.hljs-selector-id { color: var(--hljs-type); }
+.hljs-tag { color: var(--hljs-built-in); }
+.hljs-name { color: var(--hljs-function); }
+.hljs-meta { color: var(--hljs-meta); }
+.hljs-regexp { color: var(--hljs-number); }
 .hljs-variable { color: var(--ctp-text); }
-.hljs-params { color: var(--ctp-maroon); }
-.hljs-property { color: var(--ctp-sky); }
-.hljs-punctuation { color: var(--ctp-overlay2); }
-.hljs-operator { color: var(--ctp-sky); }
-.hljs-symbol { color: var(--ctp-flamingo); }
+.hljs-params { color: var(--hljs-params); }
+.hljs-property { color: var(--hljs-operator); }
+.hljs-punctuation { color: var(--hljs-punctuation); }
+.hljs-operator { color: var(--hljs-operator); }
+.hljs-symbol { color: var(--hljs-symbol); }
 
 /* ── Footnotes (marked-footnote) ─────────────────────── */
 section.footnotes[data-footnotes] {

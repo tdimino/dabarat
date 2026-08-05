@@ -22,6 +22,18 @@ blockquote, code, pre, th, td, tr {
   transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Text selection — theme wash instead of the OS-default blue,
+   mirroring the editor's ProseMirror selection alphas */
+::selection {
+  background: rgba(var(--ctp-blue-rgb), 0.25);
+}
+[data-theme="latte"] ::selection,
+[data-theme="vellum"] ::selection,
+[data-theme="rose-pine-dawn"] ::selection,
+[data-theme="tokyo-light"] ::selection {
+  background: rgba(var(--ctp-blue-rgb), 0.15);
+}
+
 /* ══════════════════════════════════════════════════════════
    TOC Sidebar
    ══════════════════════════════════════════════════════════ */

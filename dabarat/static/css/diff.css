@@ -100,8 +100,8 @@
   line-height: 1.5;
   white-space: pre-wrap;
 }
-.diff-fm-add { color: var(--ctp-green); }
-.diff-fm-del { color: var(--ctp-red); }
+.diff-fm-add { color: var(--stat-add); }
+.diff-fm-del { color: var(--stat-del); }
 
 /* ── Stats Bar ───────────────────────────────────────── */
 
@@ -116,9 +116,9 @@
   font-size: 10px;
   flex-shrink: 0;
 }
-.diff-stat-add { color: var(--ctp-green); }
-.diff-stat-del { color: var(--ctp-red); }
-.diff-stat-chg { color: var(--ctp-yellow); }
+.diff-stat-add { color: var(--stat-add); }
+.diff-stat-del { color: var(--stat-del); }
+.diff-stat-chg { color: var(--stat-chg); }
 
 /* ── Side-by-Side Panels ─────────────────────────────── */
 

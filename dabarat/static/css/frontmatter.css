@@ -509,7 +509,7 @@
   font-family: 'Victor Mono', 'Fira Code', monospace;
   font-size: 0.88em;
   background: rgba(var(--ctp-mauve-rgb), 0.18);
-  color: var(--ctp-mauve);
+  color: var(--tpl-pill-mustache);
   border: 1px solid rgba(var(--ctp-mauve-rgb), 0.30);
   cursor: default;
   position: relative;
@@ -517,7 +517,7 @@
 /* ${var} uses teal */
 .tpl-var-pill[data-syntax="dollar"] {
   background: rgba(var(--ctp-teal-rgb), 0.18);
-  color: var(--ctp-teal);
+  color: var(--tpl-pill-dollar);
   border-color: rgba(var(--ctp-teal-rgb), 0.30);
 }
 /* CSS-only tooltip */
@@ -537,15 +537,4 @@
   z-index: 1000;
   pointer-events: none;
   box-shadow: 0 4px 12px rgba(var(--ctp-mantle-rgb), 0.3);
-}
-/* Latte overrides */
-[data-theme="latte"] .tpl-var-pill {
-  background: rgba(var(--ctp-mauve-rgb), 0.12);
-  color: var(--ctp-mauve);
-  border-color: rgba(var(--ctp-mauve-rgb), 0.25);
-}
-[data-theme="latte"] .tpl-var-pill[data-syntax="dollar"] {
-  background: rgba(var(--ctp-teal-rgb), 0.12);
-  color: var(--ctp-teal);
-  border-color: rgba(var(--ctp-teal-rgb), 0.25);
 }

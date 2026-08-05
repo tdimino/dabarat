@@ -49,8 +49,11 @@ def parse_themes(css_text):
                          css_text):
         selectors, body = m.group(1), m.group(2)
         names = re.findall(r'\[data-theme="([a-z-]+)"\]', selectors)
-        if ":root" in selectors and "mocha" not in names:
-            names.append("mocha")
+        if ":root" in selectors:
+            # :root tokens cascade to every theme as defaults. Relies on the
+            # :root block preceding all [data-theme] blocks in the file —
+            # later blocks update() over earlier ones, mirroring the cascade.
+            names = THEMES
         tokens = dict(re.findall(r'(--[\w-]+)\s*:\s*([^;]+);', body))
         for name in names:
             themes.setdefault(name, {}).update(
@@ -155,6 +158,7 @@ def chroma(rgb):
 BASE = "var(--ctp-base)"
 MANTLE = "var(--ctp-mantle)"
 SURFACE0 = "var(--ctp-surface0)"
+CRUST = "var(--ctp-crust)"
 CARD = "var(--card-bg)"
 
 USED_PAIRS = [
@@ -162,6 +166,7 @@ USED_PAIRS = [
     ("body text",            "var(--ctp-text)",       [BASE], 4.5, "P0"),
     ("link",                 "var(--ctp-blue)",       [BASE], 4.5, "P0"),
     ("link hover",           "var(--ctp-lavender)",   [BASE], 4.5, "P0"),
+    ("link visited",         "var(--link-visited)",   [BASE], 4.5, "P0"),
     ("bold",                 "var(--bold-color)",     [BASE], 4.5, "P0"),
     ("italic",               "var(--italic-color)",   [BASE], 4.5, "P0"),
     ("inline code",          "var(--code-fg)",        [SURFACE0], 4.5, "P0"),
@@ -171,25 +176,24 @@ USED_PAIRS = [
 
     # Headings render 18px+ semibold → 3:1 large-text threshold
     ("h1/h2",                "var(--ctp-blue)",       [BASE], 3.0, "P1"),
-    ("h3",                   "var(--ctp-green)",      [BASE], 3.0, "P1"),
-    ("h4",                   "var(--ctp-yellow)",     [BASE], 3.0, "P1"),
-    ("h5",                   "var(--ctp-peach)",      [BASE], 3.0, "P1"),
-    ("h6 (inherits text)",   "var(--ctp-text)",       [BASE], 4.5, "P1"),
+    ("h3",                   "var(--h3-color)",       [BASE], 3.0, "P1"),
+    ("h4",                   "var(--h4-color)",       [BASE], 3.0, "P1"),
+    ("h5",                   "var(--h5-color)",       [BASE], 3.0, "P1"),
+    ("h6 (small-caps)",      "var(--ctp-subtext1)",   [BASE], 4.5, "P1"),
 
-    # Syntax tokens on the pre background
-    ("hljs keyword",         "var(--ctp-mauve)",      [MANTLE], 4.5, "P1"),
-    ("hljs string",          "var(--ctp-green)",      [MANTLE], 4.5, "P1"),
-    ("hljs number",          "var(--ctp-peach)",      [MANTLE], 4.5, "P1"),
-    ("hljs comment",         "var(--ctp-overlay0)",   [MANTLE], 4.5, "P1"),
-    ("hljs function",        "var(--ctp-blue)",       [MANTLE], 4.5, "P1"),
-    ("hljs built_in",        "var(--ctp-red)",        [MANTLE], 4.5, "P1"),
-    ("hljs type",            "var(--ctp-yellow)",     [MANTLE], 4.5, "P1"),
-    ("hljs property",        "var(--ctp-sky)",        [MANTLE], 4.5, "P1"),
-    ("hljs operator",        "var(--ctp-sky)",        [MANTLE], 4.5, "P1"),
-    ("hljs punctuation",     "var(--ctp-overlay2)",   [MANTLE], 4.5, "P1"),
-    ("hljs symbol",          "var(--ctp-flamingo)",   [MANTLE], 4.5, "P1"),
-    ("hljs params",          "var(--ctp-maroon)",     [MANTLE], 4.5, "P1"),
-    ("hljs meta",            "var(--ctp-pink)",       [MANTLE], 4.5, "P1"),
+    # Syntax role tokens on the pre background
+    ("hljs keyword",         "var(--hljs-keyword)",     [MANTLE], 4.5, "P1"),
+    ("hljs string",          "var(--hljs-string)",      [MANTLE], 4.5, "P1"),
+    ("hljs number",          "var(--hljs-number)",      [MANTLE], 4.5, "P1"),
+    ("hljs comment",         "var(--hljs-comment)",     [MANTLE], 4.5, "P1"),
+    ("hljs function",        "var(--hljs-function)",    [MANTLE], 4.5, "P1"),
+    ("hljs built_in",        "var(--hljs-built-in)",    [MANTLE], 4.5, "P1"),
+    ("hljs type",            "var(--hljs-type)",        [MANTLE], 4.5, "P1"),
+    ("hljs operator",        "var(--hljs-operator)",    [MANTLE], 4.5, "P1"),
+    ("hljs punctuation",     "var(--hljs-punctuation)", [MANTLE], 4.5, "P1"),
+    ("hljs symbol",          "var(--hljs-symbol)",      [MANTLE], 4.5, "P1"),
+    ("hljs params",          "var(--hljs-params)",      [MANTLE], 4.5, "P1"),
+    ("hljs meta",            "var(--hljs-meta)",        [MANTLE], 4.5, "P1"),
 
     # Tables
     ("table header",         "var(--ctp-blue)",       [MANTLE], 4.5, "P1"),
@@ -219,9 +223,9 @@ USED_PAIRS = [
      [BASE, "rgba(var(--ctp-mauve-rgb), 0.20)"], 4.5, "P1"),
 
     # Template variable pills (frontmatter.css)
-    ("template pill {{}}",   "var(--ctp-mauve)",
+    ("template pill {{}}",   "var(--tpl-pill-mustache)",
      [BASE, "rgba(var(--ctp-mauve-rgb), 0.18)"], 4.5, "P1"),
-    ("template pill ${}",    "var(--ctp-teal)",
+    ("template pill ${}",    "var(--tpl-pill-dollar)",
      [BASE, "rgba(var(--ctp-teal-rgb), 0.18)"], 4.5, "P1"),
 
     # Editor selection wash
@@ -235,9 +239,12 @@ USED_PAIRS = [
 
     # Version panel (mantle surface)
     ("timeline date",        "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1"),
-    ("timeline +stat",       "var(--ctp-green)",      [MANTLE], 4.5, "P1"),
-    ("timeline -stat",       "var(--ctp-red)",        [MANTLE], 4.5, "P1"),
-    ("external badge",       "var(--ctp-peach)",
+    ("timeline +stat",       "var(--stat-add)",       [MANTLE], 4.5, "P1"),
+    ("timeline -stat",       "var(--stat-del)",       [MANTLE], 4.5, "P1"),
+    ("diff stat +",          "var(--stat-add)",       [CRUST], 4.5, "P1"),
+    ("diff stat -",          "var(--stat-del)",       [CRUST], 4.5, "P1"),
+    ("diff stat ~",          "var(--stat-chg)",       [CRUST], 4.5, "P1"),
+    ("external badge",       "var(--external-badge-fg)",
      [MANTLE, "rgba(var(--ctp-peach-rgb), 0.12)"], 4.5, "P1"),
     # Chip renders crust-on-blue on dark themes, text-on-wash on light ones
     ("history chip",         "var(--ctp-crust)",      ["var(--ctp-blue)"], 4.5, "P1",

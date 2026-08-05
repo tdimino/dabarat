@@ -264,6 +264,26 @@ def list_versions(filepath, limit=50):
     return versions
 
 
+def version_summary(filepath):
+    """Version count plus newest version ref, without building row dicts.
+
+    One indexed query instead of list_versions() materializing up to 50
+    entries — this runs on every save and every browse-dir row.
+    """
+    with _db() as conn:
+        file_id = _file_id(conn, filepath)
+        if file_id is None:
+            return 0, None
+        count, head = conn.execute(
+            "SELECT COUNT(*),"
+            " (SELECT id FROM versions WHERE file_id = :fid"
+            "  ORDER BY created_at_us DESC, id DESC LIMIT 1)"
+            " FROM versions WHERE file_id = :fid",
+            {"fid": file_id},
+        ).fetchone()
+    return count, (str(head) if head is not None else None)
+
+
 def list_recent_versions(limit=50):
     """Return newest-first versions across every file:
     [{hash, path, name, date, added, removed, label, pinned, source}]."""

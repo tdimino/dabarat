@@ -287,15 +287,19 @@ function _hideExternalChangeBanner() {
   if (b) b.remove();
 }
 
-/* Server stopped answering while the user edits — unsaved work is at risk
-   and external-change detection is dark; say so instead of failing silently */
-function _showServerUnreachableBanner() {
+/* Server stopped answering — say so instead of failing silently. Edit mode
+   gets the default warning (unsaved work at risk); read mode passes its own
+   message since only live reload is affected there */
+function _showServerUnreachableBanner(msg) {
   if (document.getElementById('server-unreachable-banner')) return;
   const banner = document.createElement('div');
   banner.id = 'server-unreachable-banner';
   banner.className = 'status-banner';
-  banner.innerHTML = '<i class="ph ph-plugs"></i>' +
-    '<span>Server unreachable — saving will fail; copy your work before closing.</span>';
+  const span = document.createElement('span');
+  span.textContent = msg ||
+    'Server unreachable — saving will fail; copy your work before closing.';
+  banner.innerHTML = '<i class="ph ph-plugs"></i>';
+  banner.appendChild(span);
   document.body.appendChild(banner);
 }
 

@@ -3,6 +3,7 @@
 import json
 import os
 import re
+import sys
 import tempfile
 import threading
 from datetime import datetime, timezone
@@ -107,17 +108,20 @@ def _extract_preview(filepath, max_chars=500):
 
 
 def load():
-    """Load recent entries, pruning stale ones."""
+    """Load recent entries, filtering stale ones.
+
+    Read-only by design: load() is also called without _lock (GET
+    /api/recent), so writing the pruned list here could clobber a locked
+    writer mid-flight. The locked write paths (add_entry, touch_entry,
+    remove_entry) all save() this filtered list, persisting the prune on
+    the next mutation instead.
+    """
     if not os.path.isfile(RECENT_FILE):
         return []
     try:
         with open(RECENT_FILE, encoding="utf-8") as f:
             data = json.load(f)
-        entries = data.get("entries", [])
-        valid = [e for e in entries if _validate_entry(e)]
-        if len(valid) != len(entries):
-            save(valid)
-        return valid
+        return [e for e in data.get("entries", []) if _validate_entry(e)]
     except Exception:
         return []
 
@@ -173,9 +177,10 @@ def _version_info(filepath):
     """Version count plus newest version ref for a file."""
     try:
         from . import history as _hist_mod
-        versions = _hist_mod.list_versions(filepath)
-        return len(versions), (versions[0]["hash"] if versions else None)
-    except Exception:
+        return _hist_mod.version_summary(filepath)
+    except Exception as e:
+        print(f"Warning: version lookup failed for {filepath}: {e!r}",
+              file=sys.stderr)
         return 0, None
 
 

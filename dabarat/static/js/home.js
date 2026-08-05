@@ -1,5 +1,6 @@
 /* ── Home Screen — Workspace-Driven ──────────────────── */
 let homeScreenActive = false;
+let _previewRenderer = null;  /* lazy — marked may not be loaded yet */
 let _tocWasCollapsedBeforeHome = false;
 let _fileBrowserPath = localStorage.getItem('dabarat-browse-dir') || null;
 let _homeViewMode = localStorage.getItem('dabarat-home-view') || 'workspace'; // 'workspace' | 'recent'
@@ -754,7 +755,13 @@ function _buildCard(e, i, opts) {
     previewHtml = `<div class="home-card-preview home-card-preview-img"><img src="${imgSrc}" alt="" loading="lazy"></div>`;
   } else if (e.preview && typeof marked !== 'undefined') {
     try {
-      let rendered = marked.parse(e.preview, { breaks: false, gfm: true });
+      /* The server strips HTML from previews with a regex; suppress raw HTML
+         pass-through here too so the card never depends on a single layer */
+      if (!_previewRenderer) {
+        _previewRenderer = new marked.Renderer();
+        _previewRenderer.html = () => '';
+      }
+      let rendered = marked.parse(e.preview, { breaks: false, gfm: true, renderer: _previewRenderer });
       /* Strip leading H1 — it duplicates the filename already in the card header */
       rendered = rendered.replace(/^\s*<h1[^>]*>[\s\S]*?<\/h1>\s*/, '');
       previewHtml = `<div class="home-card-preview home-card-preview-md"><div class="home-card-preview-content">${rendered}</div><div class="home-card-preview-fade"></div></div>`;
@@ -905,7 +912,18 @@ async function browsePickDir() {
         setWorkspace(data.folderpath);
       }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('browse-folder failed:', e);
+    if (!document.getElementById('browse-failed-banner')) {
+      const banner = document.createElement('div');
+      banner.id = 'browse-failed-banner';
+      banner.className = 'status-banner';
+      banner.innerHTML = '<i class="ph ph-warning"></i>' +
+        '<span>Could not open the folder picker — is the server still running?</span>';
+      document.body.appendChild(banner);
+      setTimeout(() => banner.remove(), 4000);
+    }
+  }
 }
 
 /* ── Helpers ─────────────────────────────────────────── */
@@ -1295,19 +1313,26 @@ async function _loadWorkspaceMultiRoot() {
 /* ── Restore Workspace on Load ──────────────────────── */
 async function _restoreWorkspace() {
   if (!_activeWorkspacePath) return false;
+  let data;
   try {
     const res = await fetch('/api/workspace/open', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ path: _activeWorkspacePath })
     });
-    const data = await res.json();
-    if (data.workspace) {
-      _activeWorkspace = data.workspace;
-      return true;
-    }
-  } catch (e) {}
-  /* Workspace file gone — clear stale reference */
+    data = await res.json();
+  } catch (e) {
+    /* Transient failure (server still starting, network hiccup) — keep the
+       stored reference so the workspace survives to the next attempt */
+    console.error('workspace restore failed, keeping reference:', e);
+    return false;
+  }
+  if (data.workspace) {
+    _activeWorkspace = data.workspace;
+    return true;
+  }
+  /* The server answered and rejected it — the workspace file is genuinely
+     gone, so only now is clearing the stale reference safe */
   _activeWorkspacePath = null;
   localStorage.removeItem('dabarat-workspace-path');
   return false;

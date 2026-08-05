@@ -85,6 +85,8 @@ async function poll() {
     try {
       const res = await fetch('/api/content?tab=' + activeTabId);
       const data = await res.json();
+      _editProbeFailures = 0;
+      _hideServerUnreachableBanner();
       if (!data.error) {
         _setTabGhost(activeTabId, !!data.fileMissing);
         _setTabFileError(activeTabId, data.fileError || null);
@@ -97,10 +99,23 @@ async function poll() {
         currentFrontmatter = data.frontmatter || null;
         tabs[activeTabId].frontmatter = currentFrontmatter;
         render(tabBody(tabs[activeTabId]));
-        /* The server snapshotted this external change — flag it unseen */
+        /* The server snapshotted this external change — flag it unseen,
+           and refresh an open panel rather than dotting the toggle the
+           user is already looking past */
         historySeen.markUnseen(tabs[activeTabId].filepath);
+        if (typeof gutterMode !== 'undefined' && gutterMode === 'versions') {
+          loadVersionHistory();
+        }
       }
-    } catch (e) { /* ignore */ }
+    } catch (e) {
+      /* Read mode has no save at risk, but live reload going dark for
+         ~3s straight deserves the same banner edit mode gets */
+      _editProbeFailures++;
+      if (_editProbeFailures >= 6) {
+        _showServerUnreachableBanner(
+          'Server unreachable — live reload and external-change detection are paused.');
+      }
+    }
   }
   /* Keep the toggle's unseen dot in sync with the active tab */
   _updateHistoryDot();
@@ -125,6 +140,11 @@ async function poll() {
                 tabs[id].changeKey = data.changeKey;
                 tabs[id].frontmatter = data.frontmatter || null;
                 historySeen.markUnseen(tabs[id].filepath);
+                /* The global feed spans files — keep an open one live */
+                if (typeof gutterMode !== 'undefined' && gutterMode === 'versions'
+                    && versionPanelMode === 'global') {
+                  loadGlobalActivity();
+                }
               }
             })
             .catch(() => {})

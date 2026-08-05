@@ -4,9 +4,10 @@
 **Method**: Computed audit over `dabarat/static/css/theme-variables.css` plus every CSS module that paints markdown or chrome. ~50 foreground/surface pairs per theme, alpha washes composited onto true surfaces before measuring. Three metrics per pair: WCAG 2.1 contrast ratio (4.5:1 body text, 3:1 large text/UI), APCA-W3 Lc (perceptual cross-check), CIE76 ΔE (accent distinguishability). Plus four structural checks: surface-ramp monotonicity, accent collisions, dark↔light chroma parity, and light-theme override completeness.
 **Tooling**: `scripts/color-audit/audit.py` (rerunnable, exits 1 on any P0) · full machine-readable inventory in `scripts/color-audit/findings.txt` · kitchen-sink fixture at `scripts/color-audit/fixture.md` · 8-theme screenshot matrix in `scripts/color-audit/shots/` (via `shots.py`).
 
-**Totals**: **P0 = 8 · P1 = 111 · P2 = 82 · P3 = 14**
+**Totals at audit time**: **P0 = 8 · P1 = 111 · P2 = 82 · P3 = 14**
+**After the 2026-08-05 fix pass**: **P0 = 0 · P1 = 76 · P2 = 83 · P3 = 11 · waived = 28** — see the addendum at the end. `audit.py` now exits 0.
 
-This report is findings-only. No fixes have been applied — the fix pass is a separate follow-up, gated on review of the proposals below.
+The body below is the original point-in-time audit, kept as the record; the addendum tracks what changed.
 
 ---
 
@@ -112,3 +113,26 @@ Luminance not monotonic in depth order: base 0.898 → mantle 0.840 → **crust 
 6. **Vellum surface0, history chip, pills, headings, badges** — independent small fixes.
 
 Rerun `python3 scripts/color-audit/audit.py` after each batch; the exit code gates on P0s, so CI-style verification is free.
+
+---
+
+## Addendum — fix pass applied 2026-08-05
+
+**P0 batch (all 8 resolved)**, values chosen with ≥0.35 headroom so nothing lands on the P3 margin list:
+
+| Theme | Token | Old → New | Result |
+|-------|-------|-----------|--------|
+| Latte | `--ctp-blue` (+ `--italic-color`) | `#1e66f5` → `#1a5cd7` | 4.34 → 5.22:1 |
+| Latte | `--ctp-lavender` | `#7287fd` → `#4a5cd6` | 2.81 → 4.90:1 |
+| Rosé Pine Dawn | `--ctp-blue` (+ `--italic-color`) | `#56949f` → `#39707b` | 3.30 → 5.35:1 |
+| Rosé Pine Dawn | `--ctp-lavender` | `#907aa9` → `#755d94` | 3.65 → 5.39:1 |
+| Rosé Pine Dawn | `--blockquote-color` | `#907aa9` → `#6d5a8a` | 3.50 → 5.58:1 over wash |
+| Vellum | `--ctp-lavender` | `#7a6a8c` → `#71617f` | 4.44 → 5.10:1 |
+
+RGB companions (`--ctp-blue-rgb`, `--ctp-lavender-rgb`) updated in lockstep. Side effects, all favorable: Dawn h1–h3 headings cleared their P3 margins, Latte table header and hljs function/keyword rows left P1, and three of Dawn's ΔE-0.0 accent *collisions* became merely adjacent pairs (blue is now a distinct hue from green/sky, lavender from mauve).
+
+**Muted tier decision**: the `--ctp-overlay1` text class (card meta, figcaption, footnote backref, list marker) is the **whisper tier** — deliberately de-emphasized and waived from AA. `audit.py` reports those 28 rows under a separate `waived` section (excluded from P1 and the exit code) so drift stays visible without failing the build.
+
+**History chip**: light themes now render text-on-blue-wash (pill idiom) instead of crust-on-blue; the audit models the two variants per theme mode.
+
+**Still open** (unchanged priorities): light-theme hljs token set (~40 P1), the `--hljs-comment` token (worst offender on all 8 themes), template pills, external badge, Latte/Dawn/Vellum heading accents (h3–h5), Vellum `--ctp-surface0` ramp order, and the structural observations (`a:visited`, `::selection`, h6, warning-hue split).

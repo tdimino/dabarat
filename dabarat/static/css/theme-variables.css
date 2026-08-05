@@ -100,8 +100,8 @@
   --ctp-teal: #179299;
   --ctp-sky: #04a5e5;
   --ctp-sapphire: #209fb5;
-  --ctp-blue: #1e66f5;
-  --ctp-lavender: #7287fd;
+  --ctp-blue: #1a5cd7;      /* darkened from #1e66f5 — 5.22:1 on base */
+  --ctp-lavender: #4a5cd6;  /* darkened from #7287fd — 4.90:1 on base */
 
   /* RGB companions for rgba() usage */
   --ctp-rosewater-rgb: 220, 138, 120;
@@ -116,8 +116,8 @@
   --ctp-teal-rgb: 23, 146, 153;
   --ctp-sky-rgb: 4, 165, 229;
   --ctp-sapphire-rgb: 32, 159, 181;
-  --ctp-blue-rgb: 30, 102, 245;
-  --ctp-lavender-rgb: 114, 135, 253;
+  --ctp-blue-rgb: 26, 92, 215;
+  --ctp-lavender-rgb: 74, 92, 214;
 
   /* Surface RGB companions */
   --ctp-surface0-rgb: 204, 208, 218;
@@ -140,7 +140,7 @@
   --ctp-crust: #dce0e8;
 
   --bold-color: #2c2d3a;
-  --italic-color: #1e66f5;
+  --italic-color: #1a5cd7;  /* tracks the darkened blue */
   --blockquote-color: #8839ef;
   --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
@@ -258,8 +258,8 @@
   --ctp-teal: #286983;
   --ctp-sky: #56949f;
   --ctp-sapphire: #286983;
-  --ctp-blue: #56949f;
-  --ctp-lavender: #907aa9;
+  --ctp-blue: #39707b;      /* darkened foam — 5.35:1 on base (was 3.30) */
+  --ctp-lavender: #755d94;  /* darkened iris — 5.39:1 on base (was 3.65) */
 
   --ctp-rosewater-rgb: 215, 130, 126;
   --ctp-flamingo-rgb: 215, 130, 126;
@@ -273,8 +273,8 @@
   --ctp-teal-rgb: 40, 105, 131;
   --ctp-sky-rgb: 86, 148, 159;
   --ctp-sapphire-rgb: 40, 105, 131;
-  --ctp-blue-rgb: 86, 148, 159;
-  --ctp-lavender-rgb: 144, 122, 169;
+  --ctp-blue-rgb: 57, 112, 123;
+  --ctp-lavender-rgb: 117, 93, 148;
 
   --ctp-surface0-rgb: 223, 218, 217;
   --ctp-surface1-rgb: 206, 202, 205;
@@ -296,8 +296,8 @@
   --ctp-crust: #f2e9e1;
 
   --bold-color: #3e3a58;
-  --italic-color: #56949f;
-  --blockquote-color: #907aa9;
+  --italic-color: #39707b;      /* tracks the darkened foam */
+  --blockquote-color: #6d5a8a;  /* darkened iris — 5.58:1 over the wash */
   --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
@@ -512,7 +512,7 @@
   --ctp-sky:      #4a6a8c;  /* woad */
   --ctp-sapphire: #3d4d6a;  /* iron-gall deep */
   --ctp-blue:     #3d4d6a;  /* IRON-GALL BLUE-BLACK — signature */
-  --ctp-lavender: #7a6a8c;
+  --ctp-lavender: #71617f;  /* darkened — 5.10:1 on base (hover was 4.44) */
 
   --ctp-rosewater-rgb: 184, 135, 106;
   --ctp-flamingo-rgb:  184, 122, 106;
@@ -527,7 +527,7 @@
   --ctp-sky-rgb:       74, 106, 140;
   --ctp-sapphire-rgb:  61, 77, 106;
   --ctp-blue-rgb:      61, 77, 106;
-  --ctp-lavender-rgb:  122, 106, 140;
+  --ctp-lavender-rgb:  113, 97, 127;
 
   --ctp-surface0-rgb: 238, 230, 206;
   --ctp-surface1-rgb: 221, 211, 183;

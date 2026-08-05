@@ -200,9 +200,11 @@ USED_PAIRS = [
 
     # Secondary text
     ("footnote text",        "var(--ctp-subtext0)",   [BASE], 4.5, "P1"),
-    ("footnote backref",     "var(--ctp-overlay1)",   [BASE], 4.5, "P1"),
-    ("figcaption",           "var(--ctp-overlay1)",   [BASE], 4.5, "P1"),
-    ("list marker",          "var(--ctp-overlay1)",   [BASE], 3.0, "P1"),
+    # overlay1 text is the WHISPER TIER — deliberately de-emphasized, waived
+    # from AA by decision (2026-08-05); tracked so drift stays visible
+    ("footnote backref",     "var(--ctp-overlay1)",   [BASE], 4.5, "WAIVED"),
+    ("figcaption",           "var(--ctp-overlay1)",   [BASE], 4.5, "WAIVED"),
+    ("list marker",          "var(--ctp-overlay1)",   [BASE], 3.0, "WAIVED"),
 
     # Annotation text over its wash (wash alphas from annotations.css)
     ("annotation comment",   "var(--ctp-text)",
@@ -229,7 +231,7 @@ USED_PAIRS = [
     # Home cards (card surface differs from base in light themes)
     ("card filename",        "var(--ctp-text)",       [CARD], 4.5, "P1"),
     ("card summary",         "var(--ctp-subtext0)",   [CARD], 4.5, "P1"),
-    ("card meta",            "var(--ctp-overlay1)",   [CARD], 4.5, "P1"),
+    ("card meta",            "var(--ctp-overlay1)",   [CARD], 4.5, "WAIVED"),
 
     # Version panel (mantle surface)
     ("timeline date",        "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1"),
@@ -237,7 +239,11 @@ USED_PAIRS = [
     ("timeline -stat",       "var(--ctp-red)",        [MANTLE], 4.5, "P1"),
     ("external badge",       "var(--ctp-peach)",
      [MANTLE, "rgba(var(--ctp-peach-rgb), 0.12)"], 4.5, "P1"),
-    ("history chip",         "var(--ctp-crust)",      ["var(--ctp-blue)"], 4.5, "P1"),
+    # Chip renders crust-on-blue on dark themes, text-on-wash on light ones
+    ("history chip",         "var(--ctp-crust)",      ["var(--ctp-blue)"], 4.5, "P1",
+     {"mocha", "rose-pine", "tokyo-storm", "ink"}),
+    ("history chip",         "var(--ctp-text)",
+     [BASE, "rgba(var(--ctp-blue-rgb), 0.18)"], 4.5, "P1", LIGHT_THEMES),
 ]
 
 # ── Checks ───────────────────────────────────────────────────────────────
@@ -246,7 +252,10 @@ def contrast_findings(themes):
     findings = []
     for theme in THEMES:
         tokens = themes[theme]
-        for element, fg_spec, layers, threshold, tier in USED_PAIRS:
+        for pair in USED_PAIRS:
+            element, fg_spec, layers, threshold, tier = pair[:5]
+            if len(pair) == 6 and theme not in pair[5]:
+                continue
             try:
                 fg = resolve_color(tokens, fg_spec)
                 bg = composite([resolve_color(tokens, s) for s in layers])
@@ -262,11 +271,11 @@ def contrast_findings(themes):
             if ratio < threshold:
                 findings.append({
                     "tier": tier, "theme": theme, "element": element,
-                    "kind": "contrast",
+                    "kind": "waived-whisper" if tier == "WAIVED" else "contrast",
                     "detail": f"{ratio:.2f}:1 (needs {threshold}:1, APCA Lc {lc:.0f})",
                     "fg": fg_spec, "surface": " over ".join(layers),
                 })
-            elif ratio < threshold + 0.35:
+            elif tier != "WAIVED" and ratio < threshold + 0.35:
                 findings.append({
                     "tier": "P3", "theme": theme, "element": element,
                     "kind": "contrast-margin",
@@ -402,11 +411,12 @@ def main():
         print(json.dumps(findings, indent=2))
     else:
         counts = {t: sum(1 for f in findings if f["tier"] == t)
-                  for t in ("P0", "P1", "P2", "P3")}
+                  for t in ("P0", "P1", "P2", "P3", "WAIVED")}
         print("Color audit — 8 themes × markdown elements")
         print(f"  P0={counts['P0']}  P1={counts['P1']}  "
-              f"P2={counts['P2']}  P3={counts['P3']}\n")
-        for tier in ("P0", "P1", "P2", "P3"):
+              f"P2={counts['P2']}  P3={counts['P3']}  "
+              f"waived={counts['WAIVED']} (whisper tier)\n")
+        for tier in ("P0", "P1", "P2", "P3", "WAIVED"):
             rows = [f for f in findings if f["tier"] == tier]
             if not rows:
                 continue

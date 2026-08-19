@@ -7,6 +7,7 @@ import mimetypes
 import os
 import sys
 import threading
+import time
 import uuid
 from urllib.parse import urlparse, parse_qs, unquote
 
@@ -88,6 +89,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
     _file_write_lock = threading.Lock()  # serializes save/restore/rename check-then-write
     default_author = "Tom"
     _server_port = 3031
+    _server_ref = None      # set by cmd_serve — enables /api/shutdown
+    _max_instances = 5      # set by cmd_serve from --max-instances
 
     def log_message(self, format, *args):
         pass
@@ -333,6 +336,19 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 "filepath": fp,
             } for tid, fp in snapshot]
             self._json_response(tabs_list)
+
+        elif parsed.path == "/api/instances":
+            # Self tabs come from memory — never self-probe over HTTP.
+            # Sibling probes are serial 1s timeouts (≤5 instances), so
+            # this endpoint stays off the 2s polling hot path by design.
+            from . import instances as _instances
+            with self._tabs_lock:
+                self_paths = [t["filepath"] for t in self._tabs.values()]
+            self._json_response({
+                "instances": _instances.discover_instances(
+                    self._server_port, self_paths),
+                "maxInstances": self._max_instances,
+            })
 
         elif parsed.path == "/api/annotations":
             tab_id = params.get("tab", [None])[0]
@@ -796,7 +812,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         cfg = _read_config()
         html = get_html(title=title, default_author=self.default_author,
                         server_theme=cfg.get("theme", ""),
-                        server_justify=bool(cfg.get("justify")))
+                        server_justify=bool(cfg.get("justify")),
+                        port=self._server_port)
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.send_header("X-Content-Type-Options", "nosniff")
@@ -889,6 +906,52 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if doomed:
                 _notify_tabs_changed()
             self._json_response({"ok": True, "closed": len(doomed)})
+
+        elif parsed.path == "/api/shutdown":
+            server = type(self)._server_ref
+            if server is None:
+                self._json_response({"error": "shutdown unavailable"}, 501)
+                return
+            self._json_response({"ok": True})
+
+            def _shutdown_later():
+                # Let the response flush before stopping serve_forever;
+                # cmd_serve then unwinds through atexit cleanup (PID file
+                # + tabs.json removal)
+                time.sleep(0.2)
+                server.shutdown()
+            threading.Thread(target=_shutdown_later, daemon=True).start()
+
+        elif parsed.path == "/api/instances/shutdown":
+            # Proxy: the browser only ever talks to its own server. A
+            # cross-port fetch would fail both the sibling's strict Origin
+            # check and CORS preflight — urllib is not a browser and may
+            # set the sibling's own Origin, so no CSRF relaxation needed.
+            import urllib.request
+            target = body.get("port")
+            if not isinstance(target, int) or not (1 <= target <= 65535):
+                self._json_response({"error": "port (int) required"}, 400)
+                return
+            if target == self._server_port:
+                self._json_response(
+                    {"error": "use /api/shutdown for this instance"}, 400)
+                return
+            req = urllib.request.Request(
+                f"http://127.0.0.1:{target}/api/shutdown",
+                data=b"{}",
+                headers={
+                    "Content-Type": "application/json",
+                    "Origin": f"http://127.0.0.1:{target}",
+                },
+            )
+            try:
+                with urllib.request.urlopen(req, timeout=3) as resp:
+                    result = json.loads(resp.read())
+                self._json_response({"ok": bool(result.get("ok")),
+                                     "port": target})
+            except Exception as e:
+                self._json_response(
+                    {"error": f"shutdown of :{target} failed: {e}"}, 502)
 
         elif parsed.path == "/api/rename":
             tab_id = body.get("tab", "")

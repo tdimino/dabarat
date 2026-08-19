@@ -832,3 +832,142 @@ async function openFileAsTab(path) {
     console.error('Failed to open file:', e);
   }
 }
+
+/* ── Instance monitor ─────────────────────────────────── */
+/* Status-bar indicator (:PORT + sibling count badge) with a dropdown of
+   all live instances. Fetch cadence: init, dropdown open, 45s interval —
+   never the 2s poll (sibling probes cost up to 1s each server-side). */
+let _instancesCache = [];
+
+async function fetchInstances() {
+  try {
+    const res = await fetch('/api/instances');
+    const data = await res.json();
+    _instancesCache = data.instances || [];
+  } catch (e) { _instancesCache = []; }
+  _renderInstanceIndicator();
+  return _instancesCache;
+}
+
+function _renderInstanceIndicator() {
+  const el = document.getElementById('instance-indicator');
+  if (!el) return;
+  const port = (window.DABARAT_CONFIG || {}).port || '';
+  const siblings = _instancesCache.filter(i => !i.isSelf).length;
+  el.querySelector('.instance-port').textContent = ':' + port;
+  const badge = el.querySelector('.instance-count');
+  if (siblings > 0) {
+    badge.textContent = '+' + siblings;
+    badge.style.display = '';
+    el.title = siblings + ' other instance' + (siblings === 1 ? '' : 's') + ' running';
+  } else {
+    badge.textContent = '';
+    badge.style.display = 'none';
+    el.title = 'Dabarat instances';
+  }
+}
+
+function _instanceStartedAgo(iso) {
+  if (!iso) return '';
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!isFinite(ms) || ms < 0) return '';
+  const m = Math.floor(ms / 60000);
+  if (m < 1) return 'just started';
+  if (m < 60) return 'up ' + m + 'm';
+  const h = Math.floor(m / 60);
+  if (h < 48) return 'up ' + h + 'h';
+  return 'up ' + Math.floor(h / 24) + 'd';
+}
+
+async function showInstanceMenu(anchor) {
+  dismissTabContextMenu();
+  const menu = document.createElement('div');
+  menu.className = 'tab-context-menu instance-menu';
+
+  /* Anchor above the status bar; palette invocations on home (status bar
+     hidden, zero rect) pin to the bottom-left corner instead */
+  const rect = anchor ? anchor.getBoundingClientRect() : null;
+  if (rect && rect.width > 0) {
+    menu.style.left = rect.left + 'px';
+    menu.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
+  } else {
+    menu.style.left = '16px';
+    menu.style.bottom = '44px';
+  }
+  menu.style.top = 'auto';
+
+  const renderRows = () => {
+    if (!_instancesCache.length) {
+      menu.innerHTML = '<div class="instance-empty">No instances found</div>';
+      return;
+    }
+    menu.innerHTML = _instancesCache.map(inst => {
+      const files = inst.tabs.map(t => escapeHtml(t.filename));
+      const listing = files.length
+        ? files.slice(0, 4).join(', ') + (files.length > 4 ? ' (+' + (files.length - 4) + ')' : '')
+        : 'no tabs';
+      const ago = _instanceStartedAgo(inst.started);
+      return '<div class="instance-row' + (inst.isSelf ? ' self' : '') + '" data-port="' + inst.port + '">' +
+        '<div class="instance-row-head">' +
+          '<span class="instance-row-port">:' + inst.port + '</span>' +
+          (inst.isSelf ? '<span class="instance-row-self">this window</span>' : '') +
+          (ago ? '<span class="instance-row-ago">' + ago + '</span>' : '') +
+        '</div>' +
+        '<div class="instance-row-files" title="' +
+          escapeHtml(inst.tabs.map(t => t.filepath).join('\n')) + '">' + listing + '</div>' +
+        (inst.isSelf ? '' :
+          '<div class="instance-row-actions">' +
+            '<button data-action="focus">Focus</button>' +
+            '<button data-action="shutdown">Shut Down</button>' +
+          '</div>') +
+        '</div>';
+    }).join('');
+  };
+  menu.innerHTML = '<div class="instance-empty">Scanning…</div>';
+
+  menu.addEventListener('click', async (e) => {
+    const row = e.target.closest('.instance-row[data-port]');
+    if (!row) return;
+    const port = parseInt(row.dataset.port, 10);
+    if (e.target.closest('[data-action="focus"]')) {
+      window.open('http://127.0.0.1:' + port);
+    } else if (e.target.closest('[data-action="shutdown"]')) {
+      if (!confirm('Shut down the instance on :' + port + '? Unsaved edits in its window will be lost.')) return;
+      try {
+        await fetch('/api/instances/shutdown', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({port: port})
+        });
+      } catch (err) {}
+      await fetchInstances();
+      renderRows();
+    }
+  });
+
+  document.body.appendChild(menu);
+  await fetchInstances();
+  renderRows();
+
+  const ctrl = new AbortController();
+  menu._dismissCtrl = ctrl;
+  setTimeout(() => {
+    document.addEventListener('click', (e) => {
+      if (!menu.contains(e.target)) { dismissTabContextMenu(); ctrl.abort(); }
+    }, { signal: ctrl.signal });
+  }, 0);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { dismissTabContextMenu(); ctrl.abort(); }
+  }, { signal: ctrl.signal });
+}
+
+(() => {
+  const el = document.getElementById('instance-indicator');
+  if (!el) return;
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    showInstanceMenu(el);
+  });
+  fetchInstances();
+  setInterval(fetchInstances, 45000);
+})();

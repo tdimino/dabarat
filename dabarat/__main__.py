@@ -21,11 +21,18 @@ import uuid
 from . import annotations
 from . import bookmarks
 from . import workspace
+from .instances import (
+    INSTANCE_DIR as _INSTANCE_DIR,
+    ensure_instance_dir as _ensure_instance_dir,
+    get_open_filepaths as _get_open_filepaths,
+    live_instances as _live_instances,
+    pid_alive as _pid_alive,
+    server_running as _server_running,
+)
 from .server import PreviewHandler, start
 
 DEFAULT_PORT = 3031
 MAX_INSTANCES = 5
-_INSTANCE_DIR = os.path.join(os.path.expanduser("~"), ".dabarat", "instances")
 
 
 def _migrate_config_dir():
@@ -60,79 +67,6 @@ def _flag_value(argv, flag, default=""):
         if idx + 1 < len(argv):
             return argv[idx + 1]
     return default
-
-
-def _ensure_instance_dir():
-    os.makedirs(_INSTANCE_DIR, exist_ok=True)
-
-
-def _pid_alive(pid):
-    """Check if a process with the given PID is still running."""
-    try:
-        os.kill(pid, 0)
-        return True
-    except (ProcessLookupError, PermissionError, OSError):
-        return False
-
-
-def _live_instances():
-    """Return list of (port, pid) for all live instances, cleaning stale ones.
-
-    PID files are JSON {pid, port, started} (legacy plain-int files still
-    parse). A PID being alive is not proof it is dabarat — PIDs get reused —
-    so instances must also answer /api/tabs, with a 30s startup grace period
-    before an unresponsive one is declared stale.
-    """
-    _ensure_instance_dir()
-    live = []
-    for fname in os.listdir(_INSTANCE_DIR):
-        if not fname.endswith(".pid"):
-            continue
-        fpath = os.path.join(_INSTANCE_DIR, fname)
-        try:
-            # The filename is authoritative for the port; JSON contents are
-            # advisory and bounded (a malformed file must never abort the
-            # scan or fabricate a permanently-live instance)
-            port = int(fname[: -len(".pid")])
-            with open(fpath) as f:
-                raw = f.read(4096).strip()
-            started = None
-            try:
-                data = json.loads(raw)
-                if not isinstance(data, dict):
-                    raise ValueError("not an object")
-                pid = int(data["pid"])
-                s = data.get("started")
-                started = s if isinstance(s, str) else None
-            except (json.JSONDecodeError, ValueError, TypeError, KeyError):
-                pid = int(raw)  # legacy plain-int format
-            if pid <= 1:
-                raise ValueError("implausible pid")
-
-            if _pid_alive(pid):
-                if _server_running(port):
-                    live.append((port, pid))
-                    continue
-                # Alive but not serving: PID reuse, or still starting up.
-                # Grace only for a valid, non-future, recent timestamp.
-                if started:
-                    try:
-                        age = (
-                            datetime.datetime.now(datetime.timezone.utc)
-                            - datetime.datetime.fromisoformat(started)
-                        ).total_seconds()
-                        if 0 <= age < 30:
-                            live.append((port, pid))
-                            continue
-                    except (ValueError, TypeError):
-                        pass
-            os.remove(fpath)
-        except (ValueError, TypeError, OSError):
-            try:
-                os.remove(fpath)
-            except OSError:
-                pass
-    return live
 
 
 def _tab_state_path(port):
@@ -356,7 +290,13 @@ def _clear_pyc():
     if os.path.isdir(cache_dir):
         for f in os.listdir(cache_dir):
             if f.endswith(".pyc"):
-                os.remove(os.path.join(cache_dir, f))
+                try:
+                    os.remove(os.path.join(cache_dir, f))
+                except OSError:
+                    # Concurrent launches race each other clearing the same
+                    # cache (Finder can spawn several instances at once) —
+                    # a file already gone is a success, not a crash
+                    pass
 
 
 def _port_listeners(port):
@@ -413,17 +353,6 @@ def _kill_pids(pids, port):
         pass
 
 
-def _server_running(port):
-    """Check if a mark server is already running on the given port."""
-    import urllib.request
-    try:
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/tabs", method="GET")
-        urllib.request.urlopen(req, timeout=1)
-        return True
-    except Exception:
-        return False
-
-
 def _find_free_port():
     """Ask the OS for a free port (same pattern as cmd_export_pdf)."""
     import socket
@@ -453,18 +382,6 @@ def _kill_zombie_on_port(port):
         print(f"\033[38;2;88;91;112m  Stop that process or launch with --port <other>.\033[0m")
         sys.exit(1)
     _kill_pids(pids, port)
-
-
-def _get_open_filepaths(port):
-    """Get list of filepaths currently open in the running server."""
-    import urllib.request
-    try:
-        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/tabs")
-        resp = urllib.request.urlopen(req, timeout=2)
-        tab_list = json.loads(resp.read())
-        return [t["filepath"] for t in tab_list]
-    except Exception:
-        return []
 
 
 def _applescript_escape(s):
@@ -861,7 +778,9 @@ def cmd_serve(argv):
         print("Error: no valid files to open")
         sys.exit(1)
 
+    PreviewHandler._max_instances = max_inst
     server = start(port)
+    PreviewHandler._server_ref = server
     _register_instance(port, server)
 
     # Persist the tab session for crash recovery; updated on every add/close/rename
@@ -899,9 +818,12 @@ def cmd_serve(argv):
 
     try:
         server.serve_forever()
+        # serve_forever returns when /api/shutdown stops the loop; exiting
+        # normally unwinds through the atexit cleanup (PID file + tabs.json)
+        print("\n\033[38;2;88;91;112mStopped via /api/shutdown.\033[0m")
     except KeyboardInterrupt:
         print("\n\033[38;2;88;91;112mStopped.\033[0m")
-        server.server_close()
+    server.server_close()
 
 
 def main():

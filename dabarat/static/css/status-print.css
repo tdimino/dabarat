@@ -61,6 +61,32 @@
   padding: 0 6px;
   cursor: default;
 }
+#instance-indicator {
+  background: none;
+  border: none;
+  color: var(--home-control);
+  cursor: pointer;
+  padding: 0 4px;
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  line-height: 1;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: color 0.15s;
+}
+#instance-indicator:hover { color: var(--ctp-blue); }
+#instance-indicator i { font-size: 12px; }
+#instance-indicator .instance-count {
+  background: rgba(var(--ctp-peach-rgb), 0.18);
+  color: var(--external-badge-fg);
+  border-radius: 8px;
+  padding: 1px 5px;
+  font-size: 9px;
+  display: none;
+}
+
 #status-copy-path {
   background: none;
   border: none;

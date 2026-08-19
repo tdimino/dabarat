@@ -112,6 +112,11 @@ const CommandPalette = {
         action: () => { if (typeof closeOtherTabs === 'function') closeOtherTabs(); } },
       { id: 'close-all-tabs', label: 'Close All Tabs', icon: 'ph-x-square',
         action: () => { if (typeof closeAllTabs === 'function') closeAllTabs(); } },
+      { id: 'instances', label: 'Instances', icon: 'ph-stack',
+        action: () => {
+          if (typeof showInstanceMenu === 'function')
+            showInstanceMenu(document.getElementById('instance-indicator'));
+        } },
       { id: 'toggle-edit', label: 'Edit Mode', icon: 'ph-pencil-simple', shortcut: '\u21e7\u2318E', action: () => {
         if (typeof editState !== 'undefined' && editState.active) { exitEditMode(false); } else { enterEditMode(); }
       }},

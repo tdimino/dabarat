@@ -718,6 +718,92 @@ body.home-active.toc-collapsed #main-area {
   color: var(--home-meta);
   text-align: center;
 }
+
+/* ── Instance monitor dropdown ───────────────────────── */
+.instance-menu {
+  min-width: 260px;
+  max-width: 340px;
+  padding: 4px;
+}
+.instance-row {
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+.instance-row.self {
+  background: rgba(var(--ctp-blue-rgb), 0.08);
+}
+.instance-row + .instance-row {
+  margin-top: 2px;
+}
+.instance-row-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.instance-row-port {
+  font-family: 'Victor Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ctp-text);
+}
+.instance-row-self {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ctp-blue);
+  background: rgba(var(--ctp-blue-rgb), 0.15);
+  border-radius: 6px;
+  padding: 1px 6px;
+}
+.instance-row-ago {
+  font-family: 'Victor Mono', monospace;
+  font-size: 9px;
+  color: var(--home-meta);
+  margin-left: auto;
+}
+.instance-row-files {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--home-meta);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.instance-row-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.instance-row-actions button {
+  background: none;
+  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.8);
+  color: var(--home-control);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  padding: 3px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.instance-row-actions button:hover {
+  color: var(--ctp-text);
+  border-color: var(--ctp-surface2);
+  background: var(--interactive-muted-bg);
+}
+.instance-row-actions button[data-action="shutdown"]:hover {
+  color: var(--ctp-red);
+  border-color: rgba(var(--ctp-red-rgb), 0.5);
+  background: rgba(var(--ctp-red-rgb), 0.10);
+}
+.instance-empty {
+  padding: 12px 14px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: var(--home-meta);
+  text-align: center;
+}
 .tab-rename-input {
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-blue);

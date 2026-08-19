@@ -12,7 +12,9 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 
 - **Live-reload preview**—500ms polling detects file changes automatically
 - **Multi-tab support**—open multiple `.md` files; cross-file linking via `--add`
+- **Tab management at scale**—Close Others / Close All (confirmed), `Ctrl+Tab` cycling (`Cmd+Opt+←/→` fallback), middle-click close, and a searchable overflow menu with per-row close for 90-tab sessions
 - **Tab reuse with window picker**—launching a new file while the server is running shows a dialog with currently open files; when multiple windows are running, pick which window to add to
+- **Instance monitoring**—status-bar port indicator with a sibling-count badge; its dropdown lists every running window's open files with Focus and Shut Down actions
 - **5 annotation types**—Comment, Question, Suggestion, Important, Bookmark
 - **Selection-based carousel**—select any text, pick an annotation type from the floating UI
 - **Threaded replies**—reply to any annotation inline
@@ -25,7 +27,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Justified text mode**—floating mauve button toggles `text-align: justify` with auto-hyphenation on paragraphs and list items (headings, code, and tables untouched). Also via command palette. Preference persists across reloads and windows via localStorage and `~/.dabarat/config.json`
 - **Full biblical Hebrew rendering**—Noto Sans/Serif Hebrew fallback fonts cover the complete niqqud and cantillation range (including rarities like qamats qatan U+05C7) in every context: body, headings, blockquotes, and italics. Downloaded only when a page actually contains Hebrew
 - **Conflict-safe editing**—saves carry a change key; external modifications during edit mode surface a reload banner instead of silently clobbering, deleted files 409 before recreation, and sleep/wake cycles no longer trigger false "server unreachable" warnings
-- **Crash recovery**—tab sessions persist per port; an unclean exit restores your open tabs on the next launch, and a live server is never killed by a second launch
+- **Crash recovery**—tab sessions persist per port; an unclean exit restores your open tabs on the next launch (sessions over 20 tabs ask first), and a live server is never killed by a second launch
 - **Ghost tabs**—deleted or moved files keep serving cached content with a dimmed strikethrough tab and status banner; saving recreates the file
 - **Switchable emoji styles**—Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji
 - **Command palette**—`Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
@@ -34,7 +36,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes, links, and images—all rendered inline. Links and images survive edit-save round-trips (Link extension with autolink + linkOnPaste, Image extension). Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
 - **Footnotes**—`[^ref]` syntax renders as superscript numbered links with a compact footnote section at the bottom (via `marked-footnote`). Auto-numbered, with backref arrows. Preserved through WYSIWYG editing round-trips
 - **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll
-- **Version history**—SQLite-backed timeline (`~/.dabarat/versions.db`) where every save and external edit is versioned automatically. Content-addressed zlib blobs with rename-surviving file identity. Pin, label, compare any version against current via `Cmd+Shift+H` or command palette, one-click restore. Day separators, source badges, delegated event handling. Legacy git history imported once on first run
+- **Version history**—SQLite-backed timeline (`~/.dabarat/versions.db`) where every save and external edit is versioned automatically. Content-addressed zlib blobs with rename-surviving file identity. Pin, label, compare any version against current via `Cmd+Shift+H` or command palette, one-click restore. The panel names its file (or "Activity" for the all-files timeline), and each row expands to an excerpt of the first changed lines. Day separators, source badges, delegated event handling. Legacy git history imported once on first run
 - **Workspace system**—VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
 - **Image lightbox**—click any content image for overlay with blur backdrop, keyboard nav, zoom
 - **Motion One animations**—staggered card entrance, sidebar cascade, view transitions; progressive enhancement
@@ -163,7 +165,7 @@ See [docs/finder-integration.md](docs/finder-integration.md) for details.
 ```
 dabarat/
 ├── __main__.py          # CLI entry point (serve, add, annotate, export-pdf, workspace)
-├── server.py            # HTTP server + 44 REST API endpoints
+├── server.py            # HTTP server + 50 REST API endpoints
 ├── template.py          # HTML shell assembly (inlines 16 JS + 14 CSS modules)
 ├── pdf_export.py        # CDP-based PDF export (stdlib WebSocket, zero deps)
 ├── annotations.py       # Sidecar JSON I/O + orphan cleanup + tag persistence
@@ -173,6 +175,7 @@ dabarat/
 ├── history.py           # SQLite-backed version history (~/.dabarat/versions.db)
 ├── recent.py            # Recently opened files + metadata extraction
 ├── workspace.py         # .dabarat-workspace CRUD + recent workspaces
+├── instances.py         # Multi-instance discovery (PID files + sibling probes)
 └── static/
     ├── js/              # 16 modules concatenated in dependency order
     ├── css/             # 14 modules concatenated in dependency order

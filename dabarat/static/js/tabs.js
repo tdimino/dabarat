@@ -420,13 +420,19 @@ function closeOtherTabs(keepId) {
 
 /* ── Keyboard tab cycling ─────────────────────────────── */
 /* Ctrl+Tab / Ctrl+Shift+Tab, with Cmd+Opt+←/→ as the fallback binding
-   (Chrome app mode swallows Ctrl+Tab in some configurations) */
+   (Chrome app mode swallows Ctrl+Tab in some configurations).
+   cycleTab is also a palette command — the shortcut's discoverable home. */
+function cycleTab(dir) {
+  const ids = Object.keys(tabs);
+  if (ids.length < 2) return;
+  const idx = ids.indexOf(activeTabId);
+  switchTab(ids[((idx < 0 ? 0 : idx) + dir + ids.length) % ids.length]);
+}
+
 document.addEventListener('keydown', (e) => {
   /* Never cycle away from an in-progress text entry (rename input,
      overflow filter, version label, Tiptap surface) */
   if (e.target.closest && e.target.closest('input, textarea, [contenteditable="true"]')) return;
-  const ids = Object.keys(tabs);
-  if (ids.length < 2) return;
   let dir = 0;
   if (e.ctrlKey && !e.metaKey && e.key === 'Tab') {
     dir = e.shiftKey ? -1 : 1;
@@ -436,8 +442,7 @@ document.addEventListener('keydown', (e) => {
   }
   if (!dir) return;
   e.preventDefault();
-  const idx = ids.indexOf(activeTabId);
-  switchTab(ids[((idx < 0 ? 0 : idx) + dir + ids.length) % ids.length]);
+  cycleTab(dir);
 });
 
 /* ── Tab Context Menu ─────────────────────────────────── */
@@ -620,12 +625,17 @@ function showTabOverflowMenu(anchor) {
   document.body.appendChild(menu);
   filter.focus();
 
-  /* Keep on screen */
+  /* Keep on screen — all four edges (an anchor wider than the viewport
+     yields a negative right offset, pushing the menu past the right edge) */
   requestAnimationFrame(() => {
     const mr = menu.getBoundingClientRect();
     if (mr.bottom > window.innerHeight)
       menu.style.top = (window.innerHeight - mr.height - 8) + 'px';
-    if (mr.left < 0) { menu.style.left = '8px'; menu.style.right = 'auto'; }
+    if (mr.right > window.innerWidth) {
+      menu.style.right = '8px'; menu.style.left = 'auto';
+    } else if (mr.left < 0) {
+      menu.style.left = '8px'; menu.style.right = 'auto';
+    }
   });
 
   /* Dismiss — reuse AbortController pattern */
@@ -992,7 +1002,15 @@ async function showInstanceMenu(anchor) {
     if (e.target.closest('[data-action="focus"]')) {
       window.open('http://127.0.0.1:' + port);
     } else if (e.target.closest('[data-action="shutdown"]')) {
-      if (!confirm('Shut down the instance on :' + port + '? Unsaved edits in its window will be lost.')) return;
+      /* Name what's at stake — the decision shouldn't lean on memory of
+         the file listing the user just read in the row */
+      const inst = _instancesCache.find(i => i.port === port);
+      const names = inst ? inst.tabs.map(t => t.filename) : [];
+      const holding = !names.length ? '' :
+        ' (' + names.slice(0, 2).join(', ') +
+        (names.length > 2 ? ' +' + (names.length - 2) + ' more' : '') + ')';
+      if (!confirm('Shut down the instance on :' + port + holding +
+                   '? Unsaved edits in its window will be lost.')) return;
       try {
         const res = await fetch('/api/instances/shutdown', {
           method: 'POST',

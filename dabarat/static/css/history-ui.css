@@ -561,6 +561,21 @@ body.home-active #history-toggle {
   min-width: 34px;
   padding: 0 9px;
   border-radius: 17px;
+  /* Restates each button's base transition list (they're identical) so
+     opacity/visibility can join it for the version-panel yield below */
+  transition: transform 0.2s ease, box-shadow 0.25s ease,
+              border-color 0.2s ease, color 0.2s ease, background 0.2s ease,
+              opacity 0.2s ease, visibility 0.2s;
+}
+/* The panel (z-index 15, right edge) occupies these buttons' footprint —
+   timeline rows and excerpts would render beneath them. Yield while open;
+   visibility drops them from the tab order so focus never goes invisible. */
+body.version-panel-open #annotations-toggle,
+body.version-panel-open #edit-toggle,
+body.version-panel-open #history-toggle,
+body.version-panel-open #justify-toggle {
+  opacity: 0;
+  visibility: hidden;
 }
 .float-btn-label {
   max-width: 0;

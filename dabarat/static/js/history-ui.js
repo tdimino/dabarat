@@ -93,6 +93,7 @@ function openVersionPanel(opts) {
     ? 'ph ph-pulse' : 'ph ph-clock-counter-clockwise';
   _setVersionPanelFilename();
   document.getElementById('version-panel').classList.add('open');
+  document.body.classList.add('version-panel-open');
   loadVersionHistory();
 }
 
@@ -115,6 +116,7 @@ function _setVersionPanelFilename() {
 function closeVersionPanel() {
   gutterMode = 'none';
   document.getElementById('version-panel').classList.remove('open');
+  document.body.classList.remove('version-panel-open');
 }
 
 function _timelineSkeleton(list) {
@@ -375,7 +377,10 @@ async function toggleVersionExcerpt(ref, entry) {
   } else {
     box.innerHTML = ex.lines.map(l => {
       const cls = l.startsWith('+') ? 'add' : l.startsWith('-') ? 'del' : 'ctx';
-      return '<div class="version-excerpt-line ' + cls + '">' + escapeHtml(l) + '</div>';
+      /* title carries the full line — the box scrolls horizontally, but a
+         hover/read of the whole change shouldn't require dragging */
+      return '<div class="version-excerpt-line ' + cls + '" title="' +
+        escapeHtml(l) + '">' + escapeHtml(l) + '</div>';
     }).join('') + (ex.truncated ? '<div class="version-excerpt-line more">⋯</div>' : '');
   }
   box.hidden = false;

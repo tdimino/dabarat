@@ -225,7 +225,7 @@ function renderVersionTimeline(versions) {
       <div class="version-stats">
         <span class="version-stat-add">+${v.added}</span>
         <span class="version-stat-del">-${v.removed}</span>
-        <button class="version-excerpt-toggle" data-action="excerpt" title="What changed"><i class="ph ph-caret-down"></i></button>
+        <button class="version-excerpt-toggle" data-action="excerpt" title="What changed" aria-expanded="false"><i class="ph ph-caret-down"></i></button>
       </div>
       <div class="version-excerpt" hidden></div>
       <div class="version-actions">
@@ -338,11 +338,13 @@ document.getElementById('version-timeline')?.addEventListener('click', (e) => {
    version object in _versionsByRef */
 async function toggleVersionExcerpt(ref, entry) {
   const box = entry.querySelector('.version-excerpt');
-  const caret = entry.querySelector('.version-excerpt-toggle i');
+  const toggle = entry.querySelector('.version-excerpt-toggle');
+  const caret = toggle && toggle.querySelector('i');
   if (!box) return;
   if (!box.hidden) {
     box.hidden = true;
     if (caret) caret.className = 'ph ph-caret-down';
+    if (toggle) toggle.setAttribute('aria-expanded', 'false');
     return;
   }
   const v = _versionsByRef[ref];
@@ -378,6 +380,7 @@ async function toggleVersionExcerpt(ref, entry) {
   }
   box.hidden = false;
   if (caret) caret.className = 'ph ph-caret-up';
+  if (toggle) toggle.setAttribute('aria-expanded', 'true');
 }
 
 function _versionDisplayLabel(ref) {

@@ -111,6 +111,7 @@ function renderTabBar() {
   const overflowBtn = document.createElement('button');
   overflowBtn.id = 'tab-overflow';
   overflowBtn.title = 'All tabs';
+  overflowBtn.setAttribute('aria-haspopup', 'menu');
   overflowBtn.style.display = 'none';
   overflowBtn.onclick = (e) => {
     e.stopPropagation();
@@ -440,6 +441,30 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ── Tab Context Menu ─────────────────────────────────── */
+/* Shared keyboard model for the .tab-context-menu family — rows carry
+   role="menuitem" tabindex="-1"; ArrowUp/Down move focus (wrapping),
+   Enter activates the focused row. Bound on the menu so the overflow
+   filter keeps its own Enter handler while its ArrowDown falls through
+   to the first row. */
+function _menuKeyNav(menu, itemSelector) {
+  menu.setAttribute('role', 'menu');
+  menu.addEventListener('keydown', (e) => {
+    const rows = [...menu.querySelectorAll(itemSelector)];
+    if (!rows.length) return;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const idx = rows.indexOf(document.activeElement);
+      const next = idx < 0
+        ? (e.key === 'ArrowDown' ? rows[0] : rows[rows.length - 1])
+        : rows[(idx + (e.key === 'ArrowDown' ? 1 : -1) + rows.length) % rows.length];
+      next.focus();
+    } else if (e.key === 'Enter' && rows.includes(document.activeElement)) {
+      e.preventDefault();
+      document.activeElement.click();
+    }
+  });
+}
+
 function dismissTabContextMenu() {
   const existing = document.querySelector('.tab-context-menu');
   if (existing) {
@@ -477,12 +502,17 @@ function showTabContextMenu(x, y, tabId) {
     }
     const row = document.createElement('div');
     row.className = 'tab-context-item';
+    row.setAttribute('role', 'menuitem');
+    row.tabIndex = -1;
     row.innerHTML = '<i class="ph ' + item.icon + '"></i>' + item.label;
     row.onclick = () => { dismissTabContextMenu(); item.action(); };
     menu.appendChild(row);
   });
+  _menuKeyNav(menu, '.tab-context-item');
 
   document.body.appendChild(menu);
+  const first = menu.querySelector('.tab-context-item');
+  if (first) first.focus();
 
   /* Keep menu on screen */
   requestAnimationFrame(() => {
@@ -529,6 +559,7 @@ function showTabOverflowMenu(anchor) {
   filter.className = 'tab-overflow-filter';
   filter.type = 'text';
   filter.placeholder = 'Filter tabs…';
+  filter.setAttribute('aria-label', 'Filter tabs');
   menu.appendChild(filter);
 
   const list = document.createElement('div');
@@ -546,16 +577,19 @@ function showTabOverflowMenu(anchor) {
       return '<div class="tab-context-item' +
         (id === activeTabId ? ' active' : '') +
         (t._missing ? ' ghost' : '') +
-        '" data-tab="' + id + '" title="' + escapeHtml(t.filepath) + '">' +
+        '" role="menuitem" tabindex="-1"' +
+        ' data-tab="' + id + '" title="' + escapeHtml(t.filepath) + '">' +
         '<i class="ph ph-file-text"></i>' +
         '<span class="tab-overflow-name">' + escapeHtml(t.filename) + '</span>' +
         '<button class="tab-overflow-close" data-action="close" ' +
-        'title="Close">&times;</button></div>';
+        'title="Close" aria-label="Close ' + escapeHtml(t.filename) +
+        '">&times;</button></div>';
     }).join('') || '<div class="tab-overflow-empty">No matching tabs</div>';
     header.querySelector('.tab-overflow-count').textContent =
       allIds.length + (allIds.length === 1 ? ' tab' : ' tabs');
   };
   renderList();
+  _menuKeyNav(menu, '.tab-context-item[data-tab]');
   filter.addEventListener('input', renderList);
   filter.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
@@ -878,10 +912,12 @@ function _renderInstanceIndicator() {
     badge.textContent = '+' + siblings;
     badge.style.display = '';
     el.title = siblings + ' other instance' + (siblings === 1 ? '' : 's') + ' running';
+    el.setAttribute('aria-label', 'Dabarat instances — ' + el.title);
   } else {
     badge.textContent = '';
     badge.style.display = 'none';
     el.title = 'Dabarat instances';
+    el.setAttribute('aria-label', 'Dabarat instances');
   }
 }
 
@@ -901,6 +937,10 @@ async function showInstanceMenu(anchor) {
   dismissTabContextMenu();
   const menu = document.createElement('div');
   menu.className = 'tab-context-menu instance-menu';
+  /* Rows hold real buttons, so this is a dialog, not a menu — Tab
+     traverses Focus/Shut Down natively, Escape dismisses below */
+  menu.setAttribute('role', 'dialog');
+  menu.setAttribute('aria-label', 'Dabarat instances');
 
   /* Anchor above the status bar; palette invocations on home (status bar
      hidden, zero rect) pin to the bottom-left corner instead */
@@ -935,8 +975,10 @@ async function showInstanceMenu(anchor) {
           escapeHtml(inst.tabs.map(t => t.filepath).join('\n')) + '">' + listing + '</div>' +
         (inst.isSelf ? '' :
           '<div class="instance-row-actions">' +
-            '<button data-action="focus">Focus</button>' +
-            '<button data-action="shutdown">Shut Down</button>' +
+            '<button data-action="focus" aria-label="Focus instance on port ' +
+              inst.port + '">Focus</button>' +
+            '<button data-action="shutdown" aria-label="Shut down instance on port ' +
+              inst.port + '">Shut Down</button>' +
           '</div>') +
         '</div>';
     }).join('');

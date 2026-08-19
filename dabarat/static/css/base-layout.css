@@ -614,6 +614,12 @@ body.home-active.toc-collapsed #main-area {
 .tab-context-item:hover {
   background: var(--ctp-surface1);
 }
+/* Keyboard focus mirrors hover — the highlight IS the indicator,
+   matching native menu behavior */
+.tab-context-item:focus-visible {
+  background: var(--ctp-surface1);
+  outline: none;
+}
 .tab-context-item:first-child {
   border-radius: 6px 6px 0 0;
 }
@@ -631,6 +637,12 @@ body.home-active.toc-collapsed #main-area {
   background: var(--card-bg, var(--ctp-surface0));
   border-radius: 8px;
   min-width: 240px;
+}
+/* Overflow rows sit on --card-bg (white in light themes) where raw
+   surface1 vanishes — interactive-token convention */
+.tab-overflow-menu .tab-context-item:hover,
+.tab-overflow-menu .tab-context-item:focus-visible {
+  background: var(--interactive-hover-bg);
 }
 .tab-overflow-menu .tab-context-item.active {
   background: rgba(var(--ctp-lavender-rgb), 0.12);
@@ -706,7 +718,9 @@ body.home-active.toc-collapsed #main-area {
   transition: opacity 0.12s, color 0.12s, background 0.12s;
   flex-shrink: 0;
 }
-.tab-context-item:hover .tab-overflow-close { opacity: 1; }
+.tab-context-item:hover .tab-overflow-close,
+.tab-context-item:focus-within .tab-overflow-close,
+.tab-overflow-close:focus-visible { opacity: 1; }
 .tab-overflow-close:hover {
   color: var(--ctp-red);
   background: rgba(var(--ctp-red-rgb), 0.12);

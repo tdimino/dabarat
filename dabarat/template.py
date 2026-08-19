@@ -250,7 +250,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
   </div>
 
   <div id="status">
-    <button id="instance-indicator" title="Dabarat instances"><i class="ph ph-stack"></i><span class="instance-port"></span><span class="instance-count"></span></button>
+    <button id="instance-indicator" title="Dabarat instances" aria-haspopup="dialog"><i class="ph ph-stack"></i><span class="instance-port"></span><span class="instance-count"></span></button>
     <button id="status-copy-path" title="Copy path" onclick="navigator.clipboard.writeText(document.getElementById('status-filepath').textContent).then(()=>{{const i=this.querySelector('i');i.className='ph ph-check';this.classList.add('copied');setTimeout(()=>{{i.className='ph ph-copy';this.classList.remove('copied')}},1200)}}).catch(()=>{{}})"><i class="ph ph-copy"></i></button>
     <span class="filepath" id="status-filepath"></span>
     <button id="status-export-pdf" title="Export PDF" onclick="CommandPalette._runById('export-pdf')"><i class="ph ph-file-pdf"></i></button>

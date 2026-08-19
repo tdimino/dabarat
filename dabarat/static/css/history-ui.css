@@ -192,7 +192,9 @@
 .version-excerpt-line { white-space: pre; }
 .version-excerpt-line.add { color: var(--stat-add); }
 .version-excerpt-line.del { color: var(--stat-del); }
-.version-excerpt-line.ctx { color: var(--ctp-subtext0); }
+/* subtext1, not subtext0 — the surface0 wash lifts the panel's mantle
+   just enough that subtext0 misses 4.5:1 on three light themes */
+.version-excerpt-line.ctx { color: var(--ctp-subtext1); }
 .version-excerpt-line.more { color: var(--home-meta); }
 .version-excerpt-none {
   font-family: 'DM Sans', sans-serif;
@@ -573,8 +575,15 @@ body.home-active #history-toggle {
 #annotations-toggle:hover .float-btn-label,
 #edit-toggle:hover .float-btn-label,
 #history-toggle:hover .float-btn-label,
-#justify-toggle:hover .float-btn-label {
+#justify-toggle:hover .float-btn-label,
+#annotations-toggle:focus-visible .float-btn-label,
+#edit-toggle:focus-visible .float-btn-label,
+#history-toggle:focus-visible .float-btn-label,
+#justify-toggle:focus-visible .float-btn-label {
   max-width: 64px;
   opacity: 1;
   margin-right: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .float-btn-label { transition: none; }
 }

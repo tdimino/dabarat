@@ -284,6 +284,13 @@ USED_PAIRS = [
     ("timeline date",        "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1"),
     ("timeline +stat",       "var(--stat-add)",       [MANTLE], 4.5, "P1"),
     ("timeline -stat",       "var(--stat-del)",       [MANTLE], 4.5, "P1"),
+    # Change-excerpt box: surface0 wash at 0.6 over the panel's mantle
+    ("excerpt context line", "var(--ctp-subtext1)",
+     [MANTLE, "rgba(var(--ctp-surface0-rgb), 0.6)"], 4.5, "P1"),
+    ("excerpt +line",        "var(--stat-add)",
+     [MANTLE, "rgba(var(--ctp-surface0-rgb), 0.6)"], 4.5, "P1"),
+    ("excerpt -line",        "var(--stat-del)",
+     [MANTLE, "rgba(var(--ctp-surface0-rgb), 0.6)"], 4.5, "P1"),
     ("diff stat +",          "var(--stat-add)",       [CRUST], 4.5, "P1"),
     ("diff stat -",          "var(--stat-del)",       [CRUST], 4.5, "P1"),
     ("diff stat ~",          "var(--stat-chg)",       [CRUST], 4.5, "P1"),

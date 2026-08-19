@@ -88,8 +88,28 @@ function openVersionPanel(opts) {
   gutterMode = 'versions';
   const title = document.getElementById('version-panel-title');
   if (title) title.textContent = versionPanelMode === 'global' ? 'Activity' : 'History';
+  const icon = document.getElementById('version-panel-icon');
+  if (icon) icon.className = versionPanelMode === 'global'
+    ? 'ph ph-pulse' : 'ph ph-clock-counter-clockwise';
+  _setVersionPanelFilename();
   document.getElementById('version-panel').classList.add('open');
   loadVersionHistory();
+}
+
+/* Which document is this timeline about? File mode names the active tab;
+   global mode reads "All files". Re-set after fetches too — a tab switch
+   during the request must not leave a stale name in the header. */
+function _setVersionPanelFilename() {
+  const el = document.getElementById('version-panel-filename');
+  if (!el) return;
+  if (versionPanelMode === 'file' && typeof activeTabId !== 'undefined'
+      && activeTabId && tabs[activeTabId]) {
+    el.textContent = tabs[activeTabId].filename;
+    el.title = tabs[activeTabId].filepath;
+  } else {
+    el.textContent = versionPanelMode === 'global' ? 'All files' : '';
+    el.title = '';
+  }
 }
 
 function closeVersionPanel() {
@@ -166,6 +186,7 @@ function renderVersionTimeline(versions) {
   const list = document.getElementById('version-timeline');
   if (!list) return;
 
+  _setVersionPanelFilename();
   const badge = document.getElementById('version-count-badge');
   if (badge) badge.textContent = versions.length ? ' · ' + versions.length : '';
 
@@ -204,7 +225,9 @@ function renderVersionTimeline(versions) {
       <div class="version-stats">
         <span class="version-stat-add">+${v.added}</span>
         <span class="version-stat-del">-${v.removed}</span>
+        <button class="version-excerpt-toggle" data-action="excerpt" title="What changed"><i class="ph ph-caret-down"></i></button>
       </div>
+      <div class="version-excerpt" hidden></div>
       <div class="version-actions">
         <button class="version-btn" data-action="compare" title="Compare with current">
           <i class="ph ph-git-diff"></i> Compare
@@ -240,6 +263,7 @@ function renderGlobalTimeline(versions) {
   const list = document.getElementById('version-timeline');
   if (!list) return;
 
+  _setVersionPanelFilename();
   const badge = document.getElementById('version-count-badge');
   if (badge) badge.textContent = versions.length ? ' · ' + versions.length : '';
 
@@ -263,9 +287,10 @@ function renderGlobalTimeline(versions) {
     const labelHtml = v.label
       ? `<div class="version-label"><i class="ph ph-tag"></i> ${escapeHtml(v.label)}</div>`
       : '';
+    const parentDir = (v.path || '').split('/').slice(-2, -1)[0] || '';
     parts.push(`<div class="version-entry global" tabindex="0" data-hash="${v.hash}" data-path="${escapeHtml(v.path)}" title="${escapeHtml(v.path)}">
       <div class="version-date">${formatTimeAgo(v.date)}${srcBadge}${v.pinned ? '<i class="ph-fill ph-push-pin version-pin-mark"></i>' : ''}</div>
-      <div class="version-file"><i class="ph ph-file-md"></i> ${escapeHtml(v.name)}</div>
+      <div class="version-file"><i class="ph ph-file-md"></i> ${escapeHtml(v.name)}${parentDir ? `<span class="version-file-dir">· ${escapeHtml(parentDir)}/</span>` : ''}</div>
       ${labelHtml}
       <div class="version-stats">
         <span class="version-stat-add">+${v.added}</span>
@@ -288,7 +313,7 @@ function renderGlobalTimeline(versions) {
 
 /* Delegated actions — dynamic HTML carries data-* only, never inline handlers */
 document.getElementById('version-timeline')?.addEventListener('click', (e) => {
-  const btn = e.target.closest('.version-btn');
+  const btn = e.target.closest('.version-btn, .version-excerpt-toggle');
   const entry = e.target.closest('.version-entry');
   if (!entry || !entry.dataset.hash) return;
   const ref = entry.dataset.hash;
@@ -305,8 +330,55 @@ document.getElementById('version-timeline')?.addEventListener('click', (e) => {
     case 'restore': restoreVersion(ref); break;
     case 'pin': togglePinVersion(ref); break;
     case 'label': labelVersion(ref); break;
+    case 'excerpt': toggleVersionExcerpt(ref, entry); break;
   }
 });
+
+/* Lazy first-change excerpt — fetched once per version, cached on the
+   version object in _versionsByRef */
+async function toggleVersionExcerpt(ref, entry) {
+  const box = entry.querySelector('.version-excerpt');
+  const caret = entry.querySelector('.version-excerpt-toggle i');
+  if (!box) return;
+  if (!box.hidden) {
+    box.hidden = true;
+    if (caret) caret.className = 'ph ph-caret-down';
+    return;
+  }
+  const v = _versionsByRef[ref];
+  if (!v || v._excerpt === 'loading') return;
+  let ex = v._excerpt;
+  if (ex === undefined) {
+    v._excerpt = 'loading';  /* blocks a concurrent double-fetch */
+    box.innerHTML = '<span class="version-excerpt-none">Loading…</span>';
+    box.hidden = false;
+    try {
+      const res = await fetch('/api/version/summary?tab=' + activeTabId +
+        '&hash=' + encodeURIComponent(ref));
+      const data = await res.json();
+      ex = data.error ? null
+        : { lines: data.lines || [], truncated: !!data.truncated };
+    } catch (e) { ex = null; }
+    /* Cache only successes — a transient failure must stay retryable */
+    if (ex) v._excerpt = ex;
+    else delete v._excerpt;
+    /* The timeline may have re-rendered mid-fetch; this row is detached
+       and the fresh one carries its own state */
+    if (!entry.isConnected) return;
+  }
+  if (!ex) {
+    box.innerHTML = '<span class="version-excerpt-none">Could not load changes — click to retry</span>';
+  } else if (!ex.lines.length) {
+    box.innerHTML = '<span class="version-excerpt-none">Identical content (no line changes)</span>';
+  } else {
+    box.innerHTML = ex.lines.map(l => {
+      const cls = l.startsWith('+') ? 'add' : l.startsWith('-') ? 'del' : 'ctx';
+      return '<div class="version-excerpt-line ' + cls + '">' + escapeHtml(l) + '</div>';
+    }).join('') + (ex.truncated ? '<div class="version-excerpt-line more">⋯</div>' : '');
+  }
+  box.hidden = false;
+  if (caret) caret.className = 'ph ph-caret-up';
+}
 
 function _versionDisplayLabel(ref) {
   const v = _versionsByRef[ref];

@@ -28,16 +28,42 @@
   gap: 8px;
 }
 
+.version-panel-headings {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
 .version-panel-label {
   font-family: 'Victor Mono', monospace;
   font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 2.5px;
-  color: var(--ctp-overlay0);
-  flex: 1;
+  color: var(--home-meta);
+  display: flex;
+  align-items: center;
+  gap: 5px;
   user-select: none;
 }
+#version-panel-icon {
+  font-size: 11px;
+  letter-spacing: normal;
+}
+
+/* Which file this timeline is about — the panel's identity line */
+#version-panel-filename {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ctp-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#version-panel-filename:empty { display: none; }
 
 .version-panel-close {
   background: none;
@@ -132,6 +158,54 @@
   display: flex;
   gap: 8px;
   margin-top: 2px;
+  align-items: center;
+}
+
+/* ── Change excerpt (lazy, per-row expander) ─────────── */
+.version-excerpt-toggle {
+  background: none;
+  border: none;
+  color: var(--home-control);
+  cursor: pointer;
+  font-size: 10px;
+  padding: 1px 4px;
+  margin-left: auto;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.12s, background 0.12s;
+}
+.version-excerpt-toggle:hover {
+  color: var(--ctp-blue);
+  background: rgba(var(--ctp-blue-rgb), 0.10);
+}
+.version-excerpt {
+  font-family: 'Victor Mono', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+  margin: 6px 0 2px;
+  padding: 6px 8px;
+  background: rgba(var(--ctp-surface0-rgb), 0.6);
+  border-radius: 5px;
+  overflow-x: auto;
+}
+.version-excerpt-line { white-space: pre; }
+.version-excerpt-line.add { color: var(--stat-add); }
+.version-excerpt-line.del { color: var(--stat-del); }
+.version-excerpt-line.ctx { color: var(--ctp-subtext0); }
+.version-excerpt-line.more { color: var(--home-meta); }
+.version-excerpt-none {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  color: var(--home-meta);
+}
+
+/* Dimmed parent-directory suffix on global Activity rows */
+.version-file-dir {
+  color: var(--home-meta);
+  font-weight: 400;
+  font-size: 10px;
+  margin-left: 4px;
 }
 .version-stat-add {
   color: var(--stat-add);
@@ -474,4 +548,33 @@ body.home-active #history-toggle {
 #version-count-badge {
   color: var(--ctp-overlay0);
   font-weight: 400;
+}
+
+/* ── Floating-button labels — circle expands into a pill on hover ──
+   Shared by all four right-edge toggles (Notes/Edit/History/Justify).
+   Lives here (late in the concat order) so it wins over each button's
+   own base rules in annotations/editor/responsive css. */
+#annotations-toggle, #edit-toggle, #history-toggle, #justify-toggle {
+  width: auto;
+  min-width: 34px;
+  padding: 0 9px;
+  border-radius: 17px;
+}
+.float-btn-label {
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  transition: max-width 0.25s ease, opacity 0.2s ease, margin-right 0.25s ease;
+}
+#annotations-toggle:hover .float-btn-label,
+#edit-toggle:hover .float-btn-label,
+#history-toggle:hover .float-btn-label,
+#justify-toggle:hover .float-btn-label {
+  max-width: 64px;
+  opacity: 1;
+  margin-right: 6px;
 }

@@ -337,6 +337,60 @@ def get_version_content(filepath, ref):
     return _decode(zlib.decompress(row[0])) if row else None
 
 
+def version_change_summary(filepath, ref, max_changed=2, context=1):
+    """Excerpt of what a version changed vs its predecessor.
+
+    Returns {"lines": [...], "truncated": bool} where lines carry
+    unified-diff prefixes ('+', '-', ' '), or None when the version does
+    not belong to the file. The first version diffs against empty; an
+    identical-content version (restore-to-same) yields lines=[].
+    """
+    version_id = _version_ref(ref)
+    with _db() as conn:
+        file_id = _file_id(conn, filepath)
+        if file_id is None:
+            return None
+        row = conn.execute(
+            "SELECT blob_hash, created_at_us FROM versions"
+            " WHERE id = ? AND file_id = ?",
+            (version_id, file_id),
+        ).fetchone()
+        if row is None:
+            return None
+        blob_hash, created_us = row
+        prev = conn.execute(
+            "SELECT blob_hash FROM versions WHERE file_id = ?"
+            " AND (created_at_us < ? OR (created_at_us = ? AND id < ?))"
+            " ORDER BY created_at_us DESC, id DESC LIMIT 1",
+            (file_id, created_us, created_us, version_id),
+        ).fetchone()
+        new_text = _blob_text(conn, blob_hash)
+        old_text = _blob_text(conn, prev[0]) if prev else ""
+    # Cap the scan — the excerpt only ever needs the first hunk, and
+    # diffing a multi-MB document line-by-line is wasted work
+    old_lines = old_text.splitlines()[:5000]
+    new_lines = new_text.splitlines()[:5000]
+    lines = []
+    changed = 0
+    truncated = False
+    for line in difflib.unified_diff(old_lines, new_lines,
+                                     lineterm="", n=context):
+        if line.startswith(("+++", "---")):
+            continue
+        if line.startswith("@@"):
+            if changed:  # first hunk only
+                truncated = True
+                break
+            continue
+        if line.startswith(("+", "-")):
+            if changed >= max_changed:
+                truncated = True
+                break
+            changed += 1
+        lines.append(line)
+    return {"lines": lines, "truncated": truncated}
+
+
 def restore(filepath, ref):
     """Restore file to a version. Append-only: snapshots current state
     first, replaces atomically, then records the restore as a new version."""

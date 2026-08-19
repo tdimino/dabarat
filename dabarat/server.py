@@ -648,6 +648,30 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
+        elif parsed.path == "/api/version/summary":
+            # Lazy first-change excerpt for a timeline row's expander
+            tab_id = params.get("tab", [None])[0]
+            commit_hash = params.get("hash", [None])[0]
+            filepath = self._tab_filepath(tab_id) if tab_id else None
+            if not filepath:
+                self._json_response({"error": "tab not found"}, 404)
+                return
+            if not commit_hash:
+                self._json_response({"error": "hash required"}, 400)
+                return
+            try:
+                summary = history.version_change_summary(filepath, commit_hash)
+            except ValueError as e:
+                self._json_response({"error": str(e)}, 400)
+                return
+            except Exception as e:
+                self._json_response({"error": str(e)}, 500)
+                return
+            if summary is None:
+                self._json_response({"error": "version not found"}, 404)
+            else:
+                self._json_response(summary)
+
         elif parsed.path == "/api/version":
             tab_id = params.get("tab", [None])[0]
             commit_hash = params.get("hash", [None])[0]

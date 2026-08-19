@@ -140,6 +140,10 @@ function renderTabBar() {
     div.appendChild(close);
 
     div.onclick = () => switchTab(id);
+    /* Middle-click closes (auxclick fires after the button is released) */
+    div.onauxclick = (e) => {
+      if (e.button === 1) { e.preventDefault(); closeTab(id); }
+    };
     div.oncontextmenu = (e) => {
       e.preventDefault();
       showTabContextMenu(e.clientX, e.clientY, id);
@@ -344,6 +348,79 @@ async function closeTab(id) {
   renderTabBar();
 }
 
+/* ── Bulk close ───────────────────────────────────────── */
+/* One confirm, one POST, one render — no per-tab animation. Client state
+   is deleted synchronously BEFORE the fetch so the 2s poll cannot
+   resurrect rows between the request and the response. */
+async function _closeBulk(mode, keepIds) {
+  const keep = new Set(keepIds || []);
+  const doomed = Object.keys(tabs).filter(id => !keep.has(id));
+  if (!doomed.length) return;
+  if (doomed.length > 1 && !confirm('Close ' + doomed.length + ' tabs?')) return;
+
+  /* Exit modes that reference a closing tab before its state is deleted */
+  if (editState.active && doomed.includes(editState.tabId)) exitEditMode(true);
+  if (diffState.active && doomed.includes(diffState.leftTabId)) exitDiffMode();
+  if (typeof gutterMode !== 'undefined' && gutterMode === 'versions') closeVersionPanel();
+
+  doomed.forEach(id => {
+    delete tabs[id];
+    delete annotationsCache[id];
+    delete lastAnnotationMtimes[id];
+    delete tagsCache[id];
+  });
+
+  try {
+    await fetch('/api/close-bulk', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({mode: mode, keep: Array.from(keep)})
+    });
+  } catch(e) {}
+
+  if (!activeTabId || !tabs[activeTabId]) {
+    activeTabId = Object.keys(tabs)[0] || null;
+    lastRenderedMd = '';
+    if (activeTabId) {
+      const t = tabs[activeTabId];
+      currentFrontmatter = t.frontmatter || null;
+      if (t.content) {
+        render(tabBody(t));
+        document.getElementById('status-filepath').textContent = t.filepath;
+      } else {
+        fetchTabContent(activeTabId);
+      }
+    } else if (!homeScreenActive) {
+      showHomeScreen();
+    }
+  }
+  renderTabBar();
+}
+
+function closeAllTabs() { return _closeBulk('all', []); }
+function closeOtherTabs(keepId) {
+  return _closeBulk('others', [keepId || activeTabId].filter(Boolean));
+}
+
+/* ── Keyboard tab cycling ─────────────────────────────── */
+/* Ctrl+Tab / Ctrl+Shift+Tab, with Cmd+Opt+←/→ as the fallback binding
+   (Chrome app mode swallows Ctrl+Tab in some configurations) */
+document.addEventListener('keydown', (e) => {
+  const ids = Object.keys(tabs);
+  if (ids.length < 2) return;
+  let dir = 0;
+  if (e.ctrlKey && !e.metaKey && e.key === 'Tab') {
+    dir = e.shiftKey ? -1 : 1;
+  } else if (e.metaKey && e.altKey &&
+             (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+    dir = e.key === 'ArrowRight' ? 1 : -1;
+  }
+  if (!dir) return;
+  e.preventDefault();
+  const idx = ids.indexOf(activeTabId);
+  switchTab(ids[((idx < 0 ? 0 : idx) + dir + ids.length) % ids.length]);
+});
+
 /* ── Tab Context Menu ─────────────────────────────────── */
 function dismissTabContextMenu() {
   const existing = document.querySelector('.tab-context-menu');
@@ -360,15 +437,26 @@ function showTabContextMenu(x, y, tabId) {
   menu.style.left = x + 'px';
   menu.style.top = y + 'px';
 
+  const multi = Object.keys(tabs).length > 1;
   const items = [
     { label: 'Rename', icon: 'ph-pencil-simple', action: () => startTabRename(tabId) },
     { label: 'Copy Path', icon: 'ph-copy', action: () => {
       navigator.clipboard.writeText(tabs[tabId].filepath);
     }},
+    { sep: true },
     { label: 'Close', icon: 'ph-x', action: () => closeTab(tabId) },
+    ...(multi ? [{ label: 'Close Others', icon: 'ph-broom',
+                   action: () => closeOtherTabs(tabId) }] : []),
+    { label: 'Close All', icon: 'ph-x-square', action: () => closeAllTabs() },
   ];
 
   items.forEach(item => {
+    if (item.sep) {
+      const hr = document.createElement('div');
+      hr.className = 'tab-context-sep';
+      menu.appendChild(hr);
+      return;
+    }
     const row = document.createElement('div');
     row.className = 'tab-context-item';
     row.innerHTML = '<i class="ph ' + item.icon + '"></i>' + item.label;
@@ -399,6 +487,9 @@ function showTabContextMenu(x, y, tabId) {
 }
 
 /* ── Tab Overflow Dropdown ────────────────────────────── */
+/* Count header + Close All, filter input (filename + filepath match),
+   per-row close ×, ghost dimming, active highlight. All actions via
+   delegated data-* handlers on the menu — no inline onclick in rows. */
 function showTabOverflowMenu(anchor) {
   dismissTabContextMenu();
   const menu = document.createElement('div');
@@ -409,20 +500,73 @@ function showTabOverflowMenu(anchor) {
   menu.style.top = rect.bottom + 'px';
   menu.style.left = 'auto';
 
-  /* Show ALL tabs — active one highlighted */
-  const allIds = Object.keys(tabs);
-  allIds.forEach(id => {
-    const row = document.createElement('div');
-    row.className = 'tab-context-item' + (id === activeTabId ? ' active' : '');
-    row.innerHTML = '<i class="ph ph-file-text"></i>' +
-      '<span style="overflow:hidden;text-overflow:ellipsis">' +
-      tabs[id].filename + '</span>';
-    row.title = tabs[id].filepath;
-    row.onclick = () => { dismissTabContextMenu(); switchTab(id); };
-    menu.appendChild(row);
+  const header = document.createElement('div');
+  header.className = 'tab-overflow-header';
+  header.innerHTML =
+    '<span class="tab-overflow-count"></span>' +
+    '<button class="tab-overflow-close-all" data-action="close-all">Close All</button>';
+  menu.appendChild(header);
+
+  const filter = document.createElement('input');
+  filter.className = 'tab-overflow-filter';
+  filter.type = 'text';
+  filter.placeholder = 'Filter tabs…';
+  menu.appendChild(filter);
+
+  const list = document.createElement('div');
+  list.className = 'tab-overflow-list';
+  menu.appendChild(list);
+
+  const renderList = () => {
+    const allIds = Object.keys(tabs);
+    const q = filter.value.trim().toLowerCase();
+    const shown = allIds.filter(id =>
+      !q || tabs[id].filename.toLowerCase().includes(q)
+         || tabs[id].filepath.toLowerCase().includes(q));
+    list.innerHTML = shown.map(id => {
+      const t = tabs[id];
+      return '<div class="tab-context-item' +
+        (id === activeTabId ? ' active' : '') +
+        (t._missing ? ' ghost' : '') +
+        '" data-tab="' + id + '" title="' + escapeHtml(t.filepath) + '">' +
+        '<i class="ph ph-file-text"></i>' +
+        '<span class="tab-overflow-name">' + escapeHtml(t.filename) + '</span>' +
+        '<button class="tab-overflow-close" data-action="close" ' +
+        'title="Close">&times;</button></div>';
+    }).join('') || '<div class="tab-overflow-empty">No matching tabs</div>';
+    header.querySelector('.tab-overflow-count').textContent =
+      allIds.length + (allIds.length === 1 ? ' tab' : ' tabs');
+  };
+  renderList();
+  filter.addEventListener('input', renderList);
+  filter.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const first = list.querySelector('.tab-context-item[data-tab]');
+      if (first) { dismissTabContextMenu(); switchTab(first.dataset.tab); }
+    }
+  });
+
+  menu.addEventListener('click', async (e) => {
+    if (e.target.closest('[data-action="close-all"]')) {
+      dismissTabContextMenu();
+      closeAllTabs();
+      return;
+    }
+    const row = e.target.closest('.tab-context-item[data-tab]');
+    if (!row) return;
+    const id = row.dataset.tab;
+    if (e.target.closest('[data-action="close"]')) {
+      await closeTab(id);
+      if (!Object.keys(tabs).length) { dismissTabContextMenu(); return; }
+      renderList();
+    } else {
+      dismissTabContextMenu();
+      switchTab(id);
+    }
   });
 
   document.body.appendChild(menu);
+  filter.focus();
 
   /* Keep on screen */
   requestAnimationFrame(() => {

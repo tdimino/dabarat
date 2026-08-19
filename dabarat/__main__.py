@@ -522,6 +522,35 @@ def _ask_reuse_dialog(already_open, new_files, open_names=None, inst_port=None):
         return "add"
 
 
+def _ask_restore_session(count):
+    """Confirm restoring a large crashed session (>20 tabs).
+
+    Returns True to restore. On non-macOS or any dialog failure, restore
+    silently — recovery must never discard a session it cannot ask about.
+    """
+    import platform
+    import subprocess
+
+    if platform.system() != "Darwin":
+        return True
+    script = (
+        f'display dialog "Restore {count} tabs from the previous session?" '
+        f'with title "Dabarat session recovery" '
+        f'buttons {{"Start Fresh", "Restore"}} '
+        f'default button "Restore"'
+    )
+    try:
+        result = subprocess.run(
+            ["osascript", "-e", script],
+            capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode != 0:
+            return True
+        return "Start Fresh" not in result.stdout
+    except Exception:
+        return True
+
+
 def _ask_window_picker(instances_info, new_files):
     """Show macOS list dialog to choose which window to add files to.
 
@@ -755,6 +784,12 @@ def cmd_serve(argv):
         if not recovered:
             print("Error: no files specified")
             sys.exit(1)
+        # Guard against restoring a runaway session (the 92-tab case) —
+        # the state file is already consumed, so Start Fresh just drops it
+        if len(recovered) > 20 and not _ask_restore_session(len(recovered)):
+            print(f"\033[38;2;88;91;112mPrevious session discarded "
+                  f"({len(recovered)} tabs).\033[0m")
+            sys.exit(0)
 
     # Tab reuse: if any instances are running, ask what to do.
     # Every outcome here is non-destructive \u2014 running servers are never killed.

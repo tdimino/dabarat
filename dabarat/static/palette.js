@@ -108,6 +108,10 @@ const CommandPalette = {
     this.register('File', [
       { id: 'open-file', label: 'Open File\u2026', icon: 'ph-folder-open', action: () => this._openFilePicker() },
       { id: 'compare-with', label: 'Compare with\u2026', icon: 'ph-git-diff', action: () => this._openDiffPicker() },
+      { id: 'close-other-tabs', label: 'Close Other Tabs', icon: 'ph-broom',
+        action: () => { if (typeof closeOtherTabs === 'function') closeOtherTabs(); } },
+      { id: 'close-all-tabs', label: 'Close All Tabs', icon: 'ph-x-square',
+        action: () => { if (typeof closeAllTabs === 'function') closeAllTabs(); } },
       { id: 'toggle-edit', label: 'Edit Mode', icon: 'ph-pencil-simple', shortcut: '\u21e7\u2318E', action: () => {
         if (typeof editState !== 'undefined' && editState.active) { exitEditMode(false); } else { enterEditMode(); }
       }},

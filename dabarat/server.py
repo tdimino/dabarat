@@ -869,6 +869,27 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
+        elif parsed.path == "/api/close-bulk":
+            # One lock acquisition and one tabs.json write for the whole
+            # batch — closing 92 tabs must not fire 92 persistence writes
+            mode = body.get("mode", "all")
+            if mode not in ("all", "others", "ids"):
+                self._json_response({"error": "mode must be all|others|ids"}, 400)
+                return
+            keep = set(body.get("keep") or [])
+            ids = body.get("ids") or []
+            with self._tabs_lock:
+                if mode == "ids":
+                    doomed = [t for t in ids if t in self._tabs]
+                else:
+                    # "all" and "others" differ only in the keep list
+                    doomed = [t for t in self._tabs if t not in keep]
+                for t in doomed:
+                    del self._tabs[t]
+            if doomed:
+                _notify_tabs_changed()
+            self._json_response({"ok": True, "closed": len(doomed)})
+
         elif parsed.path == "/api/rename":
             tab_id = body.get("tab", "")
             new_name = body.get("name", "").strip()

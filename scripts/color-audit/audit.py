@@ -43,6 +43,9 @@ ACCENTS = ["rosewater", "flamingo", "pink", "mauve", "red", "maroon", "peach",
 
 def parse_themes(css_text):
     """[data-theme] blocks → {theme: {token: raw value}}. Mocha doubles as :root."""
+    # Strip comments first — token-like text inside /* */ would otherwise
+    # swallow the real declaration that follows it.
+    css_text = re.sub(r"/\*.*?\*/", "", css_text, flags=re.S)
     themes = {}
     for m in re.finditer(r'((?::root|\[data-theme="[a-z-]+"\])'
                          r'(?:\s*,\s*\[data-theme="[a-z-]+"\])*)\s*\{([^}]*)\}',
@@ -235,7 +238,47 @@ USED_PAIRS = [
     # Home cards (card surface differs from base in light themes)
     ("card filename",        "var(--ctp-text)",       [CARD], 4.5, "P1"),
     ("card summary",         "var(--ctp-subtext0)",   [CARD], 4.5, "P1"),
-    ("card meta",            "var(--ctp-overlay1)",   [CARD], 4.5, "WAIVED"),
+
+    # Home role tokens — "everything readable" (2026-08-19): all
+    # informational text and interactive controls pass 4.5:1. The whisper
+    # waiver on home survives ONLY for hover-revealed ghost controls.
+    ("home meta (base)",     "var(--home-meta)",      [BASE], 4.5, "P1"),
+    ("home meta (card)",     "var(--home-meta)",      [CARD], 4.5, "P1"),
+    ("home control (base)",  "var(--home-control)",   [BASE], 4.5, "P1"),
+    ("home control (card)",  "var(--home-control)",   [CARD], 4.5, "P1"),
+    ("home card icon",       "var(--home-icon)",      [CARD], 3.0, "P1"),
+    ("home ghost control",   "var(--ctp-overlay0)",   [CARD], 4.5, "WAIVED"),
+
+    # Badge text over its accent wash on the card (alphas from home.css;
+    # both alphas audited for hues used at .15 and .18)
+    ("badge blue .15",       "var(--badge-blue-fg)",
+     [CARD, "rgba(var(--ctp-blue-rgb), 0.15)"], 4.5, "P1"),
+    ("badge blue .18",       "var(--badge-blue-fg)",
+     [CARD, "rgba(var(--ctp-blue-rgb), 0.18)"], 4.5, "P1"),
+    ("badge mauve .15",      "var(--badge-mauve-fg)",
+     [CARD, "rgba(var(--ctp-mauve-rgb), 0.15)"], 4.5, "P1"),
+    ("badge mauve .18",      "var(--badge-mauve-fg)",
+     [CARD, "rgba(var(--ctp-mauve-rgb), 0.18)"], 4.5, "P1"),
+    ("badge green .15",      "var(--badge-green-fg)",
+     [CARD, "rgba(var(--ctp-green-rgb), 0.15)"], 4.5, "P1"),
+    ("badge green .18",      "var(--badge-green-fg)",
+     [CARD, "rgba(var(--ctp-green-rgb), 0.18)"], 4.5, "P1"),
+    ("badge peach .15",      "var(--badge-peach-fg)",
+     [CARD, "rgba(var(--ctp-peach-rgb), 0.15)"], 4.5, "P1"),
+    ("badge peach .18",      "var(--badge-peach-fg)",
+     [CARD, "rgba(var(--ctp-peach-rgb), 0.18)"], 4.5, "P1"),
+    ("badge yellow .18",     "var(--badge-yellow-fg)",
+     [CARD, "rgba(var(--ctp-yellow-rgb), 0.18)"], 4.5, "P1"),
+    ("badge sky .18",        "var(--badge-sky-fg)",
+     [CARD, "rgba(var(--ctp-sky-rgb), 0.18)"], 4.5, "P1"),
+    ("badge teal .18",       "var(--badge-teal-fg)",
+     [CARD, "rgba(var(--ctp-teal-rgb), 0.18)"], 4.5, "P1"),
+    ("badge flamingo .18",   "var(--badge-flamingo-fg)",
+     [CARD, "rgba(var(--ctp-flamingo-rgb), 0.18)"], 4.5, "P1"),
+    ("badge lavender .18",   "var(--badge-lavender-fg)",
+     [CARD, "rgba(var(--ctp-lavender-rgb), 0.18)"], 4.5, "P1"),
+    ("badge neutral .18",    "var(--badge-neutral-fg)",
+     [CARD, "rgba(var(--ctp-overlay1-rgb), 0.18)"], 4.5, "P1"),
 
     # Version panel (mantle surface)
     ("timeline date",        "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1"),

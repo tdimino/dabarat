@@ -38,6 +38,35 @@ ANNOTATIONS = [
     ("bookmark",   "bookmarked passage"),
 ]
 
+# Home-screen fixtures — filenames chosen to trigger every smart badge hue
+# (home.js _fileBadges) plus one frontmatter-badge card. (name, body, tags,
+# version commits) — versions >0 makes the footer version counter render.
+_FM = ("---\ntype: prompt\nmodel: claude-fable-5\nversion: 2.1\n"
+       "status: active\n---\n\n")
+HOME_FIXTURES = [
+    ("alpha.prompt.md", _FM + "# Alpha Prompt\n\nSummon the muse of the "
+     "wine-dark sea. This card carries frontmatter badges and the prompt "
+     "badge together, exercising five washes at once.", ["prompt"], 3),
+    ("CHANGELOG.md", "# Changelog\n\nAll notable changes to the fixture "
+     "corpus are recorded here in reverse chronological order.", [], 2),
+    ("README.md", "# Readme\n\nThe fixture corpus exists so the home grid "
+     "renders every badge hue against every theme.", ["docs"], 0),
+    ("LICENSE.md", "# License\n\nCopying is permitted under the usual "
+     "terms; the neutral badge wash renders on this card.", [], 0),
+    ("plan-sprint.md", "# Sprint Plan\n\nA plan-badged card: the sky wash "
+     "over the card surface in all eight themes.", ["sprint"], 1),
+    ("research-dossier.md", "# Research Dossier\n\nA research-badged card "
+     "carrying the lavender wash.", [], 0),
+    ("TODO.md", "# Todo\n\nA todo-badged card carrying the peach wash.",
+     [], 0),
+    ("SPEC.md", "# Spec\n\nA spec-badged card carrying the teal wash.",
+     [], 0),
+    ("architecture.md", "# Architecture\n\nAn architecture-badged card "
+     "carrying the flamingo wash.", [], 0),
+    ("CLAUDE.md", "# Agent Config\n\nAn agent-badged card carrying the "
+     "mauve wash.", [], 0),
+]
+
 
 def wait_http(url, timeout=15.0):
     deadline = time.monotonic() + timeout
@@ -78,6 +107,36 @@ def main():
                       f"(rc={result.returncode}):\n{result.stderr.strip()}")
                 return 1
 
+        # Seed recent.json (and the isolated versions.db) through the real
+        # write paths so the home screen renders honest cards.
+        for name, body, tags, versions in HOME_FIXTURES:
+            (work / name).write_text(body, encoding="utf-8")
+        seed_code = (
+            "import json, sys\n"
+            "import dabarat.history as h\n"
+            f"h.HISTORY_DIR = {str(work / 'history')!r}\n"
+            f"h.DB_PATH = {str(work / 'versions.db')!r}\n"
+            "import dabarat.recent as r\n"
+            f"r.RECENT_FILE = {str(work / 'recent.json')!r}\n"
+            "for path, tags, versions in json.loads(sys.argv[1]):\n"
+            "    body = open(path, encoding='utf-8').read()\n"
+            "    for i in range(versions):\n"
+            "        h.commit(path, body + '\\n' * i, source='save')\n"
+            "    r.add_entry(path, body, tags)\n"
+        )
+        import json as _json
+        seed_specs = _json.dumps(
+            [[str(work / name), tags, versions]
+             for name, _, tags, versions in reversed(HOME_FIXTURES)])
+        result = subprocess.run(
+            [sys.executable, "-c", seed_code, seed_specs],
+            cwd=ROOT, capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode != 0:
+            print(f"FATAL: home-fixture seed failed "
+                  f"(rc={result.returncode}):\n{result.stderr.strip()}")
+            return 1
+
         launch_code = (
             "import sys, webbrowser\n"
             "import dabarat.history as h\n"
@@ -101,19 +160,25 @@ def main():
         try:
             base = f"http://127.0.0.1:{port}"
             wait_http(base + "/api/tabs")
-            for theme in THEMES:
-                out = SHOTS / f"{theme}.png"
-                url = f"{base}/?theme={theme}&export=1"
+            shot_matrix = (
+                [(t, f"{t}.png", "", 3400) for t in THEMES]
+                # Home pass — ?home=1 forces the home screen (seeded
+                # recent.json renders the badge/meta/control matrix)
+                + [(t, f"home-{t}.png", "&home=1", 2200) for t in THEMES]
+            )
+            for theme, fname, extra, height in shot_matrix:
+                out = SHOTS / fname
+                url = f"{base}/?theme={theme}&export=1{extra}"
                 result = subprocess.run(
                     [chrome, "--headless=new", f"--screenshot={out}",
-                     "--window-size=1280,3400", "--hide-scrollbars",
+                     f"--window-size=1280,{height}", "--hide-scrollbars",
                      "--virtual-time-budget=9000",
                      "--disable-gpu", url],
                     capture_output=True, timeout=60,
                 )
                 status = "ok" if out.exists() and out.stat().st_size > 10000 \
                     else f"FAILED rc={result.returncode}"
-                print(f"  {theme:<16} {status}")
+                print(f"  {fname:<26} {status}")
         finally:
             server.terminate()
             try:

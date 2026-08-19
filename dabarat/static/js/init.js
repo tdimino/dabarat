@@ -39,7 +39,10 @@ async function init() {
     )
   );
 
-  if (Object.keys(tabs).length === 0) {
+  /* ?home=1 forces the home screen regardless of open tabs — used by the
+     screenshot matrix (shots.py) and verify scripts to capture home mode */
+  const forceHome = new URLSearchParams(window.location.search).get('home') === '1';
+  if (Object.keys(tabs).length === 0 || forceHome) {
     showHomeScreen();
   } else if (activeTabId && tabs[activeTabId]) {
     render(tabBody(tabs[activeTabId]));

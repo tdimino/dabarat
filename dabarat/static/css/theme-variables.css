@@ -37,6 +37,7 @@
   --ctp-surface0-rgb: 49, 50, 68;
   --ctp-surface1-rgb: 69, 71, 90;
   --ctp-overlay0-rgb: 108, 112, 134;
+  --ctp-overlay1-rgb: 127, 132, 156;
   --ctp-base-rgb: 30, 30, 46;
   --ctp-mantle-rgb: 24, 24, 37;
 
@@ -94,6 +95,26 @@
   --stat-chg: var(--ctp-yellow);
   --external-badge-fg: var(--ctp-peach);
 
+  /* Home-screen role tokens ("everything readable", 2026-08-19).
+     --home-meta: paths, timestamps, day separators, stats, empty states.
+     --home-control: interactive text controls (Browse Files, ws buttons,
+     version counter, section names). --badge-*-fg: badge text over its
+     0.15/0.18 accent wash on --card-bg — one token per hue so each walks
+     its own lightness path when a theme must override. */
+  --home-meta: var(--ctp-overlay0);
+  --home-control: var(--ctp-overlay1);
+  --home-icon: var(--ctp-green);
+  --badge-blue-fg: var(--ctp-blue);
+  --badge-mauve-fg: var(--ctp-mauve);
+  --badge-green-fg: var(--ctp-green);
+  --badge-peach-fg: var(--ctp-peach);
+  --badge-yellow-fg: var(--ctp-yellow);
+  --badge-sky-fg: var(--ctp-sky);
+  --badge-teal-fg: var(--ctp-teal);
+  --badge-flamingo-fg: var(--ctp-flamingo);
+  --badge-lavender-fg: var(--ctp-lavender);
+  --badge-neutral-fg: var(--ctp-overlay1);
+
   /* Elevation tokens — shadows use black with theme-tuned alpha.
      Intentional exception to palette-only convention: shadows are
      inherently dark; using surface-RGB for shadows produces invisible
@@ -109,6 +130,19 @@
   --base-size: 15px;
   --heading-scale: 1;
   color-scheme: dark;
+}
+
+/* Mocha's own home-token overrides live in a separate block: concrete
+   values in :root would leak into every theme as defaults. The FOUC
+   script always sets data-theme, so this selector always matches. */
+[data-theme="mocha"] {
+  --home-meta: #a1a5bd;
+  --home-control: #a0a5be;
+  --badge-blue-fg: #a9c7ff;
+  --badge-mauve-fg: #dab9ff;
+  --badge-peach-fg: #ffb98e;
+  --badge-lavender-fg: #bfc7fe;
+  --badge-neutral-fg: #b4b9d3;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -150,6 +184,7 @@
   --ctp-surface0-rgb: 204, 208, 218;
   --ctp-surface1-rgb: 188, 192, 204;
   --ctp-overlay0-rgb: 156, 160, 176;
+  --ctp-overlay1-rgb: 140, 143, 161;
   --ctp-base-rgb: 239, 241, 245;
   --ctp-mantle-rgb: 230, 233, 239;
 
@@ -202,6 +237,19 @@
   --stat-del: #b9002e;
   --stat-chg: #854d00;
   --external-badge-fg: #a33100;
+  --home-meta: #616574;
+  --home-control: #616475;
+  --home-icon: #389924;
+  --badge-blue-fg: #0056d0;
+  --badge-mauve-fg: #7a2ce2;
+  --badge-green-fg: #007300;
+  --badge-peach-fg: #b33800;
+  --badge-yellow-fg: #905500;
+  --badge-sky-fg: #006793;
+  --badge-teal-fg: #006a70;
+  --badge-flamingo-fg: #a14346;
+  --badge-lavender-fg: #3850c8;
+  --badge-neutral-fg: #5d6071;
 
   --elevation-1:
     0 2px 6px -1px rgba(0, 0, 0, 0.10),
@@ -251,6 +299,7 @@
   --ctp-surface0-rgb: 31, 29, 46;
   --ctp-surface1-rgb: 38, 35, 58;
   --ctp-overlay0-rgb: 82, 79, 103;
+  --ctp-overlay1-rgb: 110, 106, 134;
   --ctp-base-rgb: 25, 23, 36;
   --ctp-mantle-rgb: 21, 19, 32;
 
@@ -279,6 +328,10 @@
   /* Role-token overrides — muted accents fall below 4.5:1 on mantle */
   --hljs-comment: #89859f;
   --tpl-pill-dollar: #61a0bd;
+  --home-meta: #918da7;
+  --home-control: #918caa;
+  --badge-teal-fg: #67a5c2;
+  --badge-neutral-fg: #9f9bb8;
 
   --card-bg: var(--ctp-surface0);
   --card-bg-rgb: var(--ctp-surface0-rgb);
@@ -334,6 +387,7 @@
   --ctp-surface0-rgb: 223, 218, 217;
   --ctp-surface1-rgb: 206, 202, 205;
   --ctp-overlay0-rgb: 172, 168, 184;
+  --ctp-overlay1-rgb: 152, 147, 165;
   --ctp-base-rgb: 255, 250, 243;
   --ctp-mantle-rgb: 250, 244, 237;
 
@@ -383,6 +437,18 @@
   --stat-del: #974960;
   --stat-chg: #8c5500;
   --external-badge-fg: #8c5500;
+  --home-meta: #6c6978;
+  --home-control: #6e697a;
+  --badge-blue-fg: #306772;
+  --badge-mauve-fg: #6e5a87;
+  --badge-green-fg: #2a6b76;
+  --badge-peach-fg: #925800;
+  --badge-yellow-fg: #905700;
+  --badge-sky-fg: #296a74;
+  --badge-teal-fg: #20637d;
+  --badge-flamingo-fg: #994b4a;
+  --badge-lavender-fg: #6a5288;
+  --badge-neutral-fg: #656071;
 
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
@@ -438,6 +504,7 @@
   --ctp-surface0-rgb: 41, 46, 66;
   --ctp-surface1-rgb: 52, 59, 88;
   --ctp-overlay0-rgb: 65, 72, 104;
+  --ctp-overlay1-rgb: 86, 95, 137;
   --ctp-base-rgb: 36, 40, 59;
   --ctp-mantle-rgb: 31, 35, 53;
 
@@ -474,6 +541,15 @@
   --hljs-punctuation: #8c92bc;
   --tpl-pill-mustache: #c19efd;
   --link-visited: #ab89e6;
+  --home-meta: #989ec3;
+  --home-control: #959dcb;
+  --badge-blue-fg: #a1baff;
+  --badge-mauve-fg: #c7a6fe;
+  --badge-peach-fg: #feab7a;
+  --badge-yellow-fg: #e9b770;
+  --badge-flamingo-fg: #feab7a;
+  --badge-lavender-fg: #cdb0fe;
+  --badge-neutral-fg: #a2a9d8;
 
   --elevation-1:
     0 2px 4px -1px rgba(0, 0, 0, 0.18),
@@ -531,6 +607,7 @@
   --ctp-surface0-rgb: 33, 34, 47;
   --ctp-surface1-rgb: 44, 46, 64;
   --ctp-overlay0-rgb: 87, 81, 74;
+  --ctp-overlay1-rgb: 111, 105, 92;
   --ctp-base-rgb:     24, 26, 36;
   --ctp-mantle-rgb:   18, 19, 30;
 
@@ -569,6 +646,17 @@
   --link-visited:     #9784ab;
   --stat-del:         #d0676d;
   --external-badge-fg: #d77955;
+  --home-meta:        #99928a;
+  --home-control:     #999385;
+  --badge-blue-fg:    #97afd2;
+  --badge-mauve-fg:   #b19ec6;
+  --badge-green-fg:   #86b48e;
+  --badge-peach-fg:   #ed8c67;
+  --badge-yellow-fg:  #d3a655;
+  --badge-sky-fg:     #8daecd;
+  --badge-teal-fg:    #7cb0ac;
+  --badge-lavender-fg: #b4a3c4;
+  --badge-neutral-fg: #a7a092;
 
   --card-bg:          var(--ctp-surface0);
   --card-bg-rgb:      var(--ctp-surface0-rgb);
@@ -632,6 +720,7 @@
   --ctp-surface0-rgb: 230, 220, 187;
   --ctp-surface1-rgb: 221, 211, 183;
   --ctp-overlay0-rgb: 184, 179, 160;
+  --ctp-overlay1-rgb: 163, 158, 140;
   --ctp-base-rgb:     250, 243, 223;
   --ctp-mantle-rgb:   244, 236, 212;
 
@@ -676,6 +765,16 @@
   --stat-add:         #45653e;
   --stat-chg:         #7c5500;
   --external-badge-fg: #963d0e;
+  --home-meta:        #6b6755;
+  --home-control:     #6b6756;
+  --badge-green-fg:   #47663f;
+  --badge-peach-fg:   #9d4414;
+  --badge-yellow-fg:  #7f5700;
+  --badge-sky-fg:     #3c5d7e;
+  --badge-teal-fg:    #37635e;
+  --badge-flamingo-fg: #895041;
+  --badge-lavender-fg: #655572;
+  --badge-neutral-fg: #656150;
 
   --card-bg:          #fffaec;                             /* warm paper highlight — NOT pure white */
   --card-bg-rgb:      255, 250, 236;
@@ -733,6 +832,7 @@
   --ctp-surface0-rgb: 193, 194, 199;
   --ctp-surface1-rgb: 176, 178, 186;
   --ctp-overlay0-rgb: 136, 139, 148;
+  --ctp-overlay1-rgb: 124, 126, 136;
   --ctp-base-rgb: 230, 231, 237;
   --ctp-mantle-rgb: 220, 222, 227;
 
@@ -771,6 +871,13 @@
   --stat-add: #325905;
   --stat-del: #803847;
   --stat-chg: #724500;
+  --home-meta: #5c5f68;
+  --home-control: #5d5f68;
+  --badge-mauve-fg: #753eb4;
+  --badge-peach-fg: #8f4a21;
+  --badge-yellow-fg: #825307;
+  --badge-sky-fg: #00647d;
+  --badge-neutral-fg: #5d5f68;
 
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;

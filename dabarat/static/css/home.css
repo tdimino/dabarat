@@ -36,13 +36,13 @@ body.home-active #content {
 .home-workspace-path {
   font-family: 'Victor Mono', monospace;
   font-size: 11px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   margin-top: 2px;
 }
 .home-workspace-stats {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   margin-left: 12px;
 }
 
@@ -172,7 +172,7 @@ body.home-active #content {
 }
 .home-card-icon {
   font-size: 16px;
-  color: var(--ctp-green);
+  color: var(--home-icon);
   flex-shrink: 0;
   /* Align icon visually with text baseline */
   position: relative;
@@ -196,7 +196,7 @@ body.home-active #content {
 .home-card-time {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   flex-shrink: 0;
   margin-left: auto;
   white-space: nowrap;
@@ -204,13 +204,13 @@ body.home-active #content {
 .home-card-date {
   font-family: 'DM Sans', sans-serif;
   font-size: 10px;
-  color: var(--ctp-overlay1);
+  color: var(--home-meta);
   margin-top: 1px;
 }
 .home-card-updated {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay1);
+  color: var(--home-meta);
   margin: 6px 0 0;
   display: flex;
   align-items: center;
@@ -218,7 +218,7 @@ body.home-active #content {
 }
 .home-card-updated i {
   font-size: 11px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
 }
 .home-card-created {
   margin-left: auto;
@@ -226,7 +226,7 @@ body.home-active #content {
 .home-card-path {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -253,23 +253,24 @@ body.home-active #content {
   white-space: nowrap;
 }
 .home-badge i { font-size: 11px; }
-/* Frontmatter badges */
-.home-badge-type   { background: rgba(var(--ctp-blue-rgb), 0.15); color: var(--ctp-blue); }
-.home-badge-model  { background: rgba(var(--ctp-mauve-rgb), 0.15); color: var(--ctp-mauve); }
-.home-badge-version { background: rgba(var(--ctp-green-rgb), 0.15); color: var(--ctp-green); }
-.home-badge-status { background: rgba(var(--ctp-peach-rgb), 0.15); color: var(--ctp-peach); }
+/* Frontmatter badges — text uses --badge-*-fg role tokens (solved per
+   theme against the wash-on-card surface); washes keep the raw accents */
+.home-badge-type   { background: rgba(var(--ctp-blue-rgb), 0.15); color: var(--badge-blue-fg); }
+.home-badge-model  { background: rgba(var(--ctp-mauve-rgb), 0.15); color: var(--badge-mauve-fg); }
+.home-badge-version { background: rgba(var(--ctp-green-rgb), 0.15); color: var(--badge-green-fg); }
+.home-badge-status { background: rgba(var(--ctp-peach-rgb), 0.15); color: var(--badge-peach-fg); }
 
 /* Smart file-type badges */
-.home-badge-prompt    { background: rgba(var(--ctp-yellow-rgb), 0.18); color: var(--ctp-yellow); }
-.home-badge-agent     { background: rgba(var(--ctp-mauve-rgb), 0.18); color: var(--ctp-mauve); }
-.home-badge-plan      { background: rgba(var(--ctp-sky-rgb), 0.18); color: var(--ctp-sky); }
-.home-badge-spec      { background: rgba(var(--ctp-teal-rgb), 0.18); color: var(--ctp-teal); }
-.home-badge-readme    { background: rgba(var(--ctp-blue-rgb), 0.18); color: var(--ctp-blue); }
-.home-badge-arch      { background: rgba(var(--ctp-flamingo-rgb), 0.18); color: var(--ctp-flamingo); }
-.home-badge-changelog { background: rgba(var(--ctp-green-rgb), 0.18); color: var(--ctp-green); }
-.home-badge-todo      { background: rgba(var(--ctp-peach-rgb), 0.18); color: var(--ctp-peach); }
-.home-badge-license   { background: rgba(var(--ctp-overlay1-rgb), 0.18); color: var(--ctp-overlay1); }
-.home-badge-research  { background: rgba(var(--ctp-lavender-rgb), 0.18); color: var(--ctp-lavender); }
+.home-badge-prompt    { background: rgba(var(--ctp-yellow-rgb), 0.18); color: var(--badge-yellow-fg); }
+.home-badge-agent     { background: rgba(var(--ctp-mauve-rgb), 0.18); color: var(--badge-mauve-fg); }
+.home-badge-plan      { background: rgba(var(--ctp-sky-rgb), 0.18); color: var(--badge-sky-fg); }
+.home-badge-spec      { background: rgba(var(--ctp-teal-rgb), 0.18); color: var(--badge-teal-fg); }
+.home-badge-readme    { background: rgba(var(--ctp-blue-rgb), 0.18); color: var(--badge-blue-fg); }
+.home-badge-arch      { background: rgba(var(--ctp-flamingo-rgb), 0.18); color: var(--badge-flamingo-fg); }
+.home-badge-changelog { background: rgba(var(--ctp-green-rgb), 0.18); color: var(--badge-green-fg); }
+.home-badge-todo      { background: rgba(var(--ctp-peach-rgb), 0.18); color: var(--badge-peach-fg); }
+.home-badge-license   { background: rgba(var(--ctp-overlay1-rgb), 0.18); color: var(--badge-neutral-fg); }
+.home-badge-research  { background: rgba(var(--ctp-lavender-rgb), 0.18); color: var(--badge-lavender-fg); }
 
 /* ── Card Preview ───────────────────────────────────────── */
 .home-card-preview {
@@ -385,7 +386,7 @@ body.home-active #content {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   padding: 12px 18px 0;
 }
 
@@ -396,7 +397,7 @@ body.home-active #content {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   margin: 20px 0 12px;
   display: flex;
   align-items: center;
@@ -426,7 +427,7 @@ body.home-active #content {
 .home-card-footer span {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay1);
+  color: var(--home-meta);
   /* Vertical alignment: all spans share same height for perfect centering */
   display: inline-flex;
   align-items: center;
@@ -441,7 +442,7 @@ body.home-active #content {
 .home-card-versions {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay1);
+  color: var(--home-control);
   background: none;
   border: none;
   border-radius: 4px;
@@ -482,7 +483,7 @@ body.home-active #content {
 .ws-path {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -496,7 +497,7 @@ body.home-active #content {
 }
 .ws-path:hover {
   background: var(--ctp-surface0);
-  color: var(--ctp-subtext0);
+  color: var(--ctp-text);
 }
 .ws-path-edit {
   font-size: 9px;
@@ -555,7 +556,7 @@ body.home-active #content {
 .ws-stats {
   font-family: 'Victor Mono', monospace;
   font-size: 9px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   padding: 6px 14px 0;
   margin-bottom: 8px;
   border-top: 1px solid rgba(var(--ctp-surface0-rgb), 0.8);
@@ -582,8 +583,8 @@ body.home-active #content {
   flex-shrink: 0;
 }
 .ws-entry.ws-dir i   { color: var(--ctp-blue); }
-.ws-entry.ws-back i  { color: var(--ctp-overlay1); }
-.ws-entry.ws-back .ws-entry-name { color: var(--ctp-overlay0); }
+.ws-entry.ws-back i  { color: var(--home-meta); }
+.ws-entry.ws-back .ws-entry-name { color: var(--home-meta); }
 .ws-entry.ws-file i  { color: var(--ctp-green); }
 .ws-entry-name {
   flex: 1;
@@ -595,7 +596,7 @@ body.home-active #content {
 .ws-entry-size {
   font-family: 'Victor Mono', monospace;
   font-size: 9px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   flex-shrink: 0;
 }
 /* Badge inside sidebar recent entries */
@@ -621,7 +622,7 @@ body.home-active #content {
   text-align: center;
   font-family: 'DM Sans', sans-serif;
   font-size: 11px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
 }
 .ws-empty i {
   font-size: 18px;
@@ -638,7 +639,7 @@ body.home-active #content {
   align-items: center;
   justify-content: flex-start;
   padding: 12vh 40px 40px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   gap: 28px;
 }
 
@@ -734,7 +735,7 @@ body.home-active #content {
 }
 .home-open-btn {
   background: transparent;
-  color: var(--ctp-overlay1);
+  color: var(--home-control);
   border: 1px solid var(--ctp-surface1);
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
@@ -784,7 +785,7 @@ body.home-active #content {
 .ws-action-btn {
   background: transparent;
   border: 1px solid transparent;
-  color: var(--ctp-overlay1);
+  color: var(--home-control);
   width: 26px;
   height: 26px;
   border-radius: 5px;
@@ -819,7 +820,7 @@ body.home-active #content {
 }
 .ws-section-caret {
   font-size: 10px;
-  color: var(--ctp-overlay0);
+  color: var(--home-control);
   transition: transform 0.15s;
   flex-shrink: 0;
 }
@@ -834,7 +835,7 @@ body.home-active #content {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: var(--ctp-overlay1);
+  color: var(--home-control);
   flex: 1;
   min-width: 0;
   overflow: hidden;
@@ -955,7 +956,7 @@ body.home-active #content {
 .home-section-stats {
   font-family: 'Victor Mono', monospace;
   font-size: 10px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
 }
 .home-section-remove {
   background: transparent;
@@ -981,7 +982,7 @@ body.home-active #content {
 .home-section-empty {
   font-family: 'DM Sans', sans-serif;
   font-size: 12px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   padding: 12px 0;
   font-style: italic;
 }
@@ -996,7 +997,7 @@ body.home-active #content {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--ctp-overlay1);
+  color: var(--home-control);
   margin-bottom: 10px;
 }
 .home-recent-ws-grid {
@@ -1039,7 +1040,7 @@ body.home-active #content {
 .home-ws-card-time {
   font-family: 'Victor Mono', monospace;
   font-size: 9px;
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   flex-shrink: 0;
   margin-left: 4px;
 }

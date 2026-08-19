@@ -200,6 +200,8 @@
   /* ── Light themes: white background for print ── */
   [data-theme="latte"] html,
   [data-theme="latte"] body,
+  [data-theme="vellum"] html,
+  [data-theme="vellum"] body,
   [data-theme="rose-pine-dawn"] html,
   [data-theme="rose-pine-dawn"] body,
   [data-theme="tokyo-light"] html,

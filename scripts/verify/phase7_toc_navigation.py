@@ -266,6 +266,9 @@ def main() -> int:
                 "import sys, webbrowser\n"
                 "import dabarat.__main__ as m\n"
                 "m._find_chrome = lambda: None\n"
+                # Real live instances must not trigger the reuse dialog
+                # (phase8/11 already isolate this way)
+                "m._live_instances = lambda: []\n"
                 "webbrowser.open = lambda *a, **k: True\n"
                 "sys.argv = ['dabarat'] + sys.argv[1:]\n"
                 "m.cmd_serve(sys.argv)\n"

@@ -45,7 +45,7 @@ async function poll() {
         const tabList = await res.json();
         let changed = false;
         tabList.forEach(t => {
-          if (!tabs[t.id]) {
+          if (!tabs[t.id] && !_closePending.has(t.id)) {
             tabs[t.id] = { filepath: t.filepath, filename: t.filename, content: '', mtime: 0, scrollY: 0 };
             changed = true;
             fetchTabContent(t.id);
@@ -158,7 +158,10 @@ async function poll() {
       const tabList = await res.json();
       let changed = false;
       tabList.forEach(t => {
-        if (!tabs[t.id]) {
+        /* _closePending guards a poll fetch that was already in flight
+           when a close deleted the tab locally — the stale response must
+           not resurrect it (tabs.js owns the set) */
+        if (!tabs[t.id] && !_closePending.has(t.id)) {
           tabs[t.id] = { filepath: t.filepath, filename: t.filename, content: '', mtime: 0, scrollY: 0 };
           changed = true;
           /* Immediately fetch content for new tab */

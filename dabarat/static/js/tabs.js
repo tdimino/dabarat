@@ -304,9 +304,21 @@ async function fetchTabContent(id) {
   } catch (e) { /* ignore */ }
 }
 
+/* Tab ids being closed right now. A poll /api/tabs fetch already in
+   flight when the local delete happens would otherwise resurrect the
+   rows from its stale response (polling.js checks this set). Ids are
+   held for one extra poll cycle; a reopened file gets a fresh uuid, so
+   a held id can never block a legitimate tab. */
+const _closePending = new Set();
+
+function _releaseClosePending(ids) {
+  setTimeout(() => ids.forEach(id => _closePending.delete(id)), 2500);
+}
+
 async function closeTab(id) {
   /* Exit edit mode if active on this tab */
   if (editState.active && editState.tabId === id) exitEditMode(true);
+  _closePending.add(id);
 
   /* Exit diff mode if the left tab is being closed */
   if (diffState.active && diffState.leftTabId === id) exitDiffMode();
@@ -333,6 +345,7 @@ async function closeTab(id) {
   delete annotationsCache[id];
   delete lastAnnotationMtimes[id];
   delete tagsCache[id];
+  _releaseClosePending([id]);
 
   if (id === activeTabId) {
     activeTabId = Object.keys(tabs)[0] || null;
@@ -364,6 +377,7 @@ async function _closeBulk(mode, keepIds) {
   if (typeof gutterMode !== 'undefined' && gutterMode === 'versions') closeVersionPanel();
 
   doomed.forEach(id => {
+    _closePending.add(id);
     delete tabs[id];
     delete annotationsCache[id];
     delete lastAnnotationMtimes[id];
@@ -377,6 +391,7 @@ async function _closeBulk(mode, keepIds) {
       body: JSON.stringify({mode: mode, keep: Array.from(keep)})
     });
   } catch(e) {}
+  _releaseClosePending(doomed);
 
   if (!activeTabId || !tabs[activeTabId]) {
     activeTabId = Object.keys(tabs)[0] || null;
@@ -406,6 +421,9 @@ function closeOtherTabs(keepId) {
 /* Ctrl+Tab / Ctrl+Shift+Tab, with Cmd+Opt+←/→ as the fallback binding
    (Chrome app mode swallows Ctrl+Tab in some configurations) */
 document.addEventListener('keydown', (e) => {
+  /* Never cycle away from an in-progress text entry (rename input,
+     overflow filter, version label, Tiptap surface) */
+  if (e.target.closest && e.target.closest('input, textarea, [contenteditable="true"]')) return;
   const ids = Object.keys(tabs);
   if (ids.length < 2) return;
   let dir = 0;
@@ -934,12 +952,18 @@ async function showInstanceMenu(anchor) {
     } else if (e.target.closest('[data-action="shutdown"]')) {
       if (!confirm('Shut down the instance on :' + port + '? Unsaved edits in its window will be lost.')) return;
       try {
-        await fetch('/api/instances/shutdown', {
+        const res = await fetch('/api/instances/shutdown', {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({port: port})
         });
-      } catch (err) {}
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.ok) {
+          alert('Shutdown of :' + port + ' failed' + (data.error ? ': ' + data.error : ''));
+        }
+      } catch (err) {
+        alert('Shutdown of :' + port + ' failed: ' + err.message);
+      }
       await fetchInstances();
       renderRows();
     }

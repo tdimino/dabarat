@@ -151,11 +151,12 @@ def main():
             "sys.argv = ['dabarat'] + sys.argv[1:]\n"
             "m.cmd_serve(sys.argv)\n"
         )
+        # DEVNULL, not PIPE — nothing reads the pipe, and a chatty server
+        # filling the buffer would deadlock the run
         server = subprocess.Popen(
             [sys.executable, "-u", "-c", launch_code, str(doc),
              "--port", str(port), "--max-instances", "99"],
-            cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-            text=True,
+            cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
         try:
             base = f"http://127.0.0.1:{port}"
@@ -166,6 +167,7 @@ def main():
                 # recent.json renders the badge/meta/control matrix)
                 + [(t, f"home-{t}.png", "&home=1", 2200) for t in THEMES]
             )
+            failures = 0
             for theme, fname, extra, height in shot_matrix:
                 out = SHOTS / fname
                 url = f"{base}/?theme={theme}&export=1{extra}"
@@ -176,9 +178,11 @@ def main():
                      "--disable-gpu", url],
                     capture_output=True, timeout=60,
                 )
-                status = "ok" if out.exists() and out.stat().st_size > 10000 \
-                    else f"FAILED rc={result.returncode}"
-                print(f"  {fname:<26} {status}")
+                ok = out.exists() and out.stat().st_size > 10000
+                if not ok:
+                    failures += 1
+                print(f"  {fname:<26} "
+                      f"{'ok' if ok else f'FAILED rc={result.returncode}'}")
         finally:
             server.terminate()
             try:
@@ -186,7 +190,7 @@ def main():
             except subprocess.TimeoutExpired:
                 server.kill()
     print(f"shots → {SHOTS}")
-    return 0
+    return 1 if failures else 0
 
 
 if __name__ == "__main__":

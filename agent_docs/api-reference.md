@@ -1,6 +1,6 @@
 # API Reference
 
-All endpoints served by `server.py:PreviewHandler`. 41 endpoints total (17 GET, 24 POST).
+All endpoints served by `server.py:PreviewHandler`. 50 endpoints total (21 GET, 29 POST).
 
 ## GET Endpoints
 
@@ -61,6 +61,18 @@ Returns user config from `~/.dabarat/config.json`. Empty object `{}` if no confi
 { "theme": "ink" }
 ```
 
+### `GET /api/instances`
+Returns all live dabarat instances on this machine (via `instances.discover_instances()` — PID files in `~/.dabarat/instances/` plus serial 1s HTTP probes of siblings). The self row's tabs come from in-memory `self._tabs` under lock, never a self-probe. Sorted by port, self first.
+```json
+{
+  "instances": [
+    { "port": 3031, "pid": 4242, "started": "2026-08-19T...", "isSelf": true,
+      "tabs": [{ "filename": "file.md", "filepath": "/path/file.md" }] }
+  ],
+  "maxInstances": 5
+}
+```
+
 ### `GET /api/versions?tab={id}`
 Returns SQLite-backed version history for a tab's file. Content-addressed zlib blobs with rename-surviving file identity.
 ```json
@@ -77,6 +89,19 @@ Returns file content at a specific version. Version refs are decimal IDs seriali
 Returns a side-by-side diff of a specific version against the current file content.
 ```json
 { "blocks": [{ "type": "change", "left": "old line", "right": "new line" }] }
+```
+
+### `GET /api/version/summary?tab={id}&hash={version_id}`
+Returns a compact change excerpt for a version — the changed lines of the first hunk of a unified diff against its predecessor (first versions diff against empty). Backed by `history.version_change_summary()`: at most 2 changed lines plus 1 context line, 5000-line scan cap per side. 400 on a malformed ref, 404 when the version is missing.
+```json
+{ "lines": ["-old line", "+new line", " context line"], "truncated": false }
+```
+Lines carry unified-diff prefixes (`+`/`-`/` `); an identical-content version (restore-to-same) yields `lines: []`.
+
+### `GET /api/versions/recent`
+Returns the global activity feed — most recent versions across all files in the store, for the home screen and the panel's Activity mode.
+```json
+{ "versions": [{ "hash": "42", "date": "2026-02-18T...", "source": "save", "filepath": "/path/file.md", "filename": "file.md" }] }
 ```
 
 ### `POST /api/version/pin`
@@ -188,6 +213,15 @@ Opens a file as a new tab. Resolves relative paths against existing tab director
 Closes a tab by ID.
 ```json
 { "id": "abc123" }
+```
+
+### `POST /api/close-bulk`
+Closes tabs in one batch — `_tabs_lock` is held once for the whole operation and `_notify_tabs_changed()` fires once (one `tabs.json` write regardless of tab count). Modes: `"all"` (optionally sparing `keep`), `"others"` (spares `keep`), `"ids"` (closes exactly `ids`).
+```json
+// Request
+{ "mode": "others", "keep": ["abc123"] }
+// Response
+{ "ok": true, "closed": 14 }
 ```
 
 ### `POST /api/rename`
@@ -383,3 +417,20 @@ Exports the active tab as a PDF via headless Chrome. Opens macOS save dialog for
 { "error": "Chrome not found" }
 ```
 Requires Chrome/Chromium installed. Uses headless Chrome CDP (`Page.printToPDF` over WebSocket) with a render-complete sentinel handshake so JS rendering and images finish before printing. Timeout: 30s per phase.
+
+## Instance Endpoints
+
+### `POST /api/shutdown`
+Gracefully shuts down this instance. Responds `{"ok": true}` first, then a daemon thread sleeps ~200ms (letting the response flush) and calls `server.shutdown()`. `serve_forever` unwinds through the normal exit path — PID file and `tabs.json` are cleaned up.
+```json
+{ "ok": true }
+```
+
+### `POST /api/instances/shutdown`
+Shuts down a sibling instance by port — a server-to-server proxy, since a browser cross-port fetch would fail the sibling's strict Origin check. Validates the port (integer, 1–65535, not self), then makes a urllib POST to the sibling's `/api/shutdown` with header `Origin: http://127.0.0.1:{port}`. No CSRF relaxation and no CORS anywhere. 502 when the sibling is unreachable.
+```json
+// Request
+{ "port": 3032 }
+// Response
+{ "ok": true }
+```

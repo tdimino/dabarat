@@ -1,7 +1,7 @@
 ---
 title: "feat: Instance monitoring, tab management overhaul, history clarity, home contrast remediation"
 type: feat
-status: active
+status: completed
 date: 2026-08-19
 project: /Users/tomdimino/Desktop/Programming/dabarat
 ---

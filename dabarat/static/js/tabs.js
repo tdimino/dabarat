@@ -377,7 +377,12 @@ async function _closeBulk(mode, keepIds) {
   if (diffState.active && doomed.includes(diffState.leftTabId)) exitDiffMode();
   if (typeof gutterMode !== 'undefined' && gutterMode === 'versions') closeVersionPanel();
 
+  /* Snapshot so a failed request can put the state back — otherwise the
+     client deletes locally, the server keeps the tabs, and the next poll
+     silently resurrects them, which reads as "nothing happened". */
+  const snapshot = {};
   doomed.forEach(id => {
+    snapshot[id] = tabs[id];
     _closePending.add(id);
     delete tabs[id];
     delete annotationsCache[id];
@@ -385,14 +390,27 @@ async function _closeBulk(mode, keepIds) {
     delete tagsCache[id];
   });
 
+  let failure = null;
   try {
-    await fetch('/api/close-bulk', {
+    const res = await fetch('/api/close-bulk', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({mode: mode, keep: Array.from(keep)})
     });
-  } catch(e) {}
+    if (!res.ok) failure = 'HTTP ' + res.status;
+  } catch(e) { failure = 'network error'; }
   _releaseClosePending(doomed);
+
+  if (failure) {
+    doomed.forEach(id => { tabs[id] = snapshot[id]; });
+    renderTabBar();
+    _showServerActionFailedBanner(
+      'Could not close tabs (' + failure + '). ' +
+      (failure === 'HTTP 404'
+        ? 'This dabarat server predates the feature — restart it to pick up the new code.'
+        : 'Check that the dabarat server is still running.'));
+    return;
+  }
 
   if (!activeTabId || !tabs[activeTabId]) {
     activeTabId = Object.keys(tabs)[0] || null;
@@ -834,6 +852,23 @@ function _showFileMissingBanner() {
 function _hideFileMissingBanner() {
   const b = document.getElementById('file-missing-banner');
   if (b) b.remove();
+}
+
+/* A server-side action failed (endpoint missing on a stale process, 5xx,
+   unreachable). One banner at a time; new text replaces old. */
+function _showServerActionFailedBanner(message) {
+  const existing = document.getElementById('server-action-banner');
+  if (existing) existing.remove();
+  const banner = document.createElement('div');
+  banner.id = 'server-action-banner';
+  banner.className = 'status-banner';
+  banner.innerHTML = '<i class="ph ph-warning"></i><span></span>' +
+    '<button data-action="dismiss">Dismiss</button>';
+  banner.querySelector('span').textContent = message;
+  banner.addEventListener('click', (e) => {
+    if (e.target.closest('[data-action="dismiss"]')) banner.remove();
+  });
+  document.body.appendChild(banner);
 }
 
 /* File exists but cannot be read (permissions, encoding, replaced by a dir) */

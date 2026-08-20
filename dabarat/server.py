@@ -19,6 +19,13 @@ from . import recent
 from . import workspace
 from .template import get_html
 
+# Ceiling on hook-pushed (auto=True) tabs per window; user-opened tabs
+# are not counted. Env var is case-insensitive per house convention.
+MAX_AUTO_TABS = int(
+    os.environ.get("DABARAT_MAX_AUTO_TABS")
+    or os.environ.get("dabarat_max_auto_tabs")
+    or 30)
+
 
 _browse_cache = {}  # keyed by (dirpath, max_mtime, file_count) → response dict
 _browse_cache_lock = threading.Lock()
@@ -96,11 +103,18 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         pass
 
     @classmethod
-    def get_or_create_tab(cls, filepath):
+    def get_or_create_tab(cls, filepath, auto=False):
         """Return (tab_id, existing). Dup-check and insert share one lock
         acquisition, so concurrent adds of the same path cannot create
         duplicate tabs. Content is populated afterward via _refresh_tab
-        (fd-coherent read)."""
+        (fd-coherent read).
+
+        `auto=True` marks a tab pushed by automation (Claude Code hooks)
+        rather than opened by the user. Auto tabs are capped at
+        MAX_AUTO_TABS — oldest evicted first — so a long-lived window
+        cannot accrete hundreds of unrequested files. A user save clears
+        the flag (see _update_tab_content); user-opened tabs are never
+        evicted."""
         with cls._tabs_lock:
             for tid, t in cls._tabs.items():
                 if t["filepath"] == filepath:
@@ -111,7 +125,14 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 "content": "",
                 "mtime": 0,
                 "change_key": None,
+                "auto": bool(auto),
             }
+            if auto:
+                # dict preserves insertion order, so the first auto tabs
+                # are the oldest
+                auto_ids = [i for i, t in cls._tabs.items() if t.get("auto")]
+                for victim in auto_ids[:max(0, len(auto_ids) - MAX_AUTO_TABS)]:
+                    del cls._tabs[victim]
         snap = cls._refresh_tab(tab_id) or {}
         # Track in recent files
         try:
@@ -166,6 +187,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 tab["content"] = content
                 tab["mtime"] = mtime
                 tab["change_key"] = change_key
+                tab["auto"] = False  # the user saved it — it is theirs now
         return mtime, change_key
 
     @classmethod
@@ -770,11 +792,19 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not os.path.isfile(img_path):
                 self.send_error(404)
                 return
-            # Restrict to directories of open tabs or cached browse dirs
+            # Restrict to directories of open tabs, cached browse dirs, and
+            # recent files — home cards reference recent entries whose
+            # tabs are long closed, and the server itself emitted those
+            # previewImage paths via recent._extract_preview_image
             tab_dirs = self._tab_dirs()
             with _browse_cache_lock:
                 browse_dirs = [k[0] for k in _browse_cache]
-            allowed_dirs = tab_dirs + browse_dirs
+            try:
+                recent_dirs = [os.path.dirname(e["path"])
+                               for e in recent.load() if e.get("path")]
+            except Exception:
+                recent_dirs = []
+            allowed_dirs = tab_dirs + browse_dirs + recent_dirs
             if not any(img_path.startswith(d + os.sep) for d in allowed_dirs):
                 self.send_error(403)
                 return
@@ -869,7 +899,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self._json_response({"error": f"file not found: {filepath}"}, 400)
                 return
 
-            tab_id, existing = self.get_or_create_tab(filepath)
+            tab_id, existing = self.get_or_create_tab(
+                filepath, auto=bool(body.get("auto")))
             response = {
                 "id": tab_id,
                 "filename": os.path.basename(filepath),

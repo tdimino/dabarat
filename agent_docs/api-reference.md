@@ -184,7 +184,7 @@ Returns enriched metadata for a single file (used for pinned workspace files).
 Metadata extraction gated behind 1MB file size check.
 
 ### `GET /api/preview-image?path={absolute_path}`
-Serves image files for workspace card previews. Restricted to directories of open tabs and directories in the browse cache.
+Serves image files for workspace card previews. Restricted to directories of open tabs, directories in the browse cache, and directories of recent-file entries (home cards reference files whose tabs are closed). Non-image MIME types are refused (403); a PDF figure reference is already resolved to its `.svg`/`.png` sibling upstream by `recent.browser_image_path()`.
 ```json
 // Returns raw image bytes with correct Content-Type
 ```
@@ -196,15 +196,15 @@ Returns structured diff between current tab content and another file.
 ```
 
 ### `GET /{path}`
-Serves static files relative to the directories of open tabs. Used for images referenced in markdown.
+Serves static files relative to the directories of open tabs. Used for images referenced in markdown. When the request carries `Sec-Fetch-Dest: image` (an `<img>` fetch) and the path is a `.pdf`/`.eps`, the same-stem `.svg`/`.png`/`.jpg`/`.webp` sibling is served instead; any other fetch of the same path returns the PDF bytes.
 
 ## POST Endpoints
 
 ### `POST /api/add`
-Opens a file as a new tab. Resolves relative paths against existing tab directories.
+Opens a file as a new tab. Resolves relative paths against existing tab directories. `auto: true` marks the tab as automation-pushed (hooks); auto tabs are capped at `MAX_AUTO_TABS` (env `DABARAT_MAX_AUTO_TABS`, default 30), oldest evicted on insert. User-opened tabs are never counted or evicted, and a save through `/api/save` clears the flag.
 ```json
 // Request
-{ "filepath": "other-file.md" }
+{ "filepath": "other-file.md", "auto": false }
 // Response
 { "id": "abc123", "filepath": "/absolute/path/other-file.md", "filename": "other-file.md" }
 ```
@@ -223,6 +223,7 @@ Closes tabs in one batch — `_tabs_lock` is held once for the whole operation a
 // Response
 { "ok": true, "closed": 14 }
 ```
+The client (`_closeBulk`) snapshots its tab state before the request and restores it on any non-2xx response or network failure, surfacing a `role="status"` banner — a server process older than this endpoint answers 404, and without the restore the 2s poll would silently resurrect every tab.
 
 ### `POST /api/rename`
 Renames a tab's file on disk. Also renames sidecar annotation files.

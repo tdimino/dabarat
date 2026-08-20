@@ -12,7 +12,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 
 - **Live-reload preview**—500ms polling detects file changes automatically
 - **Multi-tab support**—open multiple `.md` files; cross-file linking via `--add`
-- **Tab management at scale**—Close Others / Close All (confirmed), `Ctrl+Tab` cycling (`Cmd+Opt+←/→` fallback), middle-click close, and a searchable overflow menu with per-row close for 90-tab sessions
+- **Tab management at scale**—Close Others / Close All (confirmed), `Ctrl+Tab` cycling (`Cmd+Opt+←/→` fallback), middle-click close, and a searchable overflow menu with per-row close for 90-tab sessions. Tabs pushed by automation (`/api/add` with `auto: true`, as the Claude Code plan hook does) are capped at `DABARAT_MAX_AUTO_TABS` (30) so a long-lived window never silts up
 - **Tab reuse with window picker**—launching a new file while the server is running shows a dialog with currently open files; when multiple windows are running, pick which window to add to
 - **Instance monitoring**—status-bar port indicator with a sibling-count badge; its dropdown lists every running window's open files with Focus and Shut Down actions
 - **5 annotation types**—Comment, Question, Suggestion, Important, Bookmark
@@ -32,7 +32,8 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Switchable emoji styles**—Twitter (Twemoji), OpenMoji, Google Noto Color Emoji, or native OS emoji
 - **Command palette**—`Cmd+K` / `Ctrl+K` for quick access to commands, tabs, and recent files
 - **File tagging**—predefined + custom tags as colored pills in palette header, status bar, and tab bar
-- **Prompt engineering support**—`.prompt.md` files with YAML frontmatter render metadata indicator bars and variable highlighting
+- **Prompt engineering support**—`.prompt.md` files with YAML frontmatter render metadata indicator bars and variable highlighting. The frontmatter dialog (click the bar, or Enter on it) lays every field out as a color-coded key/value grid—nested objects as inset sub-grids, arrays as pills, URLs as links—with full keyboard and screen-reader support
+- **PDF figures**—`![fig](tree.pdf){width=100%}` (the Pandoc/LaTeX idiom) previews via the same-stem `.svg`/`.png` sibling, in the document and on home cards; plain `[links](doc.pdf)` still open the PDF
 - **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes, links, and images—all rendered inline. Links and images survive edit-save round-trips (Link extension with autolink + linkOnPaste, Image extension). Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
 - **Footnotes**—`[^ref]` syntax renders as superscript numbered links with a compact footnote section at the bottom (via `marked-footnote`). Auto-numbered, with backref arrows. Preserved through WYSIWYG editing round-trips
 - **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll

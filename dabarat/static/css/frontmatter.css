@@ -215,9 +215,9 @@
   background: rgba(var(--ctp-mantle-rgb), 0.55);
   z-index: 9000;
   display: flex;
-  align-items: flex-start;
+  align-items: center;      /* true centre, both axes — never top-anchored */
   justify-content: center;
-  padding: 6vh 0;
+  padding: 4vh 0;
   animation: fmFadeIn 0.12s ease;
   overflow: hidden;
 }
@@ -267,6 +267,14 @@
   line-height: 1;
 }
 .fm-popup-close:hover { color: var(--ctp-text); }
+.fm-popup-close:focus-visible {
+  color: var(--ctp-text);
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+.fm-popup-close:active { transform: scale(0.96); }
+.fm-popup-close { transition: color 150ms, transform 150ms ease-out; }
 .fm-popup-body {
   padding: 20px 22px;
   overflow-y: auto;
@@ -413,6 +421,75 @@
   font-size: 9px;
 }
 
+/* Key/value grid for fields without a dedicated renderer — label column
+   sized to the longest key, values wrap in prose (not break-all: these
+   are titles and sentences, not hashes) */
+.fm-popup-fields {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 20px;
+  row-gap: 12px;
+  margin: 0;
+  align-items: baseline;
+}
+/* Keys take the keyword hue, values stay in text — the same split a
+   YAML block gets from highlight.js, so the modal reads as the source
+   it describes. All hues are --hljs-* role tokens (contrast-solved per
+   theme), never raw accents. */
+.fm-popup-fields .fm-popup-key {
+  margin: 0;
+  padding-top: 2px;
+  white-space: nowrap;
+  color: var(--hljs-keyword);
+}
+.fm-popup-fields .fm-popup-val {
+  margin: 0;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ctp-text);
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+.fm-popup-fields .fm-popup-val-literal {
+  font-family: 'Victor Mono', monospace;
+  font-size: 12.5px;
+  color: var(--hljs-number);
+}
+.fm-popup-fields .fm-popup-val a {
+  color: var(--hljs-function);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(var(--ctp-blue-rgb), 0.35);
+}
+.fm-popup-fields .fm-popup-val a:hover {
+  border-bottom-color: currentColor;
+}
+/* Nested object: inset sub-grid. Indent + a dotted surface-tier guide —
+   deliberately not a coloured left stripe (the side-border tell). */
+.fm-popup-fields-nested {
+  padding: 4px 0 2px 14px;
+  border-left: 1px dotted var(--ctp-surface1);
+  row-gap: 8px;
+}
+.fm-popup-fields-nested .fm-popup-key {
+  font-weight: 500;
+  color: var(--hljs-params);
+}
+.fm-popup-fields .fm-popup-raw {
+  margin-top: 0;
+}
+.fm-popup-fields .fm-popup-val-literal,
+.fm-popup-val {
+  font-variant-numeric: tabular-nums;
+}
+/* Narrow viewports: stack label over value instead of a two-column grid */
+@media (max-width: 560px) {
+  .fm-popup-fields { grid-template-columns: 1fr; row-gap: 4px; }
+  .fm-popup-fields .fm-popup-key { white-space: normal; }
+  .fm-popup-fields dd + dt { margin-top: 10px; }
+  .fm-popup-fields-nested { padding-left: 10px; }
+}
+
 .fm-popup-raw {
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);
@@ -467,13 +544,15 @@
   color: var(--ctp-overlay0);
 }
 .pmc-label {
+  /* Carries real values (frontmatter arrays), not just badges — 11px
+     floor, and the per-theme badge role token rather than raw green */
   font-family: 'Victor Mono', monospace;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 600;
-  padding: 1px 8px;
+  padding: 2px 9px;
   border-radius: 10px;
-  background: rgba(var(--ctp-green-rgb), 0.12);
-  color: var(--ctp-green);
+  background: rgba(var(--ctp-green-rgb), 0.15);
+  color: var(--badge-green-fg);
   letter-spacing: 0.3px;
 }
 .pmc-tag {
@@ -494,9 +573,12 @@
   background: rgba(var(--ctp-green-rgb), 0.10);
   color: var(--ctp-green);
 }
-[data-theme="latte"] .pmc-label {
-  background: rgba(var(--ctp-green-rgb), 0.08);
-  color: var(--ctp-green);
+[data-theme="latte"] .pmc-label,
+[data-theme="vellum"] .pmc-label,
+[data-theme="rose-pine-dawn"] .pmc-label,
+[data-theme="tokyo-light"] .pmc-label {
+  background: rgba(var(--ctp-green-rgb), 0.15);  /* matches the audited badge .15 wash */
+  color: var(--badge-green-fg);
 }
 
 /* ══════════════════════════════════════════════════════════

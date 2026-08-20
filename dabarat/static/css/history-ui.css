@@ -115,11 +115,14 @@
   transition: background 150ms;
   outline: none;
 }
+/* Tint, not a surface swap: --ctp-surface0 is a cold grey slab on the
+   light themes' warm bases (Vellum especially). --interactive-muted-bg is
+   the house hover token for light-surface rows (see CLAUDE.md). */
 .version-entry:hover {
-  background: var(--ctp-surface0);
+  background: var(--interactive-muted-bg);
 }
 .version-entry:focus {
-  background: var(--ctp-surface0);
+  background: var(--interactive-muted-bg);
   outline: 2px solid var(--ctp-blue);
   outline-offset: -2px;
 }
@@ -234,27 +237,41 @@
 }
 
 .version-btn {
-  background: none;
-  border: 1px solid var(--ctp-surface1);
-  color: var(--ctp-overlay2);
+  /* Revealed only on row hover, over the hover tint — overlay2 at 10px
+     fell under AA there, so these read at subtext tier with a card-colored
+     fill that separates them from the tinted row */
+  background: var(--card-bg, var(--ctp-mantle));
+  border: 1px solid var(--ctp-overlay0);
+  color: var(--ctp-subtext0);
   font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  padding: 2px 8px;
+  font-size: 11px;
+  padding: 0 9px;
+  min-height: 26px;          /* sidebar control: comfortable, not touch-sized */
   border-radius: 4px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.15s;
+  transition: color 150ms, border-color 150ms, transform 150ms ease-out;
 }
-.version-btn:hover {
-  color: var(--ctp-blue);
+/* Hover/focus: accent on the border only — text stays at subtext tier,
+   because raw blue/yellow on --card-bg (white in light themes) is well
+   under AA. The border is a non-text indicator and clears 3:1. */
+.version-btn:hover,
+.version-btn:focus-visible {
+  color: var(--ctp-text);
   border-color: var(--ctp-blue);
 }
-.version-btn-restore:hover {
-  color: var(--ctp-yellow);
+.version-btn:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 1px;
+}
+.version-btn:active { transform: scale(0.96); }
+.version-btn-restore:hover,
+.version-btn-restore:focus-visible {
   border-color: var(--ctp-yellow);
 }
+.version-btn-restore:focus-visible { outline-color: var(--ctp-yellow); }
 
 /* ── Empty state ─────────────────────────────────────── */
 .version-empty {
@@ -541,8 +558,9 @@ body.home-active #history-toggle {
 .version-btn-icon {
   padding: 2px 5px;
 }
-.version-btn-icon:hover {
-  color: var(--ctp-yellow);
+.version-btn-icon:hover,
+.version-btn-icon:focus-visible {
+  color: var(--ctp-text);        /* icon glyph reads in text; accent on the border */
   border-color: var(--ctp-yellow);
 }
 

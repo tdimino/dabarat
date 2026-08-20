@@ -834,6 +834,11 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 # Prevent directory traversal
                 if not candidate.startswith(tab_dir + os.sep):
                     continue
+                # An <img> asking for a PDF/EPS figure (Pandoc convention)
+                # gets the same-stem SVG/PNG sibling. Gated on the browser's
+                # Sec-Fetch-Dest so a [link](doc.pdf) still opens the PDF.
+                if self.headers.get("Sec-Fetch-Dest") == "image":
+                    candidate = recent.browser_image_path(candidate)
                 if os.path.isfile(candidate):
                     ctype, _ = mimetypes.guess_type(candidate)
                     if not ctype:

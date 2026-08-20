@@ -294,7 +294,15 @@ function render(md) {
   }
   _tocRenderedTabId = renderTabId;
 
-  const html = marked.parse(md, { gfm: true, breaks: false });
+  /* Pandoc image attributes — `![alt](fig.pdf){width=100%}` — are not
+     CommonMark; marked would print the brace block as literal text after
+     the figure. Strip them so academic sources aimed at a LaTeX build
+     preview cleanly. (Outside fenced code only: a line-anchored regex
+     could not tell, so this accepts the vanishingly rare false positive
+     of an image literal followed by braces inside a code block.) */
+  const html = marked.parse(
+    md.replace(/(!\[[^\]]*\]\([^)\n]*\))\{[^}\n]*\}/g, '$1'),
+    { gfm: true, breaks: false });
   const content = document.getElementById('content');
   content.innerHTML = html;
 

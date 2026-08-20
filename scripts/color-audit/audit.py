@@ -197,6 +197,12 @@ USED_PAIRS = [
     ("hljs symbol",          "var(--hljs-symbol)",      [MANTLE], 4.5, "P1"),
     ("hljs params",          "var(--hljs-params)",      [MANTLE], 4.5, "P1"),
     ("hljs meta",            "var(--hljs-meta)",        [MANTLE], 4.5, "P1"),
+    # Frontmatter modal field grid (frontmatter.css .fm-popup-fields) —
+    # the same role tokens, but the modal body is --ctp-base, not mantle
+    ("fm field key",         "var(--hljs-keyword)",     [BASE], 4.5, "P1"),
+    ("fm field literal",     "var(--hljs-number)",      [BASE], 4.5, "P1"),
+    ("fm field link",        "var(--hljs-function)",    [BASE], 4.5, "P1"),
+    ("fm nested key",        "var(--hljs-params)",      [BASE], 4.5, "P1"),
 
     # Tables
     ("table header",         "var(--ctp-blue)",       [MANTLE], 4.5, "P1"),

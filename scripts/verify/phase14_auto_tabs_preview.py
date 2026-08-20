@@ -191,6 +191,36 @@ def main() -> int:
                "V5b preview-image served for closed recent file",
                f"status={status} ctype={ctype}")
 
+        # V7: a PDF figure (Pandoc convention) resolves to its SVG sibling —
+        # for the home card and for an <img> fetch in the document, while a
+        # plain link fetch still gets the PDF bytes
+        pdfdir = work / "pdfdoc"
+        pdfdir.mkdir()
+        (pdfdir / "tree.pdf").write_bytes(b"%PDF-1.4 fake\n")
+        svg = pdfdir / "tree.svg"
+        svg.write_text('<svg xmlns="http://www.w3.org/2000/svg"/>', encoding="utf-8")
+        pdfdoc = pdfdir / "paper.md"
+        pdfdoc.write_text("# Paper\n\n![tree](tree.pdf){width=100%}\n", encoding="utf-8")
+        _, res = http_json(f"{base}/api/add", {"filepath": str(pdfdoc)})
+        _, _, recent_body = http(f"{base}/api/recent")
+        entry = next((e for e in json.loads(recent_body)["entries"]
+                      if e.get("path") == str(pdfdoc)), {})
+        report(entry.get("previewImage") == str(svg),
+               "V7a recent previewImage resolves PDF → SVG sibling",
+               str(entry.get("previewImage")))
+        req = urllib.request.Request(f"{base}/tree.pdf",
+                                     headers={"Sec-Fetch-Dest": "image"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            img_ctype, img_body = r.headers.get("Content-Type", ""), r.read()
+        report(img_ctype.startswith("image/svg") and img_body == svg.read_bytes(),
+               "V7b <img> fetch of PDF serves SVG sibling", img_ctype)
+        req = urllib.request.Request(f"{base}/tree.pdf",
+                                     headers={"Sec-Fetch-Dest": "document"})
+        with urllib.request.urlopen(req, timeout=5) as r:
+            doc_ctype = r.headers.get("Content-Type", "")
+        report(doc_ctype == "application/pdf",
+               "V7c link fetch of PDF still serves the PDF", doc_ctype)
+
         # V6: allowlist still refuses paths outside any known directory
         stray = work / "stray.png"
         stray.write_bytes(png.read_bytes())

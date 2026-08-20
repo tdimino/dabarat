@@ -43,7 +43,13 @@ function renderFrontmatterIndicator(fm) {
   bar.id = 'frontmatter-indicator';
   bar.className = 'fm-indicator';
   bar.title = 'Click to view frontmatter';
+  bar.setAttribute('role', 'button');
+  bar.tabIndex = 0;
+  bar.setAttribute('aria-haspopup', 'dialog');
   bar.addEventListener('click', () => showFrontmatterPopup(fm));
+  bar.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); showFrontmatterPopup(fm); }
+  });
 
   /* Set type-keyed accent color */
   const accent = FM_ACCENT_COLORS[fm.type] || 'var(--ctp-mauve)';
@@ -100,6 +106,54 @@ function renderFrontmatterIndicator(fm) {
 }
 
 /* ── Frontmatter Popup ──────────────────────────────── */
+/* Key/value grid for frontmatter fields without a dedicated renderer.
+   Strings → prose (URLs become links); numbers/booleans/null → literal
+   tint; scalar arrays → pills; plain objects → nested grid (depth ≤ 2);
+   anything deeper or mixed → compact JSON. textContent throughout. */
+function _fmFieldGrid(obj, depth) {
+  const isScalar = v => v === null || ['string', 'number', 'boolean'].includes(typeof v);
+  const isPlainObj = v => v && typeof v === 'object' && !Array.isArray(v);
+  const grid = document.createElement('dl');
+  grid.className = 'fm-popup-fields' + (depth ? ' fm-popup-fields-nested' : '');
+  Object.keys(obj).forEach(k => {
+    const v = obj[k];
+    const dt = document.createElement('dt');
+    dt.className = 'fm-popup-key';
+    dt.textContent = k.replace(/_/g, ' ');
+    const dd = document.createElement('dd');
+    dd.className = 'fm-popup-val';
+    if (typeof v === 'string' && /^https?:\/\/\S+$/.test(v)) {
+      const a = document.createElement('a');
+      a.href = v; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = v;
+      dd.appendChild(a);
+    } else if (isScalar(v)) {
+      dd.textContent = v === null ? '—' : String(v);
+      if (typeof v !== 'string') dd.classList.add('fm-popup-val-literal');
+    } else if (Array.isArray(v) && v.every(isScalar)) {
+      const pills = document.createElement('div');
+      pills.className = 'fm-popup-pills';
+      v.forEach(item => {
+        const p = document.createElement('span');
+        p.className = 'pmc-label';
+        p.textContent = String(item);
+        pills.appendChild(p);
+      });
+      dd.appendChild(pills);
+    } else if (isPlainObj(v) && depth < 2 && Object.keys(v).length) {
+      dd.appendChild(_fmFieldGrid(v, depth + 1));
+    } else {
+      const pre = document.createElement('pre');
+      pre.className = 'fm-popup-raw';
+      pre.textContent = JSON.stringify(v, null, 2);
+      dd.appendChild(pre);
+    }
+    grid.appendChild(dt);
+    grid.appendChild(dd);
+  });
+  return grid;
+}
+
 function showFrontmatterPopup(fm) {
   if (!fm) fm = currentFrontmatter;
   if (!fm || Object.keys(fm).length === 0) return;
@@ -112,11 +166,17 @@ function showFrontmatterPopup(fm) {
   backdrop.id = 'fm-popup-backdrop';
   backdrop.className = 'fm-popup-backdrop';
 
+  /* Focus returns to whatever opened the dialog (indicator bar, palette) */
+  const opener = document.activeElement;
+  let keyHandler = null;
+
   function closeFmPopup() {
+    if (keyHandler) { document.removeEventListener('keydown', keyHandler); keyHandler = null; }
     const doRemove = () => {
       backdrop.remove();
       document.documentElement.style.overflow = '';
       document.body.style.overflow = '';
+      if (opener && opener.isConnected && typeof opener.focus === 'function') opener.focus();
     };
     if (window.Motion && !_prefersReducedMotion) {
       Motion.animate(popup, { scale: 0.98, opacity: 0 }, { duration: 0.15, easing: 'ease-in' })
@@ -136,12 +196,16 @@ function showFrontmatterPopup(fm) {
 
   const popup = document.createElement('div');
   popup.className = 'fm-popup';
+  popup.setAttribute('role', 'dialog');
+  popup.setAttribute('aria-modal', 'true');
+  popup.setAttribute('aria-labelledby', 'fm-popup-title');
 
   /* Header */
   const header = document.createElement('div');
   header.className = 'fm-popup-header';
   const title = document.createElement('span');
   title.className = 'fm-popup-title';
+  title.id = 'fm-popup-title';
   title.textContent = fm.name || fm.slug || 'Frontmatter';
   header.appendChild(title);
   if (fm.version !== undefined && fm.version !== null) {
@@ -158,6 +222,8 @@ function showFrontmatterPopup(fm) {
   }
   const closeBtn = document.createElement('button');
   closeBtn.className = 'fm-popup-close';
+  closeBtn.type = 'button';
+  closeBtn.setAttribute('aria-label', 'Close frontmatter');
   closeBtn.innerHTML = '&times;';
   closeBtn.addEventListener('click', closeFmPopup);
   header.appendChild(closeBtn);
@@ -344,15 +410,14 @@ function showFrontmatterPopup(fm) {
     'author', 'created', 'labels', 'tags', 'variables', 'depends_on', 'parent', 'semantic_styles']);
   const extraKeys = Object.keys(fm).filter(k => !shownKeys.has(k));
   if (extraKeys.length > 0) {
+    /* Scalars → label/value rows; scalar arrays → pills; nested
+       structures → a compact per-field JSON block. textContent throughout
+       so frontmatter values can never inject markup. */
     const sec = document.createElement('div');
     sec.className = 'fm-popup-section';
-    sec.innerHTML = '<div class="fm-popup-key">other</div>';
-    const pre = document.createElement('pre');
-    pre.className = 'fm-popup-raw';
     const extra = {};
     extraKeys.forEach(k => { extra[k] = fm[k]; });
-    pre.textContent = JSON.stringify(extra, null, 2);
-    sec.appendChild(pre);
+    sec.appendChild(_fmFieldGrid(extra, 0));
     body.appendChild(sec);
   }
 
@@ -375,14 +440,26 @@ function showFrontmatterPopup(fm) {
     }
   }
 
-  /* Close on Escape */
-  const escHandler = (e) => {
-    if (e.key === 'Escape') {
-      closeFmPopup();
-      document.removeEventListener('keydown', escHandler);
+  /* Initial focus lands on the close control — the first interactive
+     element — so Escape / Enter work without a click */
+  closeBtn.focus();
+
+  /* Escape closes; Tab is trapped inside the dialog. The listener is
+     removed from every close path via closeFmPopup (not only Escape). */
+  const FOCUSABLE = 'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+  keyHandler = (e) => {
+    if (e.key === 'Escape') { closeFmPopup(); return; }
+    if (e.key !== 'Tab') return;
+    const nodes = [...popup.querySelectorAll(FOCUSABLE)].filter(n => !n.disabled);
+    if (!nodes.length) { e.preventDefault(); return; }
+    const first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.shiftKey && (document.activeElement === first || !popup.contains(document.activeElement))) {
+      e.preventDefault(); last.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !popup.contains(document.activeElement))) {
+      e.preventDefault(); first.focus();
     }
   };
-  document.addEventListener('keydown', escHandler);
+  document.addEventListener('keydown', keyHandler);
 }
 
 /* ── Semantic Styles (frontmatter-driven custom coloring) ── */

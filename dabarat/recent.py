@@ -145,6 +145,31 @@ def _extract_word_count(filepath):
         return 0
 
 
+# Image formats a browser cannot decode inside <img>, and the same-stem
+# siblings to try instead. Academic markdown aimed at Pandoc/LaTeX embeds
+# figures as PDF; the SVG/PNG the PDF was generated from usually sits
+# beside it.
+_NON_BROWSER_IMAGE_EXT = {".pdf", ".eps"}
+_IMAGE_SIBLING_EXT = (".svg", ".png", ".jpg", ".jpeg", ".webp")
+
+
+def browser_image_path(path):
+    """Return a browser-renderable path for an image reference.
+
+    Non-browser formats (PDF, EPS) resolve to a same-stem SVG/PNG/JPEG/WebP
+    sibling when one exists; everything else (including a PDF with no
+    sibling) is returned unchanged.
+    """
+    stem, ext = os.path.splitext(path)
+    if ext.lower() not in _NON_BROWSER_IMAGE_EXT:
+        return path
+    for alt in _IMAGE_SIBLING_EXT:
+        candidate = stem + alt
+        if os.path.isfile(candidate):
+            return candidate
+    return path
+
+
 def _extract_preview_image(filepath):
     """Extract first image path from markdown, returning absolute path or URL."""
     try:
@@ -154,6 +179,7 @@ def _extract_preview_image(filepath):
             img_path = img_match.group(1)
             if not img_path.startswith(("http://", "https://")):
                 img_path = os.path.join(os.path.dirname(filepath), img_path)
+                img_path = browser_image_path(img_path)
                 if os.path.isfile(img_path):
                     return img_path
                 return ""
@@ -230,21 +256,9 @@ def add_entry(filepath, content=None, tags=None):
     with _lock:
         entries = load()
         entries = [e for e in entries if e["path"] != path]
-        # Detect first image in the markdown for card preview
-        preview_image = ""
-        try:
-            raw = Path(path).read_text(encoding="utf-8", errors="ignore")
-            img_match = re.search(r"!\[.*?\]\(([^)]+)\)", raw)
-            if img_match:
-                img_path = img_match.group(1)
-                if not img_path.startswith(("http://", "https://")):
-                    img_path = os.path.join(os.path.dirname(path), img_path)
-                    if os.path.isfile(img_path):
-                        preview_image = img_path
-                else:
-                    preview_image = img_match.group(1)
-        except Exception:
-            pass
+        # First image in the markdown for the card preview (PDF figures
+        # resolve to their SVG/PNG sibling — see browser_image_path)
+        preview_image = _extract_preview_image(path)
 
         # Extract frontmatter badges
         fm_badges = {}

@@ -835,40 +835,43 @@ function _setTabGhost(id, missing) {
   }
 }
 
-function _showFileMissingBanner() {
-  if (document.getElementById('file-missing-banner')) return;
+/* One factory for every .status-banner: same markup, same dismiss wiring,
+   and a polite live region so the message is announced, not just drawn.
+   Keyed by id — calling again with the same id replaces the text in
+   place. Message is set via textContent (error names come from the OS). */
+function _showStatusBanner(id, message) {
+  _hideStatusBanner(id);
   const banner = document.createElement('div');
-  banner.id = 'file-missing-banner';
+  banner.id = id;
   banner.className = 'status-banner';
-  banner.innerHTML = '<i class="ph ph-warning"></i>' +
-    '<span>File no longer exists on disk — showing last known content. Saving will recreate it.</span>' +
-    '<button data-action="dismiss">Dismiss</button>';
-  banner.addEventListener('click', (e) => {
-    if (e.target.closest('[data-action="dismiss"]')) _hideFileMissingBanner();
-  });
-  document.body.appendChild(banner);
-}
-
-function _hideFileMissingBanner() {
-  const b = document.getElementById('file-missing-banner');
-  if (b) b.remove();
-}
-
-/* A server-side action failed (endpoint missing on a stale process, 5xx,
-   unreachable). One banner at a time; new text replaces old. */
-function _showServerActionFailedBanner(message) {
-  const existing = document.getElementById('server-action-banner');
-  if (existing) existing.remove();
-  const banner = document.createElement('div');
-  banner.id = 'server-action-banner';
-  banner.className = 'status-banner';
-  banner.innerHTML = '<i class="ph ph-warning"></i><span></span>' +
-    '<button data-action="dismiss">Dismiss</button>';
+  banner.setAttribute('role', 'status');
+  banner.setAttribute('aria-live', 'polite');
+  banner.innerHTML = '<i class="ph ph-warning" aria-hidden="true"></i><span></span>' +
+    '<button type="button" data-action="dismiss">Dismiss</button>';
   banner.querySelector('span').textContent = message;
   banner.addEventListener('click', (e) => {
     if (e.target.closest('[data-action="dismiss"]')) banner.remove();
   });
   document.body.appendChild(banner);
+}
+
+function _hideStatusBanner(id) {
+  const b = document.getElementById(id);
+  if (b) b.remove();
+}
+
+function _showFileMissingBanner() {
+  if (document.getElementById('file-missing-banner')) return;
+  _showStatusBanner('file-missing-banner',
+    'File no longer exists on disk — showing last known content. Saving will recreate it.');
+}
+
+function _hideFileMissingBanner() { _hideStatusBanner('file-missing-banner'); }
+
+/* A server-side action failed (endpoint missing on a stale process, 5xx,
+   unreachable). */
+function _showServerActionFailedBanner(message) {
+  _showStatusBanner('server-action-banner', message);
 }
 
 /* File exists but cannot be read (permissions, encoding, replaced by a dir) */
@@ -877,19 +880,9 @@ function _setTabFileError(id, errName) {
   const prev = tabs[id]._fileError || null;
   tabs[id]._fileError = errName || null;
   if (id !== activeTabId || prev === tabs[id]._fileError) return;
-  const existing = document.getElementById('file-error-banner');
-  if (existing) existing.remove();
-  if (!errName) return;
-  const banner = document.createElement('div');
-  banner.id = 'file-error-banner';
-  banner.className = 'status-banner';
-  banner.innerHTML = '<i class="ph ph-warning"></i>' +
-    '<span>File cannot be read (' + errName + ') — showing last known content.</span>' +
-    '<button data-action="dismiss">Dismiss</button>';
-  banner.addEventListener('click', (e) => {
-    if (e.target.closest('[data-action="dismiss"]')) banner.remove();
-  });
-  document.body.appendChild(banner);
+  if (!errName) { _hideStatusBanner('file-error-banner'); return; }
+  _showStatusBanner('file-error-banner',
+    'File cannot be read (' + errName + ') — showing last known content.');
 }
 
 /* ── Cross-file Link Interception ─────────────────────── */

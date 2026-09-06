@@ -183,11 +183,9 @@ USED_PAIRS = [
     # Inline code sits on --code-bg: surface0 on dark themes, a rose wash
     # over base on the four light themes (2026-09-06)
     ("inline code",          "var(--code-fg)",        [BASE, "var(--code-bg)"], 4.5, "P0"),
-    ("inline code (in blockquote)", "var(--code-fg)",
-     [BASE, "var(--blockquote-bg)", "var(--code-bg)"], 4.5, "P1"),
     ("code block text",      "var(--ctp-text)",       [MANTLE], 4.5, "P0"),
-    ("blockquote",           "var(--blockquote-color)",
-     [BASE, "var(--blockquote-bg)"], 4.5, "P0"),
+    # Blockquotes lost their fill (2026-09-06): the quote sits on base
+    ("blockquote",           "var(--blockquote-color)", [BASE], 4.5, "P0"),
 
     # Only h1 (2em) and h2 (1.5em ≈ 22.5px semibold) qualify as WCAG large
     # text at the 15px default; h3/h4/h5 render at 18/15.75/14.25px (and

@@ -95,17 +95,15 @@ strong { color: var(--bold-color); font-weight: 600; }
 em { color: var(--italic-color); font-style: italic; }
 cite { font-style: italic; }
 
+/* Quotation, not callout: upright text, one neutral rule, no fill
+   (2026-09-06). Body ink on the ported themes; Ink keeps its faded-vellum
+   and Vellum its sepia via --blockquote-color. Authored emphasis inside a
+   quote stays italic — there is no blanket italic to undo any more. */
 blockquote {
   color: var(--blockquote-color);
-  border-left: 3px solid var(--ctp-mauve);
-  padding: 0.6em 1.2em;
-  margin: 1.2em 0;
-  background: var(--blockquote-bg);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
-  font-style: italic;
-}
-blockquote em, blockquote code {
-  font-style: normal;
+  border-left: 2px solid var(--ctp-surface1);
+  padding: 0.1em 0 0.1em 1.1em;
+  margin: 1.4em 0;
 }
 
 a { color: var(--ctp-blue); text-decoration: none; }

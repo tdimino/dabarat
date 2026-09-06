@@ -321,6 +321,11 @@ USED_PAIRS = [
      [BASE, "rgba(var(--ctp-pink-rgb), 0.20)"], 4.5, "P1"),
     ("tag neutral .20 (base)", "var(--badge-neutral-fg)",
      [BASE, "rgba(var(--ctp-overlay0-rgb), 0.20)"], 4.5, "P1"),
+    # Sidebar segmented control (home.css .ws-toggle): inactive segment text
+    # on the recessed track over mantle; active segment lifts onto --card-bg
+    ("ws segment (track)",   "var(--home-control)",
+     [MANTLE, "rgba(var(--ctp-surface0-rgb), 0.6)"], 4.5, "P1"),
+    ("ws segment (active)",  "var(--ctp-text)",       [CARD], 4.5, "P1"),
     # Status bar (crust) — "everything readable" extended 2026-09-06
     ("status meta (crust)",  "var(--home-meta)",      [CRUST], 4.5, "P1"),
     ("status control (crust)", "var(--home-control)", [CRUST], 4.5, "P1"),

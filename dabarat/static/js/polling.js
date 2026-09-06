@@ -1,17 +1,48 @@
 /* ── Polling ──────────────────────────────────────────── */
 const POLL_ACTIVE_MS = 500;
 const POLL_TABS_MS = 2000;
+const POLL_HIDDEN_MS = 5000;   /* background tab: a slow heartbeat, not silence */
 let lastTabsCheck = 0;
 let _editProbeFailures = 0;
+/* One poll chain only: every setTimeout(poll) goes through _schedulePoll so
+   visibilitychange can cancel the pending tick and fire immediately, and
+   _pollInFlight stops that immediate call from forking a second chain */
+let _pollTimer = null;
+let _pollInFlight = false;
+
+function _schedulePoll(ms) {
+  clearTimeout(_pollTimer);
+  _pollTimer = setTimeout(poll, ms);
+}
+
+/* Conditional content fetch: the server answers {unchanged:true} when the
+   changeKey we hold is still current, so an idle document costs bytes,
+   not the whole body, twice a second */
+function _contentUrl(id) {
+  const key = tabs[id] && tabs[id].changeKey;
+  return '/api/content?tab=' + id + (key ? '&since=' + encodeURIComponent(key) : '');
+}
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     _editProbeFailures = 0;
     _hideServerUnreachableBanner();
+    /* Catch up at once rather than waiting out the hidden interval */
+    if (!_pollInFlight) { clearTimeout(_pollTimer); poll(); }
   }
 });
 
 async function poll() {
+  if (_pollInFlight) return;
+  _pollInFlight = true;
+  try {
+    await _pollOnce();
+  } finally {
+    _pollInFlight = false;
+  }
+}
+
+async function _pollOnce() {
   /* Full polling pauses during diff/edit mode, but edit mode keeps a
      lightweight stat-only watch so external changes surface immediately */
   if (diffState.active || editState.active) {
@@ -54,7 +85,7 @@ async function poll() {
         if (changed) renderTabBar();
       } catch(e) {}
     }
-    setTimeout(poll, POLL_ACTIVE_MS);
+    _schedulePoll(document.hidden ? POLL_HIDDEN_MS : POLL_ACTIVE_MS);
     return;
   }
 
@@ -75,7 +106,14 @@ async function poll() {
         document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
       }
     } catch(e) {}
-    setTimeout(poll, POLL_ACTIVE_MS);
+    _schedulePoll(document.hidden ? POLL_HIDDEN_MS : POLL_ACTIVE_MS);
+    return;
+  }
+
+  /* Background window: keep the heartbeat (a change should still be
+     rendered by the time the user comes back) but stop hammering */
+  if (document.hidden) {
+    _schedulePoll(POLL_HIDDEN_MS);
     return;
   }
   const now = Date.now();
@@ -83,7 +121,7 @@ async function poll() {
   /* Always poll active tab content (fast) */
   if (activeTabId && tabs[activeTabId]) {
     try {
-      const res = await fetch('/api/content?tab=' + activeTabId);
+      const res = await fetch(_contentUrl(activeTabId));
       const data = await res.json();
       _editProbeFailures = 0;
       _hideServerUnreachableBanner();
@@ -91,7 +129,7 @@ async function poll() {
         _setTabGhost(activeTabId, !!data.fileMissing);
         _setTabFileError(activeTabId, data.fileError || null);
       }
-      if (!data.error && data.changeKey !== tabs[activeTabId].changeKey) {
+      if (!data.error && !data.unchanged && data.changeKey !== tabs[activeTabId].changeKey) {
         tabs[activeTabId].content = data.content;
         tabs[activeTabId].body = data.body;
         tabs[activeTabId].mtime = data.mtime;
@@ -129,11 +167,12 @@ async function poll() {
     if (inactiveIds.length > 0) {
       await Promise.all(
         inactiveIds.map(id =>
-          fetch('/api/content?tab=' + id)
+          fetch(_contentUrl(id))
             .then(r => r.json())
             .then(data => {
+              if (!tabs[id]) return;   /* closed while the fetch was in flight */
               if (!data.error) _setTabGhost(id, !!data.fileMissing);
-              if (!data.error && data.changeKey !== tabs[id].changeKey) {
+              if (!data.error && !data.unchanged && data.changeKey !== tabs[id].changeKey) {
                 tabs[id].content = data.content;
                 tabs[id].body = data.body;
                 tabs[id].mtime = data.mtime;
@@ -201,5 +240,5 @@ async function poll() {
     } catch(e) {}
   }
 
-  setTimeout(poll, POLL_ACTIVE_MS);
+  _schedulePoll(POLL_ACTIVE_MS);
 }

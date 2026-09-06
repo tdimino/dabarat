@@ -3,6 +3,7 @@
 import html
 import json
 import os
+import threading
 
 _STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
 _JS_DIR = os.path.join(_STATIC_DIR, "js")
@@ -38,10 +39,36 @@ def _concat_modules(directory, modules):
     return "\n\n".join(parts)
 
 
+_BUNDLE_PATHS = (
+    [os.path.join(_CSS_DIR, m) for m in _CSS_MODULES]
+    + [os.path.join(_JS_DIR, m) for m in _JS_MODULES]
+    + [os.path.join(_STATIC_DIR, "palette.js")]
+)
+_bundle_lock = threading.Lock()
+_bundle = {"stamp": None, "css": "", "js": "", "palette": ""}
+
+
+def _get_bundle():
+    """Concatenated CSS/JS, rebuilt only when a module's mtime moves.
+
+    31 stats per request (~50 µs) instead of 31 reads + ~550 KB of string
+    assembly; editable installs still pick up edits on the next request,
+    so there is no dev/installed split to remember."""
+    try:
+        stamp = max(os.stat(p).st_mtime_ns for p in _BUNDLE_PATHS)
+    except OSError:
+        stamp = None
+    with _bundle_lock:
+        if stamp is None or _bundle["stamp"] != stamp:
+            _bundle["css"] = _concat_modules(_CSS_DIR, _CSS_MODULES)
+            _bundle["js"] = _concat_modules(_JS_DIR, _JS_MODULES)
+            _bundle["palette"] = _read_static("palette.js")
+            _bundle["stamp"] = stamp
+        return _bundle["css"], _bundle["js"], _bundle["palette"]
+
+
 def get_html(title="dabarat", default_author="Tom", server_theme="", server_justify=False, port=3031):
-    css = _concat_modules(_CSS_DIR, _CSS_MODULES)
-    js = _concat_modules(_JS_DIR, _JS_MODULES)
-    palette_js = _read_static("palette.js")
+    css, js, palette_js = _get_bundle()
 
     return f"""<!DOCTYPE html>
 <html lang="en">

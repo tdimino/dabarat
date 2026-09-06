@@ -1,6 +1,8 @@
 """HTTP server — serves the HTML shell and API endpoints."""
 
 import datetime
+import gzip
+import hashlib
 import http.server
 import json
 import mimetypes
@@ -37,6 +39,14 @@ _workspace_lock = threading.Lock()
 
 _on_tabs_changed = None  # Optional callback wired by __main__ — fires after tab add/close/rename
 _tabs_changed_warned = False
+
+# Transport: bodies above this many bytes are gzipped when the client
+# accepts it (below it the gzip header costs more than it saves); the
+# compressed shell is memoized by ETag so a reload costs no CPU.
+_GZIP_MIN_BYTES = 1400
+_gz_cache = {}          # etag → gzip bytes (shell only)
+_gz_cache_lock = threading.Lock()
+_GZ_CACHE_MAX = 8
 
 _CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".dabarat", "config.json")
 _VALID_THEMES = {
@@ -91,6 +101,14 @@ def _notify_tabs_changed():
 
 
 class PreviewHandler(http.server.BaseHTTPRequestHandler):
+    # Keep-alive: the client polls twice a second per window, so HTTP/1.0's
+    # connection-per-request meant a new socket and thread every 250 ms.
+    # Every body path emits Content-Length (via _send_bytes) so the
+    # connection can be reused; an idle socket times out after 30 s and
+    # the handler thread exits (daemon threads, non-blocking server_close).
+    protocol_version = "HTTP/1.1"
+    timeout = 30
+
     _tabs = {}
     _tabs_lock = threading.Lock()
     _file_write_lock = threading.Lock()  # serializes save/restore/rename check-then-write
@@ -257,6 +275,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         return snap
 
     def _read_body(self):
+        """Consume the request body. Raises ValueError on a malformed
+        Content-Length (the caller answers 400 and closes the socket —
+        under keep-alive an unread body would be parsed as the next
+        request line)."""
         length = int(self.headers.get("Content-Length", 0))
         if not length:
             return {}
@@ -268,14 +290,52 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         except (json.JSONDecodeError, ValueError):
             return {}
 
-    def _json_response(self, data, status=200):
+    def _accepts_gzip(self):
+        ae = self.headers.get("Accept-Encoding", "")
+        return any(tok.strip().split(";")[0] == "gzip" for tok in ae.split(","))
+
+    def _send_bytes(self, status, ctype, data, cache_control="no-cache",
+                    etag=None):
+        """The one body-emitting path for JSON and the HTML shell.
+
+        Always sets Content-Length (keep-alive needs it) and
+        Vary: Accept-Encoding; gzips bodies above _GZIP_MIN_BYTES when the
+        client accepts it. Binary static files and preview images have
+        their own handlers — already-compressed bytes must not come
+        through here.
+        """
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Content-Type", ctype)
+        if cache_control:
+            self.send_header("Cache-Control", cache_control)
+        if etag:
+            self.send_header("ETag", etag)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Vary", "Accept-Encoding")
+        if len(data) > _GZIP_MIN_BYTES and self._accepts_gzip():
+            gz = None
+            if etag:
+                with _gz_cache_lock:
+                    gz = _gz_cache.get(etag)
+            if gz is None:
+                # mtime=0 keeps the output deterministic for a given input
+                gz = gzip.compress(data, compresslevel=5, mtime=0)
+                if etag:
+                    with _gz_cache_lock:
+                        if len(_gz_cache) >= _GZ_CACHE_MAX:
+                            _gz_cache.pop(next(iter(_gz_cache)))
+                        _gz_cache[etag] = gz
+            data = gz
+            self.send_header("Content-Encoding", "gzip")
+        self.send_header("Content-Length", str(len(data)))
         self.end_headers()
-        self.wfile.write(json.dumps(data, default=str).encode())
+        if self.command != "HEAD":
+            self.wfile.write(data)
+
+    def _json_response(self, data, status=200):
+        self._send_bytes(status, "application/json",
+                         json.dumps(data, default=str).encode())
 
     def _check_origin(self):
         """Reject POST/PUT/DELETE from foreign origins (CSRF protection)."""
@@ -300,21 +360,31 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         if parsed.path == "/api/content":
             tab_id = params.get("tab", [None])[0]
+            since = params.get("since", [None])[0]
             tab = self._refresh_tab(tab_id) if tab_id else None
             if tab:
-                # content is always the raw file (the editor round-trips it);
-                # body is the frontmatter-stripped markdown for rendering.
-                # Parse from the snapshot itself — a separate file read could
-                # return a different version than the snapshot's content
-                fm, body = frontmatter.parse_frontmatter_text(tab["content"])
-                response = {
-                    "content": tab["content"],
-                    "frontmatter": fm,
-                    "mtime": tab["mtime"],
-                    "changeKey": tab.get("change_key", "0:0"),
-                }
-                if fm:
-                    response["body"] = body
+                change_key = tab.get("change_key", "0:0")
+                # Conditional poll: the client sends the changeKey it holds;
+                # an unchanged file answers with a few bytes instead of the
+                # whole document. Ghost/error flags still ride along so the
+                # client keeps applying them. 200 + JSON rather than 304 —
+                # a 304 has no body and res.json() would count as a failure.
+                if since is not None and since == change_key:
+                    response = {"unchanged": True, "changeKey": change_key}
+                else:
+                    # content is always the raw file (the editor round-trips
+                    # it); body is the frontmatter-stripped markdown for
+                    # rendering. Parse from the snapshot itself — a separate
+                    # file read could return a different version
+                    fm, body = frontmatter.parse_frontmatter_text(tab["content"])
+                    response = {
+                        "content": tab["content"],
+                        "frontmatter": fm,
+                        "mtime": tab["mtime"],
+                        "changeKey": change_key,
+                    }
+                    if fm:
+                        response["body"] = body
                 if tab.get("file_missing"):
                     response["fileMissing"] = True
                 if tab.get("file_error"):
@@ -374,12 +444,20 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/annotations":
             tab_id = params.get("tab", [None])[0]
-            # Refresh ensures fresh content for orphan detection
-            tab = self._refresh_tab(tab_id) if tab_id else None
+            # The content poll refreshed this tab a moment ago — reuse the
+            # cached snapshot instead of a second stat+read per tick
+            tab = None
+            if tab_id:
+                with self._tabs_lock:
+                    t = self._tabs.get(tab_id)
+                    tab = dict(t) if t else None
             if tab:
                 filepath = tab["filepath"]
-                # Auto-cleanup orphaned annotations
-                annotations.cleanup_orphans(filepath, tab["content"])
+                # Auto-cleanup orphaned annotations — only against content
+                # that was actually read (change_key None = never loaded;
+                # an empty cache would orphan every annotation)
+                if tab.get("change_key"):
+                    annotations.cleanup_orphans(filepath, tab["content"])
                 data, mtime = annotations.read(filepath)
                 self._json_response({
                     "annotations": data.get("annotations", []),
@@ -873,19 +951,40 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         server_theme=cfg.get("theme", ""),
                         server_justify=bool(cfg.get("justify")),
                         port=self._server_port)
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html")
-        self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("X-Frame-Options", "DENY")
-        self.end_headers()
-        self.wfile.write(html.encode())
+        data = html.encode()
+        # Weak ETag of the rendered shell (title/theme/port are baked in,
+        # so the bundle alone is not enough). ?theme= and ?export= are read
+        # client-side, so one validator across query strings is correct.
+        # no-cache = always revalidate; a reload costs one 304 round trip.
+        etag = 'W/"%s"' % hashlib.sha1(data).hexdigest()[:16]
+        inm = self.headers.get("If-None-Match", "")
+        candidates = set()
+        for c in inm.split(","):
+            c = c.strip()
+            candidates.add(c[2:] if c.startswith("W/") else c)
+        if inm and etag[2:] in candidates:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Vary", "Accept-Encoding")
+            self.end_headers()
+            return
+        self._send_bytes(200, "text/html; charset=utf-8", data,
+                         cache_control="no-cache", etag=etag)
 
     def do_POST(self):
         global _active_workspace, _active_workspace_path
+        parsed = urlparse(self.path)
+        # Drain the body BEFORE the origin check: under keep-alive an
+        # unread JSON body would be parsed as the next request line
+        try:
+            body = self._read_body()
+        except ValueError:
+            self.close_connection = True
+            self._json_response({"error": "bad Content-Length"}, 400)
+            return
         if not self._check_origin():
             return
-        parsed = urlparse(self.path)
-        body = self._read_body()
 
         if parsed.path == "/api/add":
             filepath = os.path.expanduser(body.get("filepath", ""))
@@ -1668,7 +1767,17 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(404)
 
 
+class _Server(http.server.ThreadingHTTPServer):
+    # Keep-alive handler threads sit in rfile.readline() on an idle browser
+    # socket; ThreadingHTTPServer's default block_on_close=True would make
+    # server_close() join every one of them (up to the 30 s handler
+    # timeout) after /api/shutdown. They are daemon threads — let process
+    # exit reap them.
+    daemon_threads = True
+    block_on_close = False
+
+
 def start(port, handler_class=PreviewHandler):
     """Create and return a ThreadingHTTPServer bound to localhost:port."""
     handler_class._server_port = port
-    return http.server.ThreadingHTTPServer(("127.0.0.1", port), handler_class)
+    return _Server(("127.0.0.1", port), handler_class)

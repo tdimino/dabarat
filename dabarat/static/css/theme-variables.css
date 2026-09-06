@@ -65,6 +65,7 @@
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
   --code-fg: var(--ctp-sapphire);
+  --code-bg: var(--ctp-surface0);   /* inline-code pill; light themes replace the slab with a rose wash */
   --card-bg: var(--ctp-surface0);
   --card-bg-rgb: var(--ctp-surface0-rgb);
   --card-border: rgba(var(--ctp-surface1-rgb), 0.5);
@@ -239,7 +240,8 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
-  --code-fg: #085570;  /* darkened sapphire — 5.35:1 on Latte surface0 */
+  --code-fg: #a5303f;  /* rose-maroon ink, split-complement of the blue headings — solved on the blockquote+wash composite (2026-09-06) */
+  --code-bg: rgba(var(--ctp-maroon-rgb), 0.08);  /* blush wash, not the cold surface0 slab (2026-09-06) */
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
   --card-border: rgba(var(--ctp-surface1-rgb), 0.8);
@@ -446,7 +448,8 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
-  --code-fg: #085570;  /* darkened sapphire — 5.96:1 on RP Dawn surface0 */
+  --code-fg: #974960;  /* love-rose ink — solved on the blockquote+wash composite (2026-09-06) */
+  --code-bg: rgba(var(--ctp-maroon-rgb), 0.09);  /* love-rose wash over the warm base (2026-09-06) */
 
   /* Role-token overrides — raw accents fall below 4.5:1 on mantle.
      Dawn merges yellow/peach and red/maroon/pink, so their role
@@ -796,7 +799,8 @@
   --toc-active-bg:    rgba(var(--ctp-blue-rgb), 0.10);
   --row-even-bg:      rgba(var(--ctp-surface0-rgb), 0.5);
   --row-hover-bg:     rgba(var(--ctp-peach-rgb), 0.06);    /* rubricated row hover */
-  --code-fg:          var(--ctp-sapphire);                 /* iron-gall blue, 6.2:1 on surface0 */
+  --code-fg:          var(--ctp-red);                      /* cinnabar rubric — marked words, manuscript convention */
+  --code-bg:          rgba(var(--ctp-red-rgb), 0.08);    /* rubric wash on parchment (2026-09-06) */
 
   /* Role-token overrides — pigments fall below 4.5:1 on mantle */
   --hljs-string:      #4b6b44;
@@ -912,7 +916,8 @@
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
-  --code-fg: #004e69;  /* darkened sapphire — 5.16:1 on Tokyo Light surface0 */
+  --code-fg: #843c4a;  /* rose ink — solved on the blockquote+wash composite (2026-09-06) */
+  --code-bg: rgba(var(--ctp-maroon-rgb), 0.09);  /* rose wash — pill within ~4 L* of the page (2026-09-06) */
 
   /* Role-token overrides — raw accents fall below 4.5:1 on mantle */
   --hljs-keyword: #743db3;

@@ -448,7 +448,7 @@
 .fm-ss-rule code {
   font-size: 10px;
   padding: 1px 5px;
-  background: rgba(var(--ctp-surface0-rgb), 0.5);
+  background: var(--code-bg);
   border-radius: var(--radius-xs);
   color: var(--ctp-text);
 }

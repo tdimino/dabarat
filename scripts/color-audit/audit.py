@@ -180,7 +180,11 @@ USED_PAIRS = [
     ("link visited",         "var(--link-visited)",   [BASE], 4.5, "P0"),
     ("bold",                 "var(--bold-color)",     [BASE], 4.5, "P0"),
     ("italic",               "var(--italic-color)",   [BASE], 4.5, "P0"),
-    ("inline code",          "var(--code-fg)",        [SURFACE0], 4.5, "P0"),
+    # Inline code sits on --code-bg: surface0 on dark themes, a rose wash
+    # over base on the four light themes (2026-09-06)
+    ("inline code",          "var(--code-fg)",        [BASE, "var(--code-bg)"], 4.5, "P0"),
+    ("inline code (in blockquote)", "var(--code-fg)",
+     [BASE, "var(--blockquote-bg)", "var(--code-bg)"], 4.5, "P1"),
     ("code block text",      "var(--ctp-text)",       [MANTLE], 4.5, "P0"),
     ("blockquote",           "var(--blockquote-color)",
      [BASE, "var(--blockquote-bg)"], 4.5, "P0"),

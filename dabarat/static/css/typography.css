@@ -129,7 +129,7 @@ li { margin: 0.3em 0; }
 li::marker { color: var(--ctp-overlay1); }
 
 code {
-  background: var(--ctp-surface0);
+  background: var(--code-bg);
   color: var(--code-fg);
   padding: 0.15em 0.45em;
   border-radius: var(--radius-sm);

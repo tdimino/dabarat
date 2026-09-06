@@ -349,7 +349,8 @@ body.home-active #content {
 .home-card-preview-md code {
   font-family: var(--font-mono);
   font-size: 10px;
-  background: var(--ctp-surface1);
+  background: var(--code-bg);   /* same pill as the document, not a surface1 slab */
+  color: var(--code-fg);
   padding: 1px 5px;
   border-radius: var(--radius-xs);
 }

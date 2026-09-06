@@ -1,7 +1,7 @@
 ---
 title: "refactor: Dabarat aesthetic, color-system, and optimization upgrade pass"
 type: refactor
-status: active
+status: completed
 date: 2026-09-06
 project: /Users/tomdimino/Desktop/Programming/dabarat
 ---

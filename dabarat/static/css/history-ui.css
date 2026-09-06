@@ -9,7 +9,7 @@
   background: var(--toc-bg, var(--ctp-mantle));
   border-left: 1px solid var(--ctp-surface0);
   transform: translateX(100%);
-  transition: transform 280ms var(--ease-standard);
+  transition: transform var(--dur-slow) var(--ease-standard);
   z-index: var(--z-panel);
   display: flex;
   flex-direction: column;

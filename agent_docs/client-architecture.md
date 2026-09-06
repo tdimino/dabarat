@@ -17,7 +17,7 @@
 - `_cachedTocContent` — cached TOC innerHTML during home screen display, restored on hide
 
 ### Rendering Pipeline
-1. `poll()` runs every 500ms, fetches `/api/content` for active tab
+1. `poll()` runs every `POLL_ACTIVE_MS` (500 ms; `POLL_HIDDEN_MS` 5 s when `document.hidden`), fetches `/api/content?since=<changeKey>` for the active tab — `{unchanged:true}` short-circuits before render; `_pollInFlight` prevents a forked chain and `visibilitychange` clears `_pollTimer` for an immediate poll. `init.js` loads content for the active tab only; inactive tabs carry a `changeKey` from `/api/mtime` until `switchTab` lazy-loads them
 2. If `changeKey` changed, sets `currentFrontmatter` from response, calls `render(md)` which:
    - Skips if `md === lastRenderedMd` AND the composite `lastRenderKey` (md + frontmatter) is unchanged
    - Reconciles TOC navigation state first: a tab switch cancels the previous tab's jump and clears its TOC-owned hash; a same-tab re-render re-resolves an in-flight jump's target against the new DOM (restart if the ID survives, cancel + clear hash if not)
@@ -46,11 +46,10 @@
 - **Variable highlighting**: `applyVariableHighlights(fm)` — DOM TreeWalker finds `{{var}}` and `${var}` in text nodes, wraps in `.tpl-var-pill` spans with CSS-only tooltips from frontmatter schema; skips `<pre>`, `<code>`, already-highlighted nodes; processes in forward order using fragment replacement
 
 ### Annotation System
-- **Text anchoring**: `findTextRange(container, searchText)` finds anchor text across DOM nodes
-  - Fast path: single text node match
-  - Slow path: concatenates all text nodes, finds match position, maps back to DOM range
-  - Normalized fallback: handles `§`↔`Section`, whitespace collapse, case-insensitive matching
-- **Highlight rendering**: `applyAnnotationHighlights()` wraps anchored text in `<mark class="annotation-highlight">` with data attributes
+- **Text anchoring**: `findTextRange(container, searchText, index?)` finds anchor text across DOM nodes against a `buildTextIndex(container)` (text nodes + offsets into the concatenated string, binary-searched)
+  - Exact match: prefers an occurrence wholly inside one text node over an earlier straddling one (capped scan)
+  - Normalized fallback: `§`↔`Section`, whitespace collapse, case-insensitive — the normalized form is memoized on the index
+- **Highlight rendering**: `applyAnnotationHighlights()` builds the index **once**, resolves every anchor to a Range first, then wraps — `surroundContents` splits text nodes, but Ranges are live and track the splits, so the shared index stays valid (was one TreeWalker per annotation per render)
   - Multi-node spans: wraps partial range from start node when `surroundContents` can't span nodes
 - **Bubble rendering**: `renderAnnotations()` builds the gutter panel with author, timestamp, type icon, body, replies, resolve/delete buttons
 - **Carousel**: text selection triggers a floating 5-button carousel positioned above the selection; clicking a type opens the annotation form in the gutter

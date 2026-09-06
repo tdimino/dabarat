@@ -2,6 +2,10 @@
 
 All endpoints served by `server.py:PreviewHandler`. 50 endpoints total (21 GET, 29 POST).
 
+## Transport
+
+HTTP/1.1 with keep-alive (30 s idle timeout). Every response body carries `Content-Length` and `Vary: Accept-Encoding`; bodies over 1400 bytes are gzipped when the client sends `Accept-Encoding: gzip` (`/api/preview-image` and the static fallback are never compressed). `GET /` carries a weak `ETag` (sha1 of the rendered shell) with `Cache-Control: no-cache` — `If-None-Match` yields an empty 304. `/api/content` and `/api/browse-dir` add `Server-Timing: total;dur=<ms>`. Regression: `scripts/verify/phase15_transport.py`.
+
 ## GET Endpoints
 
 ### `GET /`
@@ -13,8 +17,8 @@ Returns JSON array of open tabs.
 [{ "id": "abc123", "filepath": "/path/to/file.md", "filename": "file.md" }]
 ```
 
-### `GET /api/content?tab={id}`
-Returns markdown content and change metadata for a tab.
+### `GET /api/content?tab={id}[&since={changeKey}]`
+Returns markdown content and change metadata for a tab. With `since` equal to the tab's current `changeKey` the reply is the short form `{ "unchanged": true, "changeKey": "…", "fileMissing"?: true, "fileError"?: "…" }` (200 + JSON, never 304 — ghost-state flags always ride along).
 ```json
 {
   "content": "---\ntitle: Doc\n---\n\n# Hello\n...",
@@ -25,7 +29,7 @@ Returns markdown content and change metadata for a tab.
   "fileMissing": true
 }
 ```
-`content` is always the raw file (the editor round-trips it). `body` (frontmatter-stripped, for rendering) is present only when frontmatter exists — both derive from the same content snapshot. `changeKey` is `st_mtime_ns:size` captured via `fstat` of the descriptor that read the content (never torn). `fileMissing: true` appears when the file was deleted/moved; `fileError: "<ExceptionName>"` when it exists but cannot be read (permissions, encoding). Cached content is still served in both cases. Client polls every 500ms.
+`content` is always the raw file (the editor round-trips it). `body` (frontmatter-stripped, for rendering) is present only when frontmatter exists — both derive from the same content snapshot. `changeKey` is `st_mtime_ns:size` captured via `fstat` of the descriptor that read the content (never torn). `fileMissing: true` appears when the file was deleted/moved; `fileError: "<ExceptionName>"` when it exists but cannot be read (permissions, encoding). Cached content is still served in both cases. `snapshotFailed: true` (once per tab) means an externally-detected change could not be written to version history. Client polls every 500 ms with `since=`, 5 s while the window is hidden.
 
 ### `GET /api/mtime?tab={id}`
 Stat-only change probe — no file read. Used by edit mode to watch for external modifications while full polling is paused.
@@ -35,13 +39,15 @@ Stat-only change probe — no file read. Used by edit mode to watch for external
 A stat failure that isn't deletion reports `statError: "<ExceptionName>"` instead of masquerading as no-change.
 
 ### `GET /api/annotations?tab={id}`
-Loads annotations from sidecar JSON. Runs orphan cleanup against current markdown content.
+Loads annotations from sidecar JSON. Orphan cleanup runs only when the document changed since the last cleanup (never a sidecar rewrite on an idle poll).
 ```json
 {
   "annotations": [{ "id": "...", "anchor": {...}, "author": {...}, "body": "...", "type": "comment", "resolved": false, "replies": [] }],
-  "mtime": 1708099200.0
+  "mtime": 1708099200.0,
+  "corruptBackup": "/path/doc.md.annotations.json.corrupt-1788721217"
 }
 ```
+`corruptBackup` appears once after an unparseable sidecar was quarantined (the next write starts a fresh file; the quarantined copy is never touched).
 
 ### `GET /api/tags?tab={id}`
 Returns tags array for a tab.
@@ -117,7 +123,7 @@ Sets or clears a label on a version.
 ```
 
 ### `GET /api/browse-dir?path={dir}`
-Returns enriched directory listing with rich metadata for workspace cards. Results are cached in-memory with thread-safe locking. Cache key includes `(dir_path, max_mtime, dir_entry_count)`.
+Returns enriched directory listing with rich metadata for workspace cards. Results are cached in-memory with thread-safe locking; the key is `(dir_path, sorted (name, mtime_ns, size) tuples)` so same-second and size-only rewrites invalidate. Each file under 1 MB is read once; version counts come from a single batched `history.version_summaries` query.
 ```json
 {
   "path": "/absolute/path",
@@ -133,6 +139,7 @@ Returns enriched directory listing with rich metadata for workspace cards. Resul
       "wordCount": 3200,
       "annotationCount": 4,
       "versionCount": 12,
+      "headVersion": "412",
       "tags": ["draft"],
       "badges": { "type": "docs", "model": "opus-4.5" },
       "summary": "Zero-dependency Python markdown previewer...",
@@ -142,7 +149,7 @@ Returns enriched directory listing with rich metadata for workspace cards. Resul
   ]
 }
 ```
-Metadata extraction (word count, summary, preview, image) gated behind 1MB file size check.
+Metadata extraction (word count, summary, preview, image) gated behind 1MB file size check. A top-level `partial: <n>` counts per-file extraction failures (unreadable file, bad frontmatter, version lookup) — the listing is still returned.
 
 ### `GET /api/workspace`
 Returns the active workspace JSON, or `null` if no workspace is active.

@@ -653,7 +653,7 @@ body.home-active #content {
   width: 32px;
   height: 1px;
   background: rgba(var(--ctp-lavender-rgb), 0.35);
-  transition: width 0.4s var(--ease-out-expo);
+  transition: width var(--dur-slower) var(--ease-out-expo);
 }
 .home-quote:hover::before { width: 64px; }
 /* Hairline divider between quote and attribution */

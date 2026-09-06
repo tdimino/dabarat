@@ -2,11 +2,12 @@
 
 **Date**: 2026-08-04
 **Method**: Computed audit over `dabarat/static/css/theme-variables.css` plus every CSS module that paints markdown or chrome. ~50 foreground/surface pairs per theme, alpha washes composited onto true surfaces before measuring. Three metrics per pair: WCAG 2.1 contrast ratio (4.5:1 body text, 3:1 large text/UI), APCA-W3 Lc (perceptual cross-check), CIE76 ΔE (accent distinguishability). Plus four structural checks: surface-ramp monotonicity, accent collisions, dark↔light chroma parity, and light-theme override completeness.
-**Tooling**: `scripts/color-audit/audit.py` (rerunnable, exits 1 on any P0) · full machine-readable inventory in `scripts/color-audit/findings.txt` · kitchen-sink fixture at `scripts/color-audit/fixture.md` · 8-theme screenshot matrix in `scripts/color-audit/shots/` (via `shots.py`).
+**Tooling**: `scripts/color-audit/audit.py` (rerunnable, exits 1 on any P0; `--json` for the machine-readable inventory — the checked-in `findings.txt` snapshot was removed in the 2026-09 pass because a stale artifact misled two audits) · kitchen-sink fixture at `scripts/color-audit/fixture.md` · 8-theme screenshot matrix in `scripts/color-audit/shots/` (via `shots.py`).
 
 **Totals at audit time**: **P0 = 8 · P1 = 111 · P2 = 82 · P3 = 14**
 **After the 2026-08-05 fix pass**: **P0 = 0 · P1 = 76 · P2 = 83 · P3 = 11 · waived = 28** — see the first addendum.
 **After the 2026-08-05 role-token pass**: **P0 = 0 · P1 = 0 · P2 = 80 · P3 = 0 · waived = 28** — every contrast pair in the matrix now passes or is deliberately waived; see the second addendum. `audit.py` exits 0.
+**After the 2026-09-06 coverage pass**: **P0 = 0 · P1 = 0 · P2 = 42 · P3 = 9 · waived = 36** — the matrix registers what actually ships (tags, status bar, instance menu, annotation icons, editor chrome, TOC, lightbox); see the third addendum.
 
 The body below is the original point-in-time audit, kept as the record; the addendum tracks what changed.
 
@@ -33,7 +34,7 @@ Pattern: **every P0 is a light theme, and five of eight are the link/hover pair.
 
 ## P1 — Secondary elements (111 findings, grouped by pattern)
 
-Full row-level inventory: `scripts/color-audit/findings.txt` lines 14–125. Grouped here because the 111 rows collapse into seven root causes.
+Full row-level inventory: `python3 scripts/color-audit/audit.py --json` (the `findings.txt` snapshot this originally cited is gone). Grouped here because the 111 rows collapse into seven root causes.
 
 ### 1. hljs syntax tokens on light themes (~40 findings)
 Code blocks sit on `--ctp-mantle`, and the custom token mapping (typography.css:217–237) feeds raw accent variables to hljs classes. On Latte and Rosé Pine Dawn nearly the whole token set fails: Latte string 2.75, number 2.45, operator/property (sky) 2.30, type (yellow) 2.15, meta (pink) 2.17; Dawn is worse across the board (string 3.14, number/type 2.05, symbol 2.60). Tokyo Light and Vellum fail on about half the set.
@@ -164,3 +165,25 @@ This pass closed everything the previous addendum left open. **P1 = 0, P3 = 0**;
 **Audit engine changes**: `parse_themes` now seeds `:root` tokens into every theme (mirroring the CSS cascade) so alias tokens resolve per-theme; USED_PAIRS tracks the role tokens plus the new `link visited` pair; `solve.py` added as the standing remediation companion. Screenshot matrix re-shot post-pass.
 
 **Review follow-up (four-agent pass over this commit)**: the diff view's stat classes (`.diff-stat-add/del/chg`, `.diff-fm-add/del` in `diff.css`) had been left on raw accents and outside the audit. They now bind to the stat role tokens — including a new `--stat-chg` (yellow family) — and three `diff stat` pairs audit them on crust, the diff bar's actual surface and the harder one in light themes. Solving for crust retightened `--stat-add`/`--stat-del` on Latte, Dawn, and Vellum, and gave Tokyo Light its first stat overrides; the shared tokens still clear mantle (timeline) with more headroom than before. Also from review: `h6 code` gets a `text-transform: none` reset so inline code in h6 headings isn't uppercased, and `parse_themes`' reliance on the `:root` block preceding all theme blocks is now documented in the source.
+
+---
+
+## Addendum 3 — coverage pass applied 2026-09-06
+
+The second addendum closed every *registered* pair. This pass registered what the app actually ships and had never measured, fixed the threshold bug that hid nine heading failures, and moved the shadow/swatch/surface tables out of hand-copied literals. Result: **P0 = 0 · P1 = 0 · P2 = 42 · P3 = 9 · waived = 36**; `audit.py` exits 0 and `scripts/verify/phase17_tokens.py` (10 checks) guards the token discipline.
+
+**Threshold correction**: h3/h4/h5 render at 1.2/1.05/0.95em — 18/15.75/14.25px at the 15px default, smaller at the 11px minimum — so only h1/h2 qualify for the 3:1 large-text bar. `USED_PAIRS` now audits h3–h5 at 4.5:1; Latte, Dawn, and Vellum each lost three hidden failures, re-solved with `solve.py`. Decision (Tom, 2026-09-06): Ink and Vellum keep h3 as the single rubric accent and set `--h4-color`/`--h5-color` to `--ctp-text` — tonal tiers differentiated by weight and small-caps, matching the h6 rationale. Those Ink+Vellum-only groups carry a `/* pair-scoped */` marker so `override_findings` doesn't read them as incomplete light-theme groups.
+
+**Newly registered surfaces** (all P1, 63 overrides solved on the worst surface):
+- **Instance menu** (the P0 that opened this pass): `.instance-menu` moved from `--ctp-surface0` (invisible box-in-box on dark, cold slab on light) to `--card-bg` + `--elevation-2`; self row is an inset blue rule, the "this window" badge consumes `--badge-blue-fg` over `rgba(blue, .15)`; header "Windows · N open" and a footer hint identify it. Rows `instance self badge`, `instance meta (card)`, `menu header (card)`.
+- **Tags** (`TAG_COLORS`, 14 entries — `archived` failed all 8 themes at 1.49–2.71, `draft` all light): text now `var(--badge-<hue>-fg)`; `--badge-pink-fg` and `--badge-red-fg` added; audited over the .20 wash on base and surface0.
+- **Status bar** on crust ("everything readable", extending 2026-08-19): `--ctp-overlay0` chrome (1.62–3.84 on every theme) → `--home-meta`/`--home-control`, re-solved on crust; card/base rows still pass.
+- **External badge** on crust + peach .18 (its real surface — the old row measured mantle + .12): re-solved on Latte, Vellum, Tokyo Light.
+- **Annotation type icons** on surface0, **editor** caret (`--stat-chg`), `.edit-fmt-btn`, `#edit-status`, `.edit-mode-badge`, **TOC** links (`--toc-link`) and label on mantle, **lightbox** and **variables-panel** badges, `.pmc-label` on base, `.hljs-variable` → `--hljs-params`.
+- `--toc-active-bg` (defined ×8, consumed ×0 since the Ink pass) is finally wired to `#toc a.active` — Ink's tungsten current-section mark is visible.
+
+**Bugs closed**: `--ctp-crust-rgb` was consumed in three box-shadows and defined nowhere (the whole declaration dropped silently for months — `undefined_var_findings` now catches this class); the theme-toggle moon/sun swap and knob were Latte-only / hard white (now all four light themes, `--card-bg`); Vellum was missing from three "surface0 too heavy" groups; `_custom` themes inherited Mocha's `--card-bg`, `--hljs-comment`, and `color-scheme: dark` (now derived from base luminance with the interactive/elevation tokens emitted); `THEME_PREVIEW` had no Ink/Vellum swatches and stale Latte/Tokyo Light blues, `SURFACE_COLORS` and the Vibrant fallbacks were hand copies — all three tables deleted in favour of computed style.
+
+**Sweeps**: 31 latte-only override groups across `diff.css`, `frontmatter.css`, `variables-panel.css`, `typography.css`, `lightbox.css`, `base-layout.css` now name all four light themes (`override_findings` = 0). 21 mantle/crust-rgb shadows → `--elevation-1/2` (Vellum's umber override kept). `::selection` per signature: Ink tungsten (`yellow .22`), Vellum iron-gall (`blue .18`). Vellum prints on `--ctp-base`, not `#fff`; the dead `[data-theme] html` print selector became `html[data-theme]`.
+
+**Audit engine**: `hardcoded_rgba_findings` scans 3/6-digit hex and named colors across every CSS module plus `palette.js`/`theme.js` (exemptions: elevation neutrals, Vellum umber, print white); `undefined_var_findings` resolves every `var(--x)` against every theme; `shots.py` captures instance-menu, palette, version-panel, and editor states per theme via CDP.

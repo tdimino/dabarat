@@ -192,6 +192,10 @@ body.home-active #justify-toggle { display: none; }
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
   #content { padding: 24px 20px 80px; }
+  /* Editor toolbar: wrap instead of overflowing off-screen, and give the
+     formatting buttons touch-sized targets */
+  .edit-toolbar { flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
+  .edit-fmt-btn { width: 40px; height: 40px; font-size: 16px; }
   #status { padding: 4px 10px; gap: 8px; }
   #status-tags { display: none; }
   #word-count { display: none; }

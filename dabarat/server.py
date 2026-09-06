@@ -1772,7 +1772,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
             port = self._server_port
             theme_param = f"&theme={theme}" if theme else ""
-            url = f"http://127.0.0.1:{port}?export=1&tab={target_id}{theme_param}"
+            # The shell renders .pdf-date from ?date= (init.js) — the export
+            # path never passed it, so the stamp was dead code until now
+            export_date = datetime.date.today().isoformat()
+            url = f"http://127.0.0.1:{port}?export=1&tab={target_id}{theme_param}&date={export_date}"
 
             try:
                 print_to_pdf(

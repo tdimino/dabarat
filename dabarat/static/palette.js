@@ -257,6 +257,7 @@ const CommandPalette = {
     container.className = 'palette-container';
 
     container.setAttribute('role', 'dialog');
+    container.setAttribute('aria-modal', 'true');
     container.setAttribute('aria-label', 'Command palette');
 
     const input = document.createElement('input');
@@ -1066,6 +1067,10 @@ const CommandPalette = {
     this.selectedIndex = 0;
     this._filter('');
     this.els.backdrop.classList.add('visible');
+    /* Focus-modal: Tab cycles inside the container, focus returns to the
+       opener on close (openDialog, utils.js) */
+    if (this._dialog) this._dialog.close({ skipFocusReturn: true });
+    this._dialog = openDialog(this.els.container, { modal: true, initialFocus: this.els.input });
     this.els.input.focus();
 
     /* First-open stagger — never re-stagger on filter keystrokes (Raycast principle) */
@@ -1086,6 +1091,7 @@ const CommandPalette = {
     this._tagMode = false;
     this._settingsMode = false;
     this.els.backdrop.classList.remove('visible');
+    if (this._dialog) { this._dialog.close(); this._dialog = null; }
   },
 
   /* ── Build Full Command List ───────────────────────── */

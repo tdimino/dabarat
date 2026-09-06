@@ -506,6 +506,10 @@ body.home-active.toc-collapsed #main-area {
 
 .tab-close {
   display: none;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
   flex-shrink: 0;   /* never collapse the close button */
   font-size: 14px;
   color: var(--ctp-overlay0);
@@ -657,6 +661,17 @@ body.home-active.toc-collapsed #main-area {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+}
+
+/* Visually hidden, still announced — headings that give screen readers
+   the structure the layout supplies visually */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
 
 /* Keyboard focus for the icon controls that had none — same ring as the

@@ -119,7 +119,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
 </script>
 </head>
 <body>
-  <nav id="toc">
+  <nav id="toc" aria-label="Document outline">
     <div id="toc-chrome">
       <button id="toc-toggle" title="Collapse (Cmd+\\)" onclick="toggleToc()"><i class="ph ph-caret-left"></i></button>
       <span class="chrome-spacer"></span>
@@ -132,7 +132,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
         <div class="chrome-group">
           <i class="ph-fill ph-moon theme-icon icon-moon"></i>
           <div class="theme-switch">
-            <input type="checkbox" id="theme-toggle" onchange="toggleTheme(event)">
+            <input type="checkbox" id="theme-toggle" aria-label="Light theme" onchange="toggleTheme(event)">
             <label class="slider" for="theme-toggle"></label>
           </div>
           <i class="ph-fill ph-sun theme-icon icon-sun"></i>
@@ -147,9 +147,9 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
   <div id="toc-resize-handle"></div>
   <button id="toc-restore" title="Show sidebar (Cmd+\\)" onclick="toggleToc()"><i class="ph ph-caret-right"></i></button>
 
-  <div id="main-area">
-    <div id="tab-bar-wrapper"><div id="tab-bar"></div></div>
-    <div id="content"></div>
+  <main id="main-area">
+    <div id="tab-bar-wrapper"><div id="tab-bar" role="tablist" aria-label="Open documents"></div></div>
+    <article id="content" aria-live="off"></article>
     <div id="diff-view" style="display:none">
       <div class="diff-header">
         <div class="diff-header-half">
@@ -198,9 +198,9 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
         <div id="tiptap-editor"></div>
       </div>
     </div>
-  </div>
+  </main>
 
-  <div id="annotations-gutter">
+  <aside id="annotations-gutter" aria-label="Annotations and variables">
     <div class="ann-gutter-header">
       <div class="gutter-tabs">
         <button class="gutter-tab active" data-tab="notes" onclick="switchGutterTab('notes')">
@@ -239,9 +239,9 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
       <div id="variables-list"></div>
       <div id="variables-preview-bar" style="display:none;"></div>
     </div>
-  </div>
+  </aside>
 
-  <div id="annotate-carousel">
+  <div id="annotate-carousel" role="toolbar" aria-label="Annotate selection">
     <button class="carousel-btn" data-type="comment"><i class="ph ph-chat-dots"></i><span>Comment</span></button>
     <button class="carousel-btn" data-type="question"><i class="ph ph-question"></i><span>Question</span></button>
     <button class="carousel-btn" data-type="suggestion"><i class="ph ph-lightbulb"></i><span>Suggest</span></button>
@@ -256,7 +256,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
   <div id="version-panel">
     <div class="version-panel-header">
       <div class="version-panel-headings">
-        <span class="version-panel-label"><i id="version-panel-icon" class="ph ph-clock-counter-clockwise"></i><span id="version-panel-title">History</span><span id="version-count-badge"></span></span>
+        <span class="version-panel-label"><i id="version-panel-icon" class="ph ph-clock-counter-clockwise"></i><span id="version-panel-title" role="heading" aria-level="2">History</span><span id="version-count-badge"></span></span>
         <span id="version-panel-filename"></span>
       </div>
       <button class="version-panel-close" onclick="closeVersionPanel()" title="Close"><i class="ph ph-x"></i></button>

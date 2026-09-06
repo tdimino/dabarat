@@ -631,7 +631,8 @@ def cmd_export_pdf(argv):
     from .pdf_export import print_to_pdf
 
     date = _flag_value(argv, "--date")
-    url = f"http://127.0.0.1:{port}?theme={theme}&export=1"
+    export_date = datetime.date.today().isoformat()
+    url = f"http://127.0.0.1:{port}?theme={theme}&export=1&date={export_date}"
     if date:
         from urllib.parse import quote
         url += f"&date={quote(date)}"

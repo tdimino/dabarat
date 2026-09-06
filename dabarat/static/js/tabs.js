@@ -84,7 +84,13 @@ function _computeVisibleWindow() {
 
 function renderTabBar() {
   const bar = document.getElementById('tab-bar');
+  /* Re-render drops the DOM — remember whether keyboard focus lived in a
+     tab so it can land on the active one afterwards */
+  const hadFocus = bar.contains(document.activeElement) &&
+    document.activeElement.getAttribute('role') === 'tab';
   bar.innerHTML = '';
+  bar.setAttribute('role', 'tablist');
+  bar.setAttribute('aria-label', 'Open documents');
 
   /* Home button */
   const homeBtn = document.createElement('button');
@@ -126,17 +132,28 @@ function renderTabBar() {
   visibleIds.forEach(id => {
     const tab = tabs[id];
     const div = document.createElement('div');
+    const isActive = id === activeTabId && !homeScreenActive;
     div.className = 'tab' + (id === activeTabId ? ' active' : '') + (tab._missing ? ' ghost' : '');
     div.dataset.tab = id;
     div.title = tab.filepath;
+    /* Real tab semantics: roving tabindex (only the active tab is in the
+       Tab order), arrows move focus, Enter/Space activate — see the
+       tablist keydown handler below */
+    div.setAttribute('role', 'tab');
+    div.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    div.setAttribute('aria-controls', 'content');
+    div.tabIndex = isActive ? 0 : -1;
 
     const nameSpan = document.createElement('span');
     nameSpan.textContent = tab.filename;
     div.appendChild(nameSpan);
 
-    const close = document.createElement('span');
+    const close = document.createElement('button');
+    close.type = 'button';
     close.className = 'tab-close';
     close.innerHTML = '&times;';
+    close.setAttribute('aria-label', 'Close ' + tab.filename);
+    close.tabIndex = -1;   /* reachable via Delete/Backspace on the focused tab */
     close.onclick = (e) => { e.stopPropagation(); closeTab(id); };
     div.appendChild(close);
 
@@ -151,6 +168,11 @@ function renderTabBar() {
     };
     bar.insertBefore(div, addBtn);
   });
+
+  if (hadFocus) {
+    const active = bar.querySelector('.tab[aria-selected="true"]') || bar.querySelector('.tab');
+    if (active) active.focus();
+  }
 
   /* Update overflow button */
   if (hiddenIds.length > 0) {
@@ -198,6 +220,33 @@ function renderTabBar() {
     _lastTabIds = new Set(visibleIds);
   }
 }
+
+/* Tablist keyboard model (WAI-ARIA tabs, manual activation): ArrowLeft/
+   Right and Home/End move focus between tabs, Enter/Space activate,
+   Delete/Backspace close. Ctrl+Tab cycling (below) is untouched. */
+(() => {
+  const bar = document.getElementById('tab-bar');
+  if (!bar) return;
+  bar.addEventListener('keydown', (e) => {
+    const tab = e.target.closest && e.target.closest('.tab[role="tab"]');
+    if (!tab) return;
+    const all = Array.from(bar.querySelectorAll('.tab[role="tab"]'));
+    const i = all.indexOf(tab);
+    let next = null;
+    if (e.key === 'ArrowRight') next = all[(i + 1) % all.length];
+    else if (e.key === 'ArrowLeft') next = all[(i - 1 + all.length) % all.length];
+    else if (e.key === 'Home') next = all[0];
+    else if (e.key === 'End') next = all[all.length - 1];
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchTab(tab.dataset.tab); return; }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); closeTab(tab.dataset.tab); return; }
+    if (next) {
+      e.preventDefault();
+      all.forEach(t => { t.tabIndex = -1; });
+      next.tabIndex = 0;
+      next.focus();
+    }
+  });
+})();
 
 /* Recalc on container resize (catches window resize, TOC collapse, gutter toggle) */
 if (typeof ResizeObserver !== 'undefined') {

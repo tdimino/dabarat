@@ -170,7 +170,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 }
 .theme-switch input:checked + .slider::before {
   transform: translateX(14px);
-  background: white;
+  background: var(--card-bg);   /* parchment on Vellum, not pure white */
 }
 .theme-icon {
   font-size: 10px;
@@ -181,8 +181,14 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 }
 .theme-icon.icon-moon { color: var(--ctp-mauve); opacity: 0.45; }
 .theme-icon.icon-sun { color: var(--ctp-yellow); opacity: 0.2; }
-[data-theme="latte"] .theme-icon.icon-moon { opacity: 0.2; }
-[data-theme="latte"] .theme-icon.icon-sun { opacity: 0.45; }
+[data-theme="latte"] .theme-icon.icon-moon,
+[data-theme="vellum"] .theme-icon.icon-moon,
+[data-theme="rose-pine-dawn"] .theme-icon.icon-moon,
+[data-theme="tokyo-light"] .theme-icon.icon-moon { opacity: 0.2; }
+[data-theme="latte"] .theme-icon.icon-sun,
+[data-theme="vellum"] .theme-icon.icon-sun,
+[data-theme="rose-pine-dawn"] .theme-icon.icon-sun,
+[data-theme="tokyo-light"] .theme-icon.icon-sun { opacity: 0.45; }
 
 /* "INDEX" label */
 #toc-label {
@@ -235,6 +241,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 #toc a.active {
   color: var(--ctp-blue);
   border-left-color: var(--ctp-blue);
+  background: var(--toc-active-bg);   /* per-theme mark (Ink: tungsten) */
   box-shadow: -4px 0 8px -3px rgba(var(--ctp-blue-rgb), 0.15);
 }
 [data-theme="latte"] #toc a.active {

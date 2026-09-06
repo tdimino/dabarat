@@ -122,10 +122,12 @@ function setTheme(name) {
 
 function toggleToc() {
   document.body.classList.toggle('toc-collapsed');
-  localStorage.setItem('dabarat-toc-collapsed',
-    document.body.classList.contains('toc-collapsed') ? '1' : '');
-  if (document.body.classList.contains('toc-collapsed')) {
-    const btn = document.getElementById('toc-restore');
+  const collapsed = document.body.classList.contains('toc-collapsed');
+  localStorage.setItem('dabarat-toc-collapsed', collapsed ? '1' : '');
+  const restore = document.getElementById('toc-restore');
+  if (restore) restore.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+  if (collapsed) {
+    const btn = restore;
     if (btn && window.Motion && !_prefersReducedMotion) {
       window.Motion.animate(btn,
         { opacity: [0, 1], scale: [0.5, 1], x: [-8, 0] },
@@ -171,16 +173,21 @@ const OPACITY_STEPS = [1.0, 0.95, 0.90, 0.85, 0.80, 0.70];
 let opacityIndex = parseInt(localStorage.getItem('dabarat-opacity-idx') || '0');
 if (opacityIndex < 0 || opacityIndex >= OPACITY_STEPS.length) opacityIndex = 0;
 
-const SURFACE_COLORS = {
-  'ink':            { base: [24,26,36],    mantle: [18,19,30],    crust: [10,11,20]    },
-  'vellum':         { base: [250,243,223], mantle: [244,236,212], crust: [235,226,196]  },
-  'mocha':          { base: [30,30,46],    mantle: [24,24,37],    crust: [17,17,27]   },
-  'latte':          { base: [239,241,245], mantle: [230,233,239], crust: [220,224,232] },
-  'rose-pine':      { base: [25,23,36],    mantle: [21,19,32],    crust: [17,15,28]   },
-  'rose-pine-dawn': { base: [255,250,243], mantle: [250,244,237], crust: [242,233,225] },
-  'tokyo-storm':    { base: [36,40,59],    mantle: [31,35,53],    crust: [27,30,46]   },
-  'tokyo-light':    { base: [230,231,237], mantle: [220,222,227], crust: [203,205,212] },
-};
+/* Palette values are read from the stylesheet, never hand-copied —
+   theme-variables.css is the single source of truth (a copied table
+   drifted for two themes before this). getComputedStyle forces a
+   synchronous recalc, so reading right after data-theme changes is safe. */
+function _themeVar(name, fallback) {
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return /^#[0-9a-f]{3}(?:[0-9a-f]{3})?$/i.test(v) ? v : fallback;
+}
+function _themeSurfaceRgb() {
+  return {
+    base:   hexToRgb(_themeVar('--ctp-base',   '#1e1e2e')),
+    mantle: hexToRgb(_themeVar('--ctp-mantle', '#181825')),
+    crust:  hexToRgb(_themeVar('--ctp-crust',  '#11111b')),
+  };
+}
 
 /* ── Background Image ────────────────────────────────── */
 let bgImageData = localStorage.getItem('dabarat-bg-image') || '';
@@ -238,7 +245,7 @@ const BG_IMAGE_OPACITY = [0.12, 0.15, 0.20, 0.25, 0.30, 0.40];
 function applyOpacity() {
   const alpha = OPACITY_STEPS[opacityIndex];
   const theme = currentTheme || 'mocha';
-  const colors = SURFACE_COLORS[theme] || SURFACE_COLORS['mocha'];
+  const colors = _themeSurfaceRgb();
   const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
   const isExportLight = document.documentElement.dataset.export === '1'
     && THEME_META[theme] && THEME_META[theme].mode === 'light';
@@ -282,6 +289,10 @@ document.addEventListener('keydown', (e) => {
 (function _watchTocBreakpoint() {
   const mq = window.matchMedia('(max-width: 900px)');
   let wasNarrow = mq.matches;
+  /* The stylesheet only pushes #toc off-canvas via body.toc-collapsed now
+     (so it can reopen as an overlay), so a narrow first paint must start
+     collapsed — the listener below only fires on change */
+  if (wasNarrow) document.body.classList.add('toc-collapsed');
   mq.addEventListener('change', (e) => {
     if (e.matches && !wasNarrow) {
       if (!document.body.classList.contains('toc-collapsed')) {
@@ -525,6 +536,14 @@ function _buildThemeVars(base, text, subtext0, subtext1, accents, isDark) {
     '--ctp-sky': teal, '--ctp-sapphire': blue, '--ctp-lavender': mauve,
     '--toc-active-bg': isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
     '--row-hover-bg': isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+    /* Surface-role tokens the stylesheet consumes on cards, menus and
+       hover states — without these a generated light theme inherited
+       Mocha's surface0 card and surface1 hover from :root */
+    '--card-bg': isDark ? surface0 : lighten(base, 0.03),
+    '--card-border': `rgba(${hexToRgb(surface1).join(',')}, ${isDark ? 0.5 : 0.8})`,
+    '--interactive-hover-bg': isDark ? surface1 : crust,
+    '--interactive-muted-bg': isDark
+      ? `rgba(${hexToRgb(surface1).join(',')}, 0.85)` : 'rgba(0,0,0,0.06)',
   };
   return _addRgbCompanions(vars);
 }
@@ -586,13 +605,15 @@ function _extractImagePalette(file) {
 }
 
 function _mapSwatchesToTheme(sw) {
+  /* Missing swatches fall back to the active theme's palette, not a
+     frozen copy of Mocha */
   const get = (name) => sw[name] ? sw[name].getHex() : null;
-  const darkVib = get('DarkVibrant') || '#1e1e2e';
-  const lightVib = get('LightVibrant') || '#cdd6f4';
-  const vibrant = get('Vibrant') || '#89b4fa';
-  const muted = get('Muted') || '#cba6f7';
-  const darkMuted = get('DarkMuted') || '#313244';
-  const lightMuted = get('LightMuted') || '#bac2de';
+  const darkVib = get('DarkVibrant') || _themeVar('--ctp-base', '#1e1e2e');
+  const lightVib = get('LightVibrant') || _themeVar('--ctp-text', '#cdd6f4');
+  const vibrant = get('Vibrant') || _themeVar('--ctp-blue', '#89b4fa');
+  const muted = get('Muted') || _themeVar('--ctp-mauve', '#cba6f7');
+  const darkMuted = get('DarkMuted') || _themeVar('--ctp-surface0', '#313244');
+  const lightMuted = get('LightMuted') || _themeVar('--ctp-subtext1', '#bac2de');
 
   const avgLum = (luminance(...hexToRgb(vibrant)) + luminance(...hexToRgb(muted))) / 2;
   const isDark = avgLum < 0.35;
@@ -673,19 +694,20 @@ function applyCustomTheme(variables, themeId) {
     .filter(([k]) => /^--[\w-]+$/.test(k))
     .map(([k, v]) => `  ${k}: ${String(v).replace(/[{}<>]/g, '')};`)
     .join('\n');
-  style.textContent = `[data-theme="_custom"] {\n${rules}\n}`;
+  /* color-scheme drives native scrollbars/form controls; :root says dark,
+     so a generated light theme needs its own declaration */
+  let scheme = 'dark';
+  try {
+    if (variables['--ctp-base'] && luminance(...hexToRgb(variables['--ctp-base'])) > 0.5) scheme = 'light';
+  } catch (e) { /* malformed base — keep dark */ }
+  style.textContent = `[data-theme="_custom"] {\n${rules}\n  color-scheme: ${scheme};\n}`;
 
   currentTheme = '_custom';
   document.documentElement.setAttribute('data-theme', '_custom');
   localStorage.setItem('dabarat-theme', '_custom');
   if (themeId) localStorage.setItem(CUSTOM_ACTIVE_KEY, themeId);
 
-  /* Update SURFACE_COLORS for opacity calculations */
-  const base = variables['--ctp-base'] ? hexToRgb(variables['--ctp-base']) : [30,30,46];
-  const mantle = variables['--ctp-mantle'] ? hexToRgb(variables['--ctp-mantle']) : [24,24,37];
-  const crust = variables['--ctp-crust'] ? hexToRgb(variables['--ctp-crust']) : [17,17,27];
-  SURFACE_COLORS['_custom'] = { base, mantle, crust };
-  applyOpacity();
+  applyOpacity();   /* reads the freshly injected surfaces from computed style */
 }
 
 /* Restore custom theme on startup */

@@ -54,9 +54,12 @@
   --ctp-mantle: #181825;
   --ctp-crust: #11111b;
 
-  --bold-color: #e6edf3;
-  --italic-color: #a5d6ff;
-  --blockquote-color: #d4a5ff;
+  /* Prose role defaults alias accents so generated (_custom) themes
+     follow their own palette; Mocha's concrete values live in the
+     standalone [data-theme="mocha"] block below. */
+  --bold-color: var(--ctp-text);
+  --italic-color: var(--ctp-sky);
+  --blockquote-color: var(--ctp-mauve);
   --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.6);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
@@ -75,7 +78,7 @@
   --hljs-keyword: var(--ctp-mauve);
   --hljs-string: var(--ctp-green);
   --hljs-number: var(--ctp-peach);
-  --hljs-comment: #8589a0;  /* lifted overlay0 — 5.11:1 on mantle */
+  --hljs-comment: var(--ctp-overlay1);
   --hljs-function: var(--ctp-blue);
   --hljs-built-in: var(--ctp-red);
   --hljs-type: var(--ctp-yellow);
@@ -136,6 +139,10 @@
    values in :root would leak into every theme as defaults. The FOUC
    script always sets data-theme, so this selector always matches. */
 [data-theme="mocha"] {
+  --bold-color: #e6edf3;
+  --italic-color: #a5d6ff;
+  --blockquote-color: #d4a5ff;
+  --hljs-comment: #8589a0;  /* lifted overlay0 — 5.11:1 on mantle */
   --home-meta: #a1a5bd;
   --home-control: #a0a5be;
   --badge-blue-fg: #a9c7ff;

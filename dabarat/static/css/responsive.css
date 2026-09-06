@@ -162,7 +162,14 @@ body.home-active #justify-toggle { display: none; }
    900px — Auto-collapse TOC, reclaim full width
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  #toc { transform: translateX(calc(-1 * var(--toc-width, 260px))); }
+  /* Off-canvas only while collapsed — the 900px matchMedia listener in
+     theme.js adds the class on entry, and Cmd+\ / #toc-restore must be
+     able to slide the sidebar back in as an overlay */
+  body.toc-collapsed #toc { transform: translateX(calc(-1 * var(--toc-width, 260px))); }
+  body:not(.toc-collapsed) #toc {
+    transform: none;
+    box-shadow: var(--elevation-2);
+  }
   #toc-resize-handle { display: none; }
   #toc-restore {
     display: flex;

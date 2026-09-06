@@ -73,6 +73,7 @@
 
 /* Light themes: surface0 is too heavy — use mantle with subtle shadow */
 [data-theme="latte"] .ann-bubble,
+[data-theme="vellum"] .ann-bubble,
 [data-theme="rose-pine-dawn"] .ann-bubble,
 [data-theme="tokyo-light"] .ann-bubble {
   background: var(--ctp-mantle);

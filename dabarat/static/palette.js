@@ -21,14 +21,23 @@ const CommandPalette = {
   /* ── Tanit SVG (simplified Sign of Tanit) ───────────── */
   TANIT_SVG: '<svg viewBox="0 0 24 26" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="3.5"/><line x1="3" y1="11" x2="21" y2="11"/><path d="M7 11 L12 24 L17 11" fill="none"/></svg>',
 
-  /* ── Theme Preview Colors (5 per preset) ─────────── */
-  THEME_PREVIEW: {
-    'mocha':          ['#1e1e2e', '#cdd6f4', '#89b4fa', '#cba6f7', '#f38ba8'],
-    'latte':          ['#eff1f5', '#4c4f69', '#1e66f5', '#8839ef', '#d20f39'],
-    'rose-pine':      ['#191724', '#e0def4', '#31748f', '#c4a7e7', '#eb6f92'],
-    'rose-pine-dawn': ['#faf4ed', '#575279', '#56949f', '#907aa9', '#b4637a'],
-    'tokyo-storm':    ['#24283b', '#c0caf5', '#7aa2f7', '#bb9af7', '#f7768e'],
-    'tokyo-light':    ['#e6e7ed', '#343b58', '#2959aa', '#7847bd', '#8c4351'],
+  /* ── Theme Preview Swatches (5 per preset) ───────── */
+  /* Read from the stylesheet through a probe element carrying the
+     theme's data-theme attribute — the old hand-copied table had no
+     Ink/Vellum rows and stale Latte/Tokyo Light accents */
+  _swatchCache: {},
+  themeSwatches(theme) {
+    if (this._swatchCache[theme]) return this._swatchCache[theme];
+    const probe = document.createElement('div');
+    probe.setAttribute('data-theme', theme);
+    probe.style.display = 'none';
+    document.body.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    const colors = ['--ctp-base', '--ctp-text', '--ctp-blue', '--ctp-mauve', '--ctp-red']
+      .map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+    probe.remove();
+    if (colors.length === 5) this._swatchCache[theme] = colors;
+    return colors;
   },
 
   /* ── Tag Color Map ──────────────────────────────────── */
@@ -796,7 +805,7 @@ const CommandPalette = {
 
       const dots = document.createElement('div');
       dots.className = 'tp-dots';
-      (this.THEME_PREVIEW[theme] || []).forEach(color => {
+      this.themeSwatches(theme).forEach(color => {
         const dot = document.createElement('span');
         dot.style.background = color;
         dots.appendChild(dot);

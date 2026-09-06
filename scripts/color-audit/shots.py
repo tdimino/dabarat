@@ -104,10 +104,13 @@ def _cdp_wait(debug_port, expression, timeout=20.0):
     raise RuntimeError(f"timed out waiting for {expression}: {last}")
 
 
-# Seeded sibling so the dropdown renders both the self row (rubric rule,
-# THIS WINDOW badge) and a sibling row with Focus/Shut Down. fetchInstances
-# is stubbed so the real /api/instances scan can't overwrite the seed.
-_INSTANCE_MENU_JS = """
+# Interactive states captured through CDP after the static matrix. Each
+# entry: (name, setup JS returning a clip box or null for the viewport).
+# The instance menu seeds a sibling so both the self row (rubric rule,
+# THIS WINDOW badge) and a Focus/Shut Down row render; fetchInstances is
+# stubbed so the real /api/instances scan can't overwrite the seed.
+_CDP_STATES = [
+    ("instances", """
 (async () => {
   _instancesCache = [
     {port: (window.DABARAT_CONFIG || {}).port, isSelf: true,
@@ -123,12 +126,38 @@ _INSTANCE_MENU_JS = """
   const r = document.querySelector('.instance-menu').getBoundingClientRect();
   return {x: r.left, y: r.top, width: r.width, height: r.height};
 })()
-"""
+"""),
+    ("palette", """
+(async () => {
+  CommandPalette.open();
+  await new Promise(r => setTimeout(r, 400));
+  const r = document.querySelector('.palette-container').getBoundingClientRect();
+  return {x: r.left, y: r.top, width: r.width, height: r.height};
+})()
+"""),
+    ("versions", """
+(async () => {
+  openVersionPanel();
+  await new Promise(r => setTimeout(r, 900));
+  return null;
+})()
+"""),
+    ("editor", """
+(async () => {
+  enterEditMode();
+  const t0 = Date.now();
+  while (!document.querySelector('.ProseMirror, #edit-textarea') && Date.now() - t0 < 8000)
+    await new Promise(r => setTimeout(r, 100));
+  await new Promise(r => setTimeout(r, 600));
+  return null;
+})()
+"""),
+]
 
 
-def _shoot_instance_menu(chrome, base, work):
-    """instances-<theme>.png — the status-bar Windows dropdown, opened via
-    CDP with a seeded sibling, clipped to the menu plus a margin."""
+def _shoot_cdp_states(chrome, base, work):
+    """<state>-<theme>.png for every _CDP_STATES entry: a fresh navigation
+    per theme, the state's setup JS, then a clipped (or viewport) capture."""
     import base64
     debug_port = pdf_export._find_free_port()
     proc = subprocess.Popen(
@@ -141,36 +170,41 @@ def _shoot_instance_menu(chrome, base, work):
     failures = 0
     try:
         _cdp_wait(debug_port, "document.readyState === 'complete'")
-        for theme in THEMES:
-            fname = f"instances-{theme}.png"
-            out = SHOTS / fname
-            ok = False
-            try:
-                pdf_export._cdp_request(
-                    debug_port, "Page.navigate",
-                    {"url": f"{base}/?theme={theme}&export=1"})
-                _cdp_wait(debug_port,
-                          "document.readyState === 'complete' && "
-                          "typeof showInstanceMenu === 'function' && "
-                          "!!document.getElementById('instance-indicator')")
-                time.sleep(0.6)   # fonts + first render
-                box = _cdp_eval(debug_port, _INSTANCE_MENU_JS)
-                margin = 24
-                clip = {"x": max(0, box["x"] - margin),
-                        "y": max(0, box["y"] - margin),
-                        "width": box["width"] + 2 * margin,
-                        "height": box["height"] + 2 * margin, "scale": 2}
-                shot = pdf_export._cdp_request(
-                    debug_port, "Page.captureScreenshot",
-                    {"format": "png", "clip": clip})
-                out.write_bytes(base64.b64decode(shot["data"]))
-                ok = out.stat().st_size > 5000
-            except Exception as exc:
-                print(f"  {fname:<26} FAILED {exc}")
-            if not ok:
-                failures += 1
-            else:
-                print(f"  {fname:<26} ok")
+        for state, setup_js in _CDP_STATES:
+            for theme in THEMES:
+                fname = f"{state}-{theme}.png"
+                out = SHOTS / fname
+                ok = False
+                try:
+                    pdf_export._cdp_request(
+                        debug_port, "Page.navigate",
+                        {"url": f"{base}/?theme={theme}&export=1"})
+                    _cdp_wait(debug_port,
+                              "document.readyState === 'complete' && "
+                              "typeof showInstanceMenu === 'function' && "
+                              "typeof tabs !== 'undefined' && "
+                              "Object.keys(tabs).length > 0 && "
+                              "!!document.querySelector('#content h1')")
+                    time.sleep(0.6)   # fonts + first render
+                    box = _cdp_eval(debug_port, setup_js)
+                    params = {"format": "png"}
+                    if box:
+                        margin = 24
+                        params["clip"] = {
+                            "x": max(0, box["x"] - margin),
+                            "y": max(0, box["y"] - margin),
+                            "width": box["width"] + 2 * margin,
+                            "height": box["height"] + 2 * margin, "scale": 2}
+                    shot = pdf_export._cdp_request(
+                        debug_port, "Page.captureScreenshot", params)
+                    out.write_bytes(base64.b64decode(shot["data"]))
+                    ok = out.stat().st_size > 5000
+                except Exception as exc:
+                    print(f"  {fname:<26} FAILED {exc}")
+                if not ok:
+                    failures += 1
+                else:
+                    print(f"  {fname:<26} ok")
     finally:
         proc.terminate()
         try:
@@ -284,7 +318,7 @@ def main():
                     failures += 1
                 print(f"  {fname:<26} "
                       f"{'ok' if ok else f'FAILED rc={result.returncode}'}")
-            failures += _shoot_instance_menu(chrome, base, work)
+            failures += _shoot_cdp_states(chrome, base, work)
         finally:
             server.terminate()
             try:

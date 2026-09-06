@@ -9,7 +9,10 @@
   bottom: 0; left: 0; right: 0;
   background: var(--ctp-crust);
   border-top: 1px solid var(--ctp-surface0);
-  color: var(--ctp-overlay0);
+  /* "Everything readable" (2026-09-06, extends the 2026-08-19 home decision):
+     informational text sits on --home-meta, controls on --home-control,
+     both solved on --ctp-crust in theme-variables.css */
+  color: var(--home-meta);
   font-family: 'Victor Mono', monospace;
   font-size: 11px;
   padding: 4px 16px;
@@ -20,7 +23,7 @@
   z-index: 30;
 }
 #status .filepath {
-  color: var(--ctp-overlay1);
+  color: var(--home-meta);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -44,7 +47,7 @@
   animation: pulse 2s infinite;
 }
 #word-count {
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   font-size: 10px;
   flex-shrink: 0;
   white-space: nowrap;
@@ -90,7 +93,7 @@
 #status-copy-path {
   background: none;
   border: none;
-  color: var(--ctp-overlay0);
+  color: var(--home-control);
   cursor: pointer;
   padding: 0 4px;
   font-size: 12px;
@@ -107,7 +110,7 @@
 #status-export-pdf {
   background: none;
   border: none;
-  color: var(--ctp-overlay0);
+  color: var(--home-control);
   cursor: pointer;
   padding: 0 4px;
   font-size: 13px;
@@ -128,7 +131,11 @@
    Print — WYSIWYG theme-preserving
    ══════════════════════════════════════════════════════════ */
 
-/* ── Page layout (top-level for reliable parsing) ── */
+/* ── Page layout (top-level for reliable parsing) ──
+   Browser print keeps a 0.5in vertical page margin so page 2+ don't run
+   text to the sheet edge. The CDP export path (pdf_export.py) overrides
+   this with @page { margin: 0 } and spaces via #content padding — the two
+   contracts differ on purpose. */
 @page {
   size: letter;
   margin: 0.5in 0;
@@ -175,7 +182,9 @@
   pre, table, blockquote, figure, img { break-inside: avoid; }
   li { break-inside: avoid; }
   tr { break-inside: avoid; }
-  thead { display: table-header-group; }
+  /* sticky would pin the header to the first page's top edge instead of
+     letting table-header-group repeat it per page */
+  thead { display: table-header-group; position: static; }
   p, li { orphans: 3; widows: 3; }
 
   /* ── Links: clickable in PDF, no URL display ── */
@@ -197,16 +206,23 @@
     width: 100%;
   }
 
-  /* ── Light themes: white background for print ── */
-  [data-theme="latte"] html,
-  [data-theme="latte"] body,
-  [data-theme="vellum"] html,
-  [data-theme="vellum"] body,
-  [data-theme="rose-pine-dawn"] html,
-  [data-theme="rose-pine-dawn"] body,
-  [data-theme="tokyo-light"] html,
-  [data-theme="tokyo-light"] body {
+  /* ── Light themes: white background for print ──
+     data-theme lives on <html> itself, so the selector must be
+     html[data-theme] — a descendant form never matched (dead until
+     2026-09-06). Vellum prints on its own parchment base: its card note
+     says "NOT pure white" and the print contract agrees (pair-scoped). */
+  html[data-theme="latte"],
+  html[data-theme="latte"] body,
+  html[data-theme="rose-pine-dawn"],
+  html[data-theme="rose-pine-dawn"] body,
+  html[data-theme="tokyo-light"],
+  html[data-theme="tokyo-light"] body {
     background: #fff !important;
+  }
+  /* pair-scoped: Vellum parchment */
+  html[data-theme="vellum"],
+  html[data-theme="vellum"] body {
+    background: var(--ctp-base) !important;
   }
 
   /* ── No animations, no hover effects ── */

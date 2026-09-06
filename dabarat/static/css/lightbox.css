@@ -20,7 +20,10 @@
   opacity: 1;
   pointer-events: auto;
 }
-[data-theme="latte"] .lightbox {
+[data-theme="latte"] .lightbox,
+[data-theme="vellum"] .lightbox,
+[data-theme="rose-pine-dawn"] .lightbox,
+[data-theme="tokyo-light"] .lightbox {
   background: rgba(var(--ctp-mantle-rgb), 0.75);
 }
 
@@ -118,6 +121,6 @@
 .lightbox-close:focus-visible,
 .lightbox-prev:focus-visible,
 .lightbox-next:focus-visible {
-  outline: 2px solid var(--ctp-lavender);
+  outline: 2px solid var(--ctp-blue);   /* one focus hue app-wide */
   outline-offset: 2px;
 }

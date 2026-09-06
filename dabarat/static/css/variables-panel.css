@@ -96,11 +96,11 @@
   border-radius: 6px;
   letter-spacing: 0.3px;
 }
-.var-card-badge.type-string  { background: rgba(var(--ctp-blue-rgb),0.15); color: var(--ctp-blue); }
-.var-card-badge.type-integer { background: rgba(var(--ctp-peach-rgb),0.15); color: var(--ctp-peach); }
-.var-card-badge.type-boolean { background: rgba(var(--ctp-green-rgb),0.15); color: var(--ctp-green); }
-.var-card-badge.type-unknown { background: rgba(var(--ctp-overlay0-rgb),0.15); color: var(--ctp-overlay0); }
-.var-card-badge.required { background: rgba(var(--ctp-red-rgb),0.12); color: var(--ctp-red); }
+.var-card-badge.type-string  { background: rgba(var(--ctp-blue-rgb),0.15); color: var(--badge-blue-fg); }
+.var-card-badge.type-integer { background: rgba(var(--ctp-peach-rgb),0.15); color: var(--badge-peach-fg); }
+.var-card-badge.type-boolean { background: rgba(var(--ctp-green-rgb),0.15); color: var(--badge-green-fg); }
+.var-card-badge.type-unknown { background: rgba(var(--ctp-overlay0-rgb),0.15); color: var(--badge-neutral-fg); }
+.var-card-badge.required { background: rgba(var(--ctp-red-rgb),0.12); color: var(--badge-red-fg); }
 .var-card-badge.undeclared {
   background: rgba(var(--ctp-red-rgb),0.12);
   color: var(--ctp-red);
@@ -300,11 +300,35 @@
 }
 
 /* ── Latte Overrides ─────────────────────────────────── */
-[data-theme="latte"] .var-card { border-left-color: rgba(var(--ctp-mauve-rgb), 0.3); }
-[data-theme="latte"] .var-card-badge.type-string { background: rgba(var(--ctp-blue-rgb),0.1); }
-[data-theme="latte"] .var-card-badge.type-integer { background: rgba(var(--ctp-peach-rgb),0.1); }
-[data-theme="latte"] .var-card-badge.type-boolean { background: rgba(var(--ctp-green-rgb),0.1); }
-[data-theme="latte"] .var-card-badge.required { background: rgba(var(--ctp-red-rgb),0.08); }
-[data-theme="latte"] .var-card-badge.type-unknown { background: rgba(var(--ctp-overlay0-rgb),0.12); }
-[data-theme="latte"] .var-card-badge.undeclared { background: rgba(var(--ctp-red-rgb),0.08); border: 1px dashed rgba(var(--ctp-red-rgb),0.3); }
-[data-theme="latte"] .var-fill-toggle.active { background: rgba(var(--ctp-blue-rgb),0.08); }
+[data-theme="latte"] .var-card,
+[data-theme="vellum"] .var-card,
+[data-theme="rose-pine-dawn"] .var-card,
+[data-theme="tokyo-light"] .var-card { border-left-color: rgba(var(--ctp-mauve-rgb), 0.3); }
+[data-theme="latte"] .var-card-badge.type-string,
+[data-theme="vellum"] .var-card-badge.type-string,
+[data-theme="rose-pine-dawn"] .var-card-badge.type-string,
+[data-theme="tokyo-light"] .var-card-badge.type-string { background: rgba(var(--ctp-blue-rgb),0.1); }
+[data-theme="latte"] .var-card-badge.type-integer,
+[data-theme="vellum"] .var-card-badge.type-integer,
+[data-theme="rose-pine-dawn"] .var-card-badge.type-integer,
+[data-theme="tokyo-light"] .var-card-badge.type-integer { background: rgba(var(--ctp-peach-rgb),0.1); }
+[data-theme="latte"] .var-card-badge.type-boolean,
+[data-theme="vellum"] .var-card-badge.type-boolean,
+[data-theme="rose-pine-dawn"] .var-card-badge.type-boolean,
+[data-theme="tokyo-light"] .var-card-badge.type-boolean { background: rgba(var(--ctp-green-rgb),0.1); }
+[data-theme="latte"] .var-card-badge.required,
+[data-theme="vellum"] .var-card-badge.required,
+[data-theme="rose-pine-dawn"] .var-card-badge.required,
+[data-theme="tokyo-light"] .var-card-badge.required { background: rgba(var(--ctp-red-rgb),0.08); }
+[data-theme="latte"] .var-card-badge.type-unknown,
+[data-theme="vellum"] .var-card-badge.type-unknown,
+[data-theme="rose-pine-dawn"] .var-card-badge.type-unknown,
+[data-theme="tokyo-light"] .var-card-badge.type-unknown { background: rgba(var(--ctp-overlay0-rgb),0.12); }
+[data-theme="latte"] .var-card-badge.undeclared,
+[data-theme="vellum"] .var-card-badge.undeclared,
+[data-theme="rose-pine-dawn"] .var-card-badge.undeclared,
+[data-theme="tokyo-light"] .var-card-badge.undeclared { background: rgba(var(--ctp-red-rgb),0.08); border: 1px dashed rgba(var(--ctp-red-rgb),0.3); }
+[data-theme="latte"] .var-fill-toggle.active,
+[data-theme="vellum"] .var-fill-toggle.active,
+[data-theme="rose-pine-dawn"] .var-fill-toggle.active,
+[data-theme="tokyo-light"] .var-fill-toggle.active { background: rgba(var(--ctp-blue-rgb),0.08); }

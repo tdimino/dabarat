@@ -249,8 +249,11 @@ function applyOpacity() {
   const rgba = (rgb, a) => `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${a})`;
   const isExportLight = document.documentElement.dataset.export === '1'
     && THEME_META[theme] && THEME_META[theme].mode === 'light';
+  /* Print/export: light themes flatten to white, except Vellum, whose
+     parchment base is the point ("NOT pure white") */
+  const exportBg = theme === 'vellum' ? rgba(colors.base, 1) : '#fff';   /* print contract */
   document.documentElement.style.setProperty('--body-bg',
-    isExportLight ? '#fff' : rgba(colors.base, alpha));
+    isExportLight ? exportBg : rgba(colors.base, alpha));
   document.documentElement.style.setProperty('--toc-bg', rgba(colors.mantle, alpha));
   document.documentElement.style.setProperty('--crust-bg', rgba(colors.crust, alpha));
 

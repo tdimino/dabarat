@@ -117,6 +117,10 @@
   --badge-flamingo-fg: var(--ctp-flamingo);
   --badge-lavender-fg: var(--ctp-lavender);
   --badge-neutral-fg: var(--ctp-overlay1);
+  --badge-pink-fg: var(--ctp-pink);      /* tag pills (personal, prompt:cognitive) */
+  --badge-red-fg: var(--ctp-red);        /* variables panel "required" badge */
+  /* Sidebar link text on --ctp-mantle (overlay2 fails 4.5:1 on light themes) */
+  --toc-link: var(--ctp-overlay2);
 
   /* Elevation tokens — shadows use black with theme-tuned alpha.
      Intentional exception to palette-only convention: shadows are
@@ -150,6 +154,7 @@
   --badge-peach-fg: #ffb98e;
   --badge-lavender-fg: #bfc7fe;
   --badge-neutral-fg: #b4b9d3;
+  --badge-red-fg: #fe9bb6;  /* var badge required, solved 2026-09-06 */
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -236,27 +241,27 @@
   --hljs-meta: #a33289;
   --tpl-pill-mustache: #6c1dd5;
   --tpl-pill-dollar: #006368;
-  --h3-color: #2d9019;
-  --h4-color: #b36d00;
-  --h5-color: #dd4c00;
+  --h3-color: #007700;  /* h3, solved 2026-09-06 */
+  --h4-color: #955700;  /* h4, solved 2026-09-06 */
+  --h5-color: #ba3600;  /* h5, solved 2026-09-06 */
   --link-visited: #8233e9;
   --stat-add: #006b00;
   --stat-del: #b9002e;
   --stat-chg: #854d00;
-  --external-badge-fg: #a33100;
-  --home-meta: #616574;
-  --home-control: #616475;
+  --external-badge-fg: #972600;  /* instance count badge, solved 2026-09-06 */
+  --home-meta: #565a69;  /* status meta (crust), solved 2026-09-06 */
+  --home-control: #575a6b;  /* status control (crust), solved 2026-09-06 */
   --home-icon: #389924;
-  --badge-blue-fg: #0056d0;
-  --badge-mauve-fg: #7a2ce2;
-  --badge-green-fg: #007300;
-  --badge-peach-fg: #b33800;
-  --badge-yellow-fg: #905500;
+  --badge-blue-fg: #003fa0;  /* var badge string, solved 2026-09-06 */
+  --badge-mauve-fg: #5e0ac8;  /* tag mauve .20, solved 2026-09-06 */
+  --badge-green-fg: #005700;  /* var badge boolean, solved 2026-09-06 */
+  --badge-peach-fg: #8e1d00;  /* var badge integer, solved 2026-09-06 */
+  --badge-yellow-fg: #7c4400;  /* tag yellow .20, solved 2026-09-06 */
   --badge-sky-fg: #006793;
-  --badge-teal-fg: #006a70;
+  --badge-teal-fg: #00575c;  /* tag teal .20, solved 2026-09-06 */
   --badge-flamingo-fg: #a14346;
   --badge-lavender-fg: #3850c8;
-  --badge-neutral-fg: #5d6071;
+  --badge-neutral-fg: #494c5c;  /* var badge unknown, solved 2026-09-06 */
 
   --elevation-1:
     0 2px 6px -1px rgba(0, 0, 0, 0.10),
@@ -266,6 +271,9 @@
     0 6px 14px -4px rgba(0, 0, 0, 0.10),
     0 2px 6px -1px rgba(0, 0, 0, 0.08);
 
+  --toc-link: #5d6073;  /* toc link, solved 2026-09-06 */
+  --badge-red-fg: #90001f;  /* var badge required, solved 2026-09-06 */
+  --badge-pink-fg: #911e78;  /* tag pink .20, solved 2026-09-06 */
   color-scheme: light;
 }
 
@@ -354,6 +362,7 @@
     0 6px 12px -4px rgba(0, 0, 0, 0.16),
     0 2px 4px -1px rgba(0, 0, 0, 0.10);
 
+  --badge-pink-fg: #f77a9d;  /* tag pink .20 (base), solved 2026-09-06 */
   color-scheme: dark;
 }
 
@@ -436,26 +445,26 @@
   --hljs-meta: #9e4f66;
   --tpl-pill-mustache: #695581;
   --tpl-pill-dollar: #1c607a;
-  --h3-color: #4e8c97;
-  --h4-color: #b97400;
-  --h5-color: #b97400;
+  --h3-color: #34747e;  /* h3, solved 2026-09-06 */
+  --h4-color: #985d00;  /* h4, solved 2026-09-06 */
+  --h5-color: #985d00;  /* h5, solved 2026-09-06 */
   --link-visited: #776290;
   --stat-add: #296a75;
   --stat-del: #974960;
   --stat-chg: #8c5500;
   --external-badge-fg: #8c5500;
-  --home-meta: #6c6978;
-  --home-control: #6e697a;
-  --badge-blue-fg: #306772;
-  --badge-mauve-fg: #6e5a87;
-  --badge-green-fg: #2a6b76;
-  --badge-peach-fg: #925800;
-  --badge-yellow-fg: #905700;
+  --home-meta: #625f6e;  /* status meta (crust), solved 2026-09-06 */
+  --home-control: #645f70;  /* status control (crust), solved 2026-09-06 */
+  --badge-blue-fg: #19545e;  /* var badge string, solved 2026-09-06 */
+  --badge-mauve-fg: #5f4c78;  /* tag mauve .20, solved 2026-09-06 */
+  --badge-green-fg: #115963;  /* var badge boolean, solved 2026-09-06 */
+  --badge-peach-fg: #7c4600;  /* var badge integer, solved 2026-09-06 */
+  --badge-yellow-fg: #834c00;  /* tag yellow .20, solved 2026-09-06 */
   --badge-sky-fg: #296a74;
-  --badge-teal-fg: #20637d;
+  --badge-teal-fg: #0b5770;  /* tag teal .20, solved 2026-09-06 */
   --badge-flamingo-fg: #994b4a;
   --badge-lavender-fg: #6a5288;
-  --badge-neutral-fg: #656071;
+  --badge-neutral-fg: #555061;  /* var badge unknown, solved 2026-09-06 */
 
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
@@ -471,6 +480,9 @@
     0 6px 14px -4px rgba(0, 0, 0, 0.10),
     0 2px 6px -1px rgba(0, 0, 0, 0.08);
 
+  --toc-link: #69657e;  /* toc link, solved 2026-09-06 */
+  --badge-red-fg: #83374f;  /* var badge required, solved 2026-09-06 */
+  --badge-pink-fg: #863a52;  /* tag pink .20, solved 2026-09-06 */
   color-scheme: light;
 }
 
@@ -566,6 +578,9 @@
     0 6px 12px -4px rgba(0, 0, 0, 0.16),
     0 2px 4px -1px rgba(0, 0, 0, 0.10);
 
+  --toc-link: #8c92bc;  /* toc link, solved 2026-09-06 */
+  --badge-red-fg: #fe8ea0;  /* var badge required, solved 2026-09-06 */
+  --badge-pink-fg: #cbacff;  /* tag pink .20 (base), solved 2026-09-06 */
   color-scheme: dark;
 }
 
@@ -653,6 +668,11 @@
   --link-visited:     #9784ab;
   --stat-del:         #d0676d;
   --external-badge-fg: #d77955;
+  /* Scholar's Codex heading tiers are tonal (2026-09-06): h3 keeps the
+     single rubric accent, h4/h5 sit in --ctp-text and differ by weight and
+     small-caps — structure through type, as the h6 rule already argues */
+  --h4-color:         var(--ctp-text);
+  --h5-color:         var(--ctp-text);
   --home-meta:        #99928a;
   --home-control:     #999385;
   --badge-blue-fg:    #97afd2;
@@ -679,6 +699,7 @@
     0 6px 12px -4px rgba(0, 0, 0, 0.18),
     0 2px 4px -1px rgba(0, 0, 0, 0.12);
 
+  --badge-red-fg: #e87c81;  /* var badge required, solved 2026-09-06 */
   color-scheme: dark;
 }
 
@@ -768,20 +789,24 @@
   --hljs-symbol:      #8d5345;
   --hljs-meta:        #8b515b;
   --tpl-pill-dollar:  #33605a;
-  --h4-color:         #a57717;  /* darkened orpiment — 3.62:1 on base */
+  /* Scholar's Codex heading tiers are tonal (2026-09-06): h3 keeps the
+     single rubric accent, h4/h5 sit in --ctp-text and differ by weight and
+     small-caps — structure through type, as the h6 rule already argues */
+  --h4-color:         var(--ctp-text);
+  --h5-color:         var(--ctp-text);
   --stat-add:         #45653e;
   --stat-chg:         #7c5500;
-  --external-badge-fg: #963d0e;
-  --home-meta:        #6b6755;
-  --home-control:     #6b6756;
-  --badge-green-fg:   #47663f;
-  --badge-peach-fg:   #9d4414;
-  --badge-yellow-fg:  #7f5700;
+  --external-badge-fg: #8a3303;  /* instance count badge, solved 2026-09-06 */
+  --home-meta:        #605c4a;  /* status meta (crust), solved 2026-09-06 */
+  --home-control:     #605c4b;  /* status control (crust), solved 2026-09-06 */
+  --badge-green-fg:   #385630;  /* var badge boolean, solved 2026-09-06 */
+  --badge-peach-fg:   #883302;  /* var badge integer, solved 2026-09-06 */
+  --badge-yellow-fg:  #704a00;  /* tag yellow .20, solved 2026-09-06 */
   --badge-sky-fg:     #3c5d7e;
-  --badge-teal-fg:    #37635e;
+  --badge-teal-fg:    #2a5651;  /* tag teal .20, solved 2026-09-06 */
   --badge-flamingo-fg: #895041;
   --badge-lavender-fg: #655572;
-  --badge-neutral-fg: #656150;
+  --badge-neutral-fg: #595544;  /* var badge unknown, solved 2026-09-06 */
 
   --card-bg:          #fffaec;                             /* warm paper highlight — NOT pure white */
   --card-bg-rgb:      255, 250, 236;
@@ -799,6 +824,11 @@
     0 6px 14px -4px rgba(70, 48, 20, 0.10),
     0 2px 6px -1px rgba(70, 48, 20, 0.08);
 
+  --h3-color: #4f6f47;  /* h3, solved 2026-09-06 */
+  --toc-link: #676352;  /* toc link, solved 2026-09-06 */
+  --badge-red-fg: #91272b;  /* var badge required, solved 2026-09-06 */
+  --badge-mauve-fg: #5e405e;  /* tag mauve .20, solved 2026-09-06 */
+  --badge-pink-fg: #763e49;  /* tag pink .20, solved 2026-09-06 */
   color-scheme: light;
 }
 
@@ -874,17 +904,17 @@
   --hljs-punctuation: #575960;
   --tpl-pill-mustache: #6831a7;
   --tpl-pill-dollar: #275750;
-  --external-badge-fg: #7f3d15;
+  --external-badge-fg: #6e2f06;  /* instance count badge, solved 2026-09-06 */
   --stat-add: #325905;
   --stat-del: #803847;
   --stat-chg: #724500;
-  --home-meta: #5c5f68;
-  --home-control: #5d5f68;
-  --badge-mauve-fg: #753eb4;
-  --badge-peach-fg: #8f4a21;
-  --badge-yellow-fg: #825307;
+  --home-meta: #4d5058;  /* status meta (crust), solved 2026-09-06 */
+  --home-control: #4c4e57;  /* status control (crust), solved 2026-09-06 */
+  --badge-mauve-fg: #542093;  /* tag mauve .20, solved 2026-09-06 */
+  --badge-peach-fg: #692a00;  /* var badge integer, solved 2026-09-06 */
+  --badge-yellow-fg: #603800;  /* tag yellow .20, solved 2026-09-06 */
   --badge-sky-fg: #00647d;
-  --badge-neutral-fg: #5d5f68;
+  --badge-neutral-fg: #40424a;  /* var badge unknown, solved 2026-09-06 */
 
   --card-bg: #ffffff;
   --card-bg-rgb: 255, 255, 255;
@@ -900,5 +930,11 @@
     0 6px 14px -4px rgba(0, 0, 0, 0.10),
     0 2px 6px -1px rgba(0, 0, 0, 0.08);
 
+  --toc-link: #575960;  /* toc link, solved 2026-09-06 */
+  --badge-blue-fg: #003a7f;  /* var badge string, solved 2026-09-06 */
+  --badge-green-fg: #1d4500;  /* var badge boolean, solved 2026-09-06 */
+  --badge-red-fg: #6d2737;  /* var badge required, solved 2026-09-06 */
+  --badge-pink-fg: #6d2737;  /* tag pink .20, solved 2026-09-06 */
+  --badge-teal-fg: #164741;  /* tag teal .20, solved 2026-09-06 */
   color-scheme: light;
 }

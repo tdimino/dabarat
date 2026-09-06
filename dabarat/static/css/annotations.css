@@ -328,11 +328,12 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   font-size: 11px;
   margin-right: 4px;
 }
-.ann-type-icon.comment    { color: var(--ctp-yellow); }
-.ann-type-icon.question   { color: var(--ctp-blue); }
-.ann-type-icon.suggestion { color: var(--ctp-green); }
-.ann-type-icon.important  { color: var(--ctp-peach); }
-.ann-type-icon.bookmark   { color: var(--ctp-mauve); }
+/* Badge role tokens: raw yellow/peach fell to 1.6–3.1:1 on light bubbles */
+.ann-type-icon.comment    { color: var(--badge-yellow-fg); }
+.ann-type-icon.question   { color: var(--badge-blue-fg); }
+.ann-type-icon.suggestion { color: var(--badge-green-fg); }
+.ann-type-icon.important  { color: var(--badge-peach-fg); }
+.ann-type-icon.bookmark   { color: var(--badge-mauve-fg); }
 
 /* Bubble left border accent by type */
 .ann-bubble[data-type="comment"]    { border-left: 3px solid rgba(var(--ctp-yellow-rgb), 0.5); }
@@ -515,7 +516,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
 [data-theme="vellum"] #annotation-form textarea,
 [data-theme="rose-pine-dawn"] #annotation-form textarea,
 [data-theme="tokyo-light"] #annotation-form textarea {
-  background: var(--card-bg, #fff);
+  background: var(--card-bg);
   border-color: var(--ctp-overlay0);
 }
 

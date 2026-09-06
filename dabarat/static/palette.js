@@ -41,21 +41,24 @@ const CommandPalette = {
   },
 
   /* ── Tag Color Map ──────────────────────────────────── */
+  /* Text goes through the --badge-<hue>-fg role tokens (audited as
+     "tag <hue> .20" over the wash on base) — raw accents failed 4.5:1 on
+     every light theme, and archived/overlay0 failed on all eight */
   TAG_COLORS: {
-    draft:     { bg: 'rgba(var(--ctp-yellow-rgb), 0.20)', fg: 'var(--ctp-yellow)' },
-    reviewed:  { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--ctp-green)' },
-    final:     { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--ctp-blue)' },
-    important: { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--ctp-peach)' },
-    archived:  { bg: 'rgba(var(--ctp-overlay0-rgb), 0.20)', fg: 'var(--ctp-overlay0)' },
-    research:  { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--ctp-mauve)' },
-    personal:  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--ctp-pink)' },
-    'prompt:system':    { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--ctp-blue)' },
-    'prompt:user':      { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--ctp-green)' },
-    'prompt:assistant': { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--ctp-mauve)' },
-    'prompt:chain':     { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--ctp-peach)' },
-    'prompt:cognitive':  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--ctp-pink)' },
-    'prompt:tested':    { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--ctp-teal)' },
-    _default:  { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--ctp-teal)' },
+    draft:     { bg: 'rgba(var(--ctp-yellow-rgb), 0.20)', fg: 'var(--badge-yellow-fg)' },
+    reviewed:  { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--badge-green-fg)' },
+    final:     { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--badge-blue-fg)' },
+    important: { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--badge-peach-fg)' },
+    archived:  { bg: 'rgba(var(--ctp-overlay0-rgb), 0.20)', fg: 'var(--badge-neutral-fg)' },
+    research:  { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--badge-mauve-fg)' },
+    personal:  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--badge-pink-fg)' },
+    'prompt:system':    { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--badge-blue-fg)' },
+    'prompt:user':      { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--badge-green-fg)' },
+    'prompt:assistant': { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--badge-mauve-fg)' },
+    'prompt:chain':     { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--badge-peach-fg)' },
+    'prompt:cognitive':  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--badge-pink-fg)' },
+    'prompt:tested':    { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--badge-teal-fg)' },
+    _default:  { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--badge-teal-fg)' },
   },
   PREDEFINED_TAGS: ['draft', 'reviewed', 'final', 'important', 'archived', 'research', 'personal',
     'prompt:system', 'prompt:user', 'prompt:assistant', 'prompt:chain', 'prompt:cognitive', 'prompt:tested'],

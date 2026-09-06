@@ -166,7 +166,7 @@ body.edit-mode .edit-body {
   padding: 48px 56px 80px;
   outline: none;
   min-height: calc(100vh - 120px);
-  caret-color: var(--ctp-yellow);
+  caret-color: var(--stat-chg);   /* pending-work yellow, solved per theme on base */
 }
 
 #tiptap-editor .ProseMirror > *:first-child { margin-top: 0; }

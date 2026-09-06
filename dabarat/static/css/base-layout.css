@@ -33,6 +33,10 @@ blockquote, code, pre, th, td, tr {
 [data-theme="tokyo-light"] ::selection {
   background: rgba(var(--ctp-blue-rgb), 0.15);
 }
+/* Scholar's Codex signatures: tungsten on Ink, iron-gall on Vellum */
+[data-theme="ink"] ::selection { background: rgba(var(--ctp-yellow-rgb), 0.22); }
+/* pair-scoped */
+[data-theme="vellum"] ::selection { background: rgba(var(--ctp-blue-rgb), 0.18); }
 
 /* ══════════════════════════════════════════════════════════
    TOC Sidebar
@@ -224,7 +228,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 }
 
 #toc a {
-  color: var(--ctp-overlay2);
+  color: var(--toc-link);
   text-decoration: none;
   display: block;
   padding: 3px 8px 3px 12px;
@@ -244,7 +248,10 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   background: var(--toc-active-bg);   /* per-theme mark (Ink: tungsten) */
   box-shadow: -4px 0 8px -3px rgba(var(--ctp-blue-rgb), 0.15);
 }
-[data-theme="latte"] #toc a.active {
+[data-theme="latte"] #toc a.active,
+[data-theme="vellum"] #toc a.active,
+[data-theme="rose-pine-dawn"] #toc a.active,
+[data-theme="tokyo-light"] #toc a.active {
   box-shadow: -4px 0 8px -3px rgba(var(--ctp-blue-rgb), 0.12);
 }
 
@@ -483,6 +490,11 @@ body.home-active.toc-collapsed #main-area {
   box-shadow: var(--elevation-2);
 }
 .status-banner i { color: var(--ctp-yellow); font-size: 15px; flex-shrink: 0; }
+/* Severity hues — yellow (warn, default) / red (error) / blue (info) */
+.status-banner[data-severity="error"] { border-color: rgba(var(--ctp-red-rgb), 0.55); }
+.status-banner[data-severity="error"] i { color: var(--ctp-red); }
+.status-banner[data-severity="info"] { border-color: rgba(var(--ctp-blue-rgb), 0.5); }
+.status-banner[data-severity="info"] i { color: var(--ctp-blue); }
 .status-banner button {
   flex-shrink: 0;
   padding: 3px 10px;

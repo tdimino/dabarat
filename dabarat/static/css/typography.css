@@ -65,6 +65,16 @@ h5 {
   font-weight: 600;
   font-family: 'DM Sans', sans-serif;
 }
+/* Scholar's Codex (Ink/Vellum): h4/h5 are tonal — same ink as the body
+   (--h4/h5-color alias --ctp-text there), told apart by weight and
+   small-caps rather than a third and fourth accent hue */
+[data-theme="ink"] h4, [data-theme="vellum"] h4 { font-weight: 700; }
+/* pair-scoped */
+[data-theme="ink"] h5, [data-theme="vellum"] h5 {
+  font-weight: 500;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.06em;
+}
 /* h6 — structure through type, not color: uppercase + tracking keeps it
    distinct from the paragraph it heads without another accent slot */
 h6 {
@@ -201,10 +211,16 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
     0 0 20px rgba(var(--ctp-blue-rgb), 0.06);
 }
 /* Latte (light) theme — softer shadows */
-[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img) {
+[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img),
+[data-theme="vellum"] #content img:not(.emoji):not(.tpl-var-img),
+[data-theme="rose-pine-dawn"] #content img:not(.emoji):not(.tpl-var-img),
+[data-theme="tokyo-light"] #content img:not(.emoji):not(.tpl-var-img) {
   box-shadow: none;
 }
-[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img):hover {
+[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img):hover,
+[data-theme="vellum"] #content img:not(.emoji):not(.tpl-var-img):hover,
+[data-theme="rose-pine-dawn"] #content img:not(.emoji):not(.tpl-var-img):hover,
+[data-theme="tokyo-light"] #content img:not(.emoji):not(.tpl-var-img):hover {
   box-shadow:
     0 8px 24px rgba(var(--ctp-mantle-rgb), 0.2),
     0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
@@ -247,7 +263,7 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
 .hljs-name { color: var(--hljs-function); }
 .hljs-meta { color: var(--hljs-meta); }
 .hljs-regexp { color: var(--hljs-number); }
-.hljs-variable { color: var(--ctp-text); }
+.hljs-variable { color: var(--hljs-params); }   /* body-text colour made it invisible as a token */
 .hljs-params { color: var(--hljs-params); }
 .hljs-property { color: var(--hljs-operator); }
 .hljs-punctuation { color: var(--hljs-punctuation); }

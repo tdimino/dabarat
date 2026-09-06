@@ -85,19 +85,10 @@ function toggleTheme(event) {
     applyOpacity();
   };
 
-  /* View Transitions API — circular reveal from toggle button */
+  /* View Transitions API — a short crossfade (the browser default, ~250ms).
+     The 400ms circular reveal it replaced was a demo flourish (2026-09-06). */
   if (!_prefersReducedMotion && document.startViewTransition) {
-    const x = event ? event.clientX || event.pageX : window.innerWidth / 2;
-    const y = event ? event.clientY || event.pageY : 0;
-    const endRadius = Math.hypot(Math.max(x, window.innerWidth - x), Math.max(y, window.innerHeight - y));
-
-    const transition = document.startViewTransition(doToggle);
-    transition.ready.then(() => {
-      document.documentElement.animate(
-        { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + endRadius + 'px at ' + x + 'px ' + y + 'px)'] },
-        { duration: 400, easing: 'ease-out', pseudoElement: '::view-transition-new(root)' }
-      );
-    }).catch(() => {});
+    document.startViewTransition(doToggle);
   } else {
     doToggle();
   }

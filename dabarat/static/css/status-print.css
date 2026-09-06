@@ -44,7 +44,7 @@
   border-radius: 50%;
   margin-right: 6px;
   flex-shrink: 0;
-  animation: pulse 2s infinite;
+  /* Static at rest — a settled state does not pulse (2026-09-06) */
 }
 #word-count {
   color: var(--home-meta);
@@ -120,11 +120,6 @@
 }
 #status-export-pdf:hover {
   color: var(--ctp-blue);
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
 }
 
 /* ══════════════════════════════════════════════════════════

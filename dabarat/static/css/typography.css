@@ -193,39 +193,15 @@ tr:hover { background: var(--row-hover-bg); }
 img { max-width: 100%; border-radius: var(--radius-lg); margin: 1em 0; }
 img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -0.1em; border-radius: 0; }
 
-/* Content images — enhanced treatment with border/glow effects */
+/* Content images — still at rest and on hover; the zoom cursor is the
+   affordance, the lightbox is the response (lift + glow removed 2026-09-06) */
 #content img:not(.emoji):not(.tpl-var-img) {
   max-width: 100%;
   border-radius: var(--radius-xl);
   margin: 1.5em 0;
   border: none;
   box-shadow: none;
-  transition: transform var(--dur-slow) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-slow) ease;
   cursor: zoom-in;
-}
-#content img:not(.emoji):not(.tpl-var-img):hover {
-  transform: translateY(-2px) scale(1.005);
-  border-color: rgba(var(--ctp-blue-rgb), 0.25);
-  box-shadow:
-    0 8px 24px rgba(var(--ctp-mantle-rgb), 0.35),
-    0 0 0 1px rgba(var(--ctp-blue-rgb), 0.12),
-    0 0 20px rgba(var(--ctp-blue-rgb), 0.06);
-}
-/* Latte (light) theme — softer shadows */
-[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img),
-[data-theme="vellum"] #content img:not(.emoji):not(.tpl-var-img),
-[data-theme="rose-pine-dawn"] #content img:not(.emoji):not(.tpl-var-img),
-[data-theme="tokyo-light"] #content img:not(.emoji):not(.tpl-var-img) {
-  box-shadow: none;
-}
-[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img):hover,
-[data-theme="vellum"] #content img:not(.emoji):not(.tpl-var-img):hover,
-[data-theme="rose-pine-dawn"] #content img:not(.emoji):not(.tpl-var-img):hover,
-[data-theme="tokyo-light"] #content img:not(.emoji):not(.tpl-var-img):hover {
-  box-shadow:
-    0 8px 24px rgba(var(--ctp-mantle-rgb), 0.2),
-    0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
-    0 0 20px rgba(var(--ctp-blue-rgb), 0.04);
 }
 /* PNGs with transparent backgrounds — no border/shadow framing */
 #content img[src$=".png"]:not(.emoji):not(.tpl-var-img) {

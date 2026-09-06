@@ -113,9 +113,9 @@ Uses `_hasStaggered` flag to prevent re-stagger on filter keystrokes (Raycast pr
 ### `theme.js` — Theme Toggle (View Transitions API, not Motion One)
 | Animation | Method | Options |
 |-----------|--------|---------|
-| Circular reveal | `document.startViewTransition()` + `clip-path: circle()` | `400ms, ease-out` |
+| Crossfade | `document.startViewTransition()` with the browser's default animation | ~250ms |
 
-This uses the native View Transitions API, not Motion One. The `::view-transition-old(root)` and `::view-transition-new(root)` pseudo-elements are styled in `base-layout.css`. Falls back to instant theme swap if the API is unavailable (Safari < 18, Firefox).
+This uses the native View Transitions API, not Motion One. The 400ms `clip-path: circle()` reveal it used to run was removed on 2026-09-06 as ambient flourish — feedback motion stays in the 120–250ms band, nothing animates at rest (the status-bar dot no longer pulses, content images and home cards no longer lift on hover). The `::view-transition-old(root)` and `::view-transition-new(root)` pseudo-elements are styled in `base-layout.css`. Falls back to instant theme swap if the API is unavailable (Safari < 18, Firefox).
 
 ## CSS Fallbacks
 

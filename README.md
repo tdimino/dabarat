@@ -11,6 +11,8 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 ## Features
 
 - **Live-reload preview**—500ms polling detects file changes automatically
+- **Light on the wire**—HTTP/1.1 keep-alive, gzip, and an ETag on the shell; polls send `since=<changeKey>` and get a one-line reply when nothing moved; hidden windows back off to 5s; inactive tabs load on first activation, not at startup
+- **Keyboard and screen-reader access**—the tab strip is a real `tablist` (arrow keys, Home/End, Delete to close), dialogs and the palette trap and return focus, landmarks (`main`/`article`/`aside`) throughout, status banners announce via `aria-live`
 - **Multi-tab support**—open multiple `.md` files; cross-file linking via `--add`
 - **Tab management at scale**—Close Others / Close All (confirmed), `Ctrl+Tab` cycling (`Cmd+Opt+←/→` fallback), middle-click close, and a searchable overflow menu with per-row close for 90-tab sessions. Tabs pushed by automation (`/api/add` with `auto: true`, as the Claude Code plan hook does) are capped at `DABARAT_MAX_AUTO_TABS` (30) so a long-lived window never silts up
 - **Tab reuse with window picker**—launching a new file while the server is running shows a dialog with currently open files; when multiple windows are running, pick which window to add to
@@ -21,7 +23,8 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Resolve/archive workflow**—resolved annotations move to a separate archive file
 - **Global bookmark index**—bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
 - **Auto-cleanup of orphaned annotations**—when anchor text is deleted, its annotations are removed on next load
-- **8 themes with cross-window persistence**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Theme choice persists to `~/.dabarat/config.json` so new windows on different ports inherit the same theme. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents. Every theme is contrast-audited (WCAG AA) by `scripts/color-audit/`—zero failures across all 8, enforced by a color-role token layer.
+- **Sidecar integrity**—annotation writes are locked and atomic (tempfile + rename); a sidecar that fails to parse is quarantined as `.corrupt-<ts>` and reported, never silently overwritten
+- **8 themes with cross-window persistence**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Theme choice persists to `~/.dabarat/config.json` so new windows on different ports inherit the same theme. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents. Every theme is contrast-audited (WCAG AA) by `scripts/color-audit/`—zero failures across all 8, enforced by a color-role token layer. Light themes carry accent washes instead of grey slabs: a blue-tinted home ground and tab bar, and a rose inline-code pill.
 - **Resizable TOC sidebar**—drag the right edge to adjust width (persisted across sessions)
 - **Deterministic TOC navigation**—clicks always jump (even re-clicks on the same heading), with scroll-spy highlighting, deep-link `#hash` support, and stale-hash cleanup across tabs and re-renders
 - **Justified text mode**—floating mauve button toggles `text-align: justify` with auto-hyphenation on paragraphs and list items (headings, code, and tables untouched). Also via command palette. Preference persists across reloads and windows via localStorage and `~/.dabarat/config.json`
@@ -113,7 +116,7 @@ python3 -m dabarat --annotate document.md \
 Most markdown annotation tools either require a heavy framework (Svelte, React, Electron) or operate only in the terminal. This tool is:
 
 - **Zero-dependency**—pure Python stdlib server. No npm, no pip install, no build step.
-- **Modular**—12 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document.
+- **Modular**—12 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document. Radius, z-index, elevation, duration, easing, and font stacks are tokens in `theme-variables.css`; regression scripts in `scripts/verify/` guard navigation, transport, tokens, and sidecar integrity.
 - **AI-native**—built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
 - **Beautiful**—Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
 

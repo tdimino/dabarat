@@ -324,6 +324,12 @@ USED_PAIRS = [
     ("status control (crust)", "var(--home-control)", [CRUST], 4.5, "P1"),
     ("instance count badge", "var(--external-badge-fg)",
      [CRUST, "rgba(var(--ctp-peach-rgb), 0.18)"], 4.5, "P1"),
+    # Tab bar — dark: inactive tabs on mantle; light: on the blue-washed bar
+    ("tab inactive (mantle)", "var(--home-control)",  [MANTLE], 4.5, "P1", DARK_THEMES),
+    ("tab inactive (wash)",  "var(--home-control)",
+     [BASE, "rgba(var(--ctp-blue-rgb), 0.06)"], 4.5, "P1", LIGHT_THEMES),
+    ("tab hover (surface0)", "var(--ctp-text)",       [SURFACE0], 4.5, "P1", DARK_THEMES),
+    ("tab active",           "var(--ctp-text)",       [BASE], 4.5, "P1"),
 
     # Home cards (card surface differs from base in light themes)
     ("card filename",        "var(--ctp-text)",       [CARD], 4.5, "P1"),

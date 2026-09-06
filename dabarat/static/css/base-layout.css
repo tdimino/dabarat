@@ -437,6 +437,10 @@ body.home-active.toc-collapsed #main-area {
   overflow: hidden;
 }
 
+/* Tab ladder (dark themes): bar on crust, inactive tabs one step up on
+   mantle (--toc-bg keeps the opacity control's alpha), hover on surface0,
+   active on base — three distinct steps of the depth ramp, no accent rule
+   (a blue top rule was tried and rejected, 2026-09-06). */
 .tab {
   display: flex;
   align-items: center;
@@ -444,8 +448,8 @@ body.home-active.toc-collapsed #main-area {
   padding: 0 14px;
   font-family: var(--font-sans);
   font-size: 10.5px;
-  color: var(--ctp-overlay1);
-  background: var(--crust-bg, var(--ctp-crust));
+  color: var(--home-control);
+  background: var(--toc-bg, var(--ctp-mantle));
   border-right: 1px solid var(--ctp-surface0);
   border-bottom: 2px solid var(--ctp-surface0);
   cursor: pointer;
@@ -461,11 +465,40 @@ body.home-active.toc-collapsed #main-area {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tab:hover { color: var(--ctp-text); background: var(--ctp-mantle); }
+.tab:hover { color: var(--ctp-text); background: var(--ctp-surface0); }
 .tab.active {
   color: var(--ctp-text);
   background: var(--body-bg, var(--ctp-base));
   border-bottom-color: transparent;
+}
+/* Light themes: crust is the heaviest neutral in each light palette and
+   read as a grey slab over the page. The bar paints the home-ground blue
+   wash over the body background instead (layered in CSS so applyOpacity's
+   inline --crust-bg can't clobber it), tabs go transparent with the card
+   hairline as divider, and the active tab lifts out on base. */
+[data-theme="latte"] #tab-bar, [data-theme="vellum"] #tab-bar,
+[data-theme="rose-pine-dawn"] #tab-bar, [data-theme="tokyo-light"] #tab-bar {
+  background: linear-gradient(rgba(var(--ctp-blue-rgb), 0.06), rgba(var(--ctp-blue-rgb), 0.06)),
+              var(--body-bg, var(--ctp-base));
+  border-bottom-color: rgba(var(--ctp-blue-rgb), 0.16);
+}
+[data-theme="latte"] .tab, [data-theme="vellum"] .tab,
+[data-theme="rose-pine-dawn"] .tab, [data-theme="tokyo-light"] .tab {
+  background: transparent;
+  border-right-color: rgba(var(--ctp-blue-rgb), 0.16);
+  border-bottom-color: transparent;
+}
+[data-theme="latte"] #tab-home, [data-theme="vellum"] #tab-home,
+[data-theme="rose-pine-dawn"] #tab-home, [data-theme="tokyo-light"] #tab-home {
+  border-right-color: rgba(var(--ctp-blue-rgb), 0.16);
+}
+[data-theme="latte"] .tab:hover, [data-theme="vellum"] .tab:hover,
+[data-theme="rose-pine-dawn"] .tab:hover, [data-theme="tokyo-light"] .tab:hover {
+  background: rgba(var(--ctp-blue-rgb), 0.10);
+}
+[data-theme="latte"] .tab.active, [data-theme="vellum"] .tab.active,
+[data-theme="rose-pine-dawn"] .tab.active, [data-theme="tokyo-light"] .tab.active {
+  background: var(--body-bg, var(--ctp-base));
 }
 /* Ghost tab: file was deleted/moved on disk; content is served from cache.
    Opacity + italic + strikethrough only — no colors, so no light-theme
@@ -573,8 +606,10 @@ body.home-active.toc-collapsed #main-area {
 }
 #tab-overflow:hover { color: var(--ctp-text); }
 
+/* Add-file field sits on the card surface (white on light themes, surface0
+   on dark) — a surface0 fill read as a grey slab inside the light tab bar. */
 .tab-add-input {
-  background: var(--ctp-surface0);
+  background: var(--card-bg);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-text);
   font-family: var(--font-mono);
@@ -605,6 +640,16 @@ body.home-active.toc-collapsed #main-area {
 }
 .tab-browse-btn:hover {
   color: var(--ctp-blue);
+}
+[data-theme="latte"] .tab-add-input, [data-theme="vellum"] .tab-add-input,
+[data-theme="rose-pine-dawn"] .tab-add-input, [data-theme="tokyo-light"] .tab-add-input,
+[data-theme="latte"] .tab-browse-btn, [data-theme="vellum"] .tab-browse-btn,
+[data-theme="rose-pine-dawn"] .tab-browse-btn, [data-theme="tokyo-light"] .tab-browse-btn {
+  border-color: rgba(var(--ctp-blue-rgb), 0.16);
+}
+[data-theme="latte"] .tab-add-input:focus, [data-theme="vellum"] .tab-add-input:focus,
+[data-theme="rose-pine-dawn"] .tab-add-input:focus, [data-theme="tokyo-light"] .tab-add-input:focus {
+  border-color: var(--ctp-blue);
 }
 
 /* ── Secondary button recipe ──────────────────────────

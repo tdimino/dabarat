@@ -286,6 +286,14 @@ USED_PAIRS = [
     ("badge neutral .18",    "var(--badge-neutral-fg)",
      [CARD, "rgba(var(--ctp-overlay1-rgb), 0.18)"], 4.5, "P1"),
 
+    # Instance dropdown + overflow menu — both sit on --card-bg
+    # (base-layout.css .instance-menu / .tab-overflow-menu). Registered
+    # so the surface can never silently drift back to surface0.
+    ("instance self badge",  "var(--badge-blue-fg)",
+     [CARD, "rgba(var(--ctp-blue-rgb), 0.15)"], 4.5, "P1"),
+    ("instance meta (card)", "var(--home-meta)",      [CARD], 4.5, "P1"),
+    ("menu header (card)",   "var(--home-control)",   [CARD], 4.5, "P1"),
+
     # Version panel (mantle surface)
     ("timeline date",        "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1"),
     ("timeline +stat",       "var(--stat-add)",       [MANTLE], 4.5, "P1"),

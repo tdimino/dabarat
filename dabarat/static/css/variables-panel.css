@@ -72,7 +72,7 @@
 }
 .var-card:hover {
   border-left-color: var(--ctp-mauve);
-  box-shadow: 0 2px 8px rgba(var(--ctp-mantle-rgb), 0.12);
+  box-shadow: var(--elevation-1);
 }
 .var-card-header {
   display: flex;

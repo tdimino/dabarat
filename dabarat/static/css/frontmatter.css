@@ -231,7 +231,7 @@
   background: var(--ctp-base);
   border: 1px solid var(--ctp-surface1);
   border-radius: 14px;
-  box-shadow: 0 16px 56px rgba(var(--ctp-mantle-rgb), 0.55), 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.08);
+  box-shadow: var(--elevation-2), 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -618,5 +618,5 @@
   border: 1px solid var(--ctp-surface1);
   z-index: 1000;
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(var(--ctp-mantle-rgb), 0.3);
+  box-shadow: var(--elevation-1);
 }

@@ -898,7 +898,7 @@ body.home-active #content {
   border-radius: 8px;
   padding: 4px;
   z-index: 100;
-  box-shadow: 0 8px 24px rgba(var(--ctp-crust-rgb), 0.5);
+  box-shadow: var(--elevation-1);
   min-width: 180px;
 }
 .ws-add-menu button {

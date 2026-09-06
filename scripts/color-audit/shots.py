@@ -79,6 +79,107 @@ def wait_http(url, timeout=15.0):
     raise RuntimeError(f"server not ready: {url}")
 
 
+def _cdp_eval(debug_port, expression):
+    result = pdf_export._cdp_request(
+        debug_port, "Runtime.evaluate",
+        {"expression": expression, "returnByValue": True,
+         "awaitPromise": True, "userGesture": True})
+    if result.get("exceptionDetails"):
+        details = result["exceptionDetails"]
+        raise RuntimeError(details.get("exception", {}).get("description")
+                           or details.get("text"))
+    return result.get("result", {}).get("value")
+
+
+def _cdp_wait(debug_port, expression, timeout=20.0):
+    deadline = time.monotonic() + timeout
+    last = None
+    while time.monotonic() < deadline:
+        try:
+            if _cdp_eval(debug_port, expression):
+                return
+        except Exception as exc:
+            last = exc
+        time.sleep(0.1)
+    raise RuntimeError(f"timed out waiting for {expression}: {last}")
+
+
+# Seeded sibling so the dropdown renders both the self row (rubric rule,
+# THIS WINDOW badge) and a sibling row with Focus/Shut Down. fetchInstances
+# is stubbed so the real /api/instances scan can't overwrite the seed.
+_INSTANCE_MENU_JS = """
+(async () => {
+  _instancesCache = [
+    {port: (window.DABARAT_CONFIG || {}).port, isSelf: true,
+     started: new Date(Date.now() - 4 * 60000).toISOString(),
+     tabs: [{filename: 'fixture.md', filepath: '/tmp/fixture.md'}]},
+    {port: 3031, isSelf: false,
+     started: new Date(Date.now() - 3 * 3600000).toISOString(),
+     tabs: [{filename: 'research-dossier.md', filepath: '/tmp/a.md'},
+            {filename: 'plan-sprint.md', filepath: '/tmp/b.md'}]},
+  ];
+  fetchInstances = async () => _instancesCache;
+  await showInstanceMenu(document.getElementById('instance-indicator'));
+  const r = document.querySelector('.instance-menu').getBoundingClientRect();
+  return {x: r.left, y: r.top, width: r.width, height: r.height};
+})()
+"""
+
+
+def _shoot_instance_menu(chrome, base, work):
+    """instances-<theme>.png — the status-bar Windows dropdown, opened via
+    CDP with a seeded sibling, clipped to the menu plus a margin."""
+    import base64
+    debug_port = pdf_export._find_free_port()
+    proc = subprocess.Popen(
+        [chrome, "--headless=new", f"--remote-debugging-port={debug_port}",
+         f"--user-data-dir={work / 'chrome-profile'}", "--disable-gpu",
+         "--no-first-run", "--no-default-browser-check",
+         "--disable-extensions", "--hide-scrollbars",
+         "--window-size=1100,760", "about:blank"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    failures = 0
+    try:
+        _cdp_wait(debug_port, "document.readyState === 'complete'")
+        for theme in THEMES:
+            fname = f"instances-{theme}.png"
+            out = SHOTS / fname
+            ok = False
+            try:
+                pdf_export._cdp_request(
+                    debug_port, "Page.navigate",
+                    {"url": f"{base}/?theme={theme}&export=1"})
+                _cdp_wait(debug_port,
+                          "document.readyState === 'complete' && "
+                          "typeof showInstanceMenu === 'function' && "
+                          "!!document.getElementById('instance-indicator')")
+                time.sleep(0.6)   # fonts + first render
+                box = _cdp_eval(debug_port, _INSTANCE_MENU_JS)
+                margin = 24
+                clip = {"x": max(0, box["x"] - margin),
+                        "y": max(0, box["y"] - margin),
+                        "width": box["width"] + 2 * margin,
+                        "height": box["height"] + 2 * margin, "scale": 2}
+                shot = pdf_export._cdp_request(
+                    debug_port, "Page.captureScreenshot",
+                    {"format": "png", "clip": clip})
+                out.write_bytes(base64.b64decode(shot["data"]))
+                ok = out.stat().st_size > 5000
+            except Exception as exc:
+                print(f"  {fname:<26} FAILED {exc}")
+            if not ok:
+                failures += 1
+            else:
+                print(f"  {fname:<26} ok")
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+    return failures
+
+
 def main():
     chrome = pdf_export._find_chrome()
     if not chrome:
@@ -183,6 +284,7 @@ def main():
                     failures += 1
                 print(f"  {fname:<26} "
                       f"{'ok' if ok else f'FAILED rc={result.returncode}'}")
+            failures += _shoot_instance_menu(chrome, base, work)
         finally:
             server.terminate()
             try:

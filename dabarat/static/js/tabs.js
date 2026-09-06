@@ -493,6 +493,7 @@ function dismissTabContextMenu() {
   if (existing) {
     if (existing._dismissCtrl) existing._dismissCtrl.abort();
     existing.remove();
+    if (typeof existing._onDismiss === 'function') existing._onDismiss();
   }
 }
 
@@ -946,16 +947,19 @@ function _renderInstanceIndicator() {
   const siblings = _instancesCache.filter(i => !i.isSelf).length;
   el.querySelector('.instance-port').textContent = ':' + port;
   const badge = el.querySelector('.instance-count');
+  /* Say what the control IS — the port alone reads as a bare number */
   if (siblings > 0) {
     badge.textContent = '+' + siblings;
     badge.style.display = '';
-    el.title = siblings + ' other instance' + (siblings === 1 ? '' : 's') + ' running';
-    el.setAttribute('aria-label', 'Dabarat instances — ' + el.title);
+    el.title = 'Windows — this one plus ' + siblings + ' other' +
+      (siblings === 1 ? '' : 's') + ' — click to list';
+    el.setAttribute('aria-label', 'Dabarat windows: this window on port ' + port +
+      ' plus ' + siblings + ' other' + (siblings === 1 ? '' : 's'));
   } else {
     badge.textContent = '';
     badge.style.display = 'none';
-    el.title = 'Dabarat instances';
-    el.setAttribute('aria-label', 'Dabarat instances');
+    el.title = 'Windows — click to list';
+    el.setAttribute('aria-label', 'Dabarat windows: this window on port ' + port);
   }
 }
 
@@ -978,7 +982,16 @@ async function showInstanceMenu(anchor) {
   /* Rows hold real buttons, so this is a dialog, not a menu — Tab
      traverses Focus/Shut Down natively, Escape dismisses below */
   menu.setAttribute('role', 'dialog');
-  menu.setAttribute('aria-label', 'Dabarat instances');
+  menu.setAttribute('aria-labelledby', 'instance-menu-title');
+  if (anchor) anchor.setAttribute('aria-expanded', 'true');
+  /* Anchored non-modal dialog: focus enters on open and returns to the
+     trigger on Escape/action dismissal — never on an outside click, which
+     already moved focus where the user pointed */
+  menu._onDismiss = () => {
+    if (!anchor) return;
+    anchor.setAttribute('aria-expanded', 'false');
+    if (!menu._skipFocusReturn && typeof anchor.focus === 'function') anchor.focus();
+  };
 
   /* Anchor above the status bar; palette invocations on home (status bar
      hidden, zero rect) pin to the bottom-left corner instead */
@@ -992,18 +1005,29 @@ async function showInstanceMenu(anchor) {
   }
   menu.style.top = 'auto';
 
+  /* Identity line: the trigger already says "Dabarat", so the header
+     names the concept ("Windows") and the count; the footer explains why
+     each row has its own port */
+  const header = (n) =>
+    '<div class="instance-menu-header" id="instance-menu-title">' +
+      '<span class="instance-menu-kicker">Windows</span>' +
+      '<span class="instance-menu-count">' + n + ' open</span>' +
+    '</div>';
+  const hint = '<div class="instance-menu-hint">Each window is its own server on 127.0.0.1</div>';
+
   const renderRows = () => {
     if (!_instancesCache.length) {
-      menu.innerHTML = '<div class="instance-empty">No instances found</div>';
+      menu.innerHTML = header(0) + '<div class="instance-empty">No windows found</div>';
       return;
     }
-    menu.innerHTML = _instancesCache.map(inst => {
+    menu.innerHTML = header(_instancesCache.length) + _instancesCache.map(inst => {
       const files = inst.tabs.map(t => escapeHtml(t.filename));
       const listing = files.length
         ? files.slice(0, 4).join(', ') + (files.length > 4 ? ' (+' + (files.length - 4) + ')' : '')
         : 'no tabs';
       const ago = _instanceStartedAgo(inst.started);
-      return '<div class="instance-row' + (inst.isSelf ? ' self' : '') + '" data-port="' + inst.port + '">' +
+      return '<div class="instance-row' + (inst.isSelf ? ' self' : '') +
+        '" data-port="' + inst.port + '" tabindex="-1">' +
         '<div class="instance-row-head">' +
           '<span class="instance-row-port">:' + inst.port + '</span>' +
           (inst.isSelf ? '<span class="instance-row-self">this window</span>' : '') +
@@ -1019,9 +1043,9 @@ async function showInstanceMenu(anchor) {
               inst.port + '">Shut Down</button>' +
           '</div>') +
         '</div>';
-    }).join('');
+    }).join('') + hint;
   };
-  menu.innerHTML = '<div class="instance-empty">Scanning…</div>';
+  menu.innerHTML = header('…') + '<div class="instance-empty">Scanning…</div>';
 
   menu.addEventListener('click', async (e) => {
     const row = e.target.closest('.instance-row[data-port]');
@@ -1053,19 +1077,31 @@ async function showInstanceMenu(anchor) {
         alert('Shutdown of :' + port + ' failed: ' + err.message);
       }
       await fetchInstances();
+      if (!menu.isConnected) return;
       renderRows();
+      /* Re-render dropped the focused button — land on the next one */
+      const next = menu.querySelector('.instance-row-actions button') ||
+                   menu.querySelector('.instance-row');
+      if (next) next.focus();
     }
   });
 
   document.body.appendChild(menu);
   await fetchInstances();
+  if (!menu.isConnected) return;   /* dismissed during the scan */
   renderRows();
+  const first = menu.querySelector('.instance-row-actions button') ||
+                menu.querySelector('.instance-row');
+  if (first) first.focus();
 
   const ctrl = new AbortController();
   menu._dismissCtrl = ctrl;
   setTimeout(() => {
     document.addEventListener('click', (e) => {
-      if (!menu.contains(e.target)) { dismissTabContextMenu(); ctrl.abort(); }
+      if (!menu.contains(e.target)) {
+        menu._skipFocusReturn = true;
+        dismissTabContextMenu(); ctrl.abort();
+      }
     }, { signal: ctrl.signal });
   }, 0);
   document.addEventListener('keydown', (e) => {

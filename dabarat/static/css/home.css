@@ -40,7 +40,7 @@ body.home-active #content {
   font-size: calc(var(--base-size) * 1.85);   /* 28px at the 15px default */
   font-weight: 600;
   font-style: italic;
-  color: var(--ctp-lavender);
+  color: var(--home-title);   /* lavender by default; Ink tungsten, Vellum iron-gall */
   letter-spacing: -0.02em;
 }
 .home-workspace-path {

@@ -167,7 +167,8 @@ CARD = "var(--card-bg)"
 
 HOME_WASH = [BASE, "rgba(var(--ctp-blue-rgb), 0.07)"]
 HOME_WASH_ROWS = [
-    ("home title (wash)",    "var(--ctp-text)",       HOME_WASH, 4.5, "P1"),
+    # .home-title is 28px semibold Cormorant — WCAG large text, 3:1
+    ("home title (wash)",    "var(--home-title)",     HOME_WASH, 3.0, "P1"),
     ("home meta (wash)",     "var(--home-meta)",      HOME_WASH, 4.5, "P1"),
     ("home control (wash)",  "var(--home-control)",   HOME_WASH, 4.5, "P1"),
 ]

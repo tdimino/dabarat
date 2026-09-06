@@ -107,6 +107,7 @@
   --home-meta: var(--ctp-overlay0);
   --home-control: var(--ctp-overlay1);
   --home-icon: var(--ctp-green);
+  --home-title: var(--ctp-lavender);   /* home/workspace h1; the Scholar's Codex pair pigments it */
   --badge-blue-fg: var(--ctp-blue);
   --badge-mauve-fg: var(--ctp-mauve);
   --badge-green-fg: var(--ctp-green);
@@ -664,10 +665,15 @@
   --bold-color:       #f0eada;                             /* brightest vellum */
   --italic-color:     #c8a478;                             /* softer tungsten */
   --blockquote-color: #c9c3b0;                             /* faded vellum — quoted, not shouted */
-  --toc-active-bg:    rgba(var(--ctp-yellow-rgb), 0.09);   /* tungsten current-section mark */
+  /* Functional marks (current section, row hover, selection) are blue like
+     every other theme; the signature pigments go to the title and the h3
+     rubric instead (2026-09-06) */
+  --toc-active-bg:    rgba(var(--ctp-blue-rgb), 0.09);
   --row-even-bg:      rgba(var(--ctp-surface0-rgb), 0.25);
-  --row-hover-bg:     rgba(var(--ctp-yellow-rgb), 0.04);
+  --row-hover-bg:     rgba(var(--ctp-blue-rgb), 0.04);
   --code-fg:          var(--ctp-sky);                      /* iron-gall blue */
+  --home-title:       var(--ctp-yellow);                   /* TUNGSTEN — the signature, on the home h1 */
+  --h3-color:         #d47a56;                             /* rubricated ochre, lifted from --ctp-peach for 5.5:1 headroom — the single h3 rubric */
 
   /* Role-token overrides — earthed pigments fall below 4.5:1 on mantle */
   --hljs-keyword:     #9380a7;
@@ -835,7 +841,8 @@
     0 6px 14px -4px rgba(70, 48, 20, 0.10),
     0 2px 6px -1px rgba(70, 48, 20, 0.08);
 
-  --h3-color: #4f6f47;  /* h3, solved 2026-09-06 */
+  --h3-color: var(--ctp-red);      /* CINNABAR rubric — the single h3 accent, same pigment as inline code (2026-09-06) */
+  --home-title: var(--ctp-blue);   /* IRON-GALL — the signature, on the home h1 */
   --toc-link: #676352;  /* toc link, solved 2026-09-06 */
   --badge-red-fg: #91272b;  /* var badge required, solved 2026-09-06 */
   --badge-mauve-fg: #5e405e;  /* tag mauve .20, solved 2026-09-06 */

@@ -39,8 +39,9 @@ blockquote, code, pre, th, td, tr {
 [data-theme="tokyo-light"] ::selection {
   background: rgba(var(--ctp-blue-rgb), 0.15);
 }
-/* Scholar's Codex signatures: tungsten on Ink, iron-gall on Vellum */
-[data-theme="ink"] ::selection { background: rgba(var(--ctp-yellow-rgb), 0.22); }
+/* Selection is functional, so it stays blue on every theme — Ink's tungsten
+   and Vellum's cinnabar live in the title and h3 rubric instead (2026-09-06) */
+[data-theme="ink"] ::selection { background: rgba(var(--ctp-blue-rgb), 0.22); }
 /* pair-scoped */
 [data-theme="vellum"] ::selection { background: rgba(var(--ctp-blue-rgb), 0.18); }
 

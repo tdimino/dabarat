@@ -222,7 +222,7 @@ USED_PAIRS = [
     ("fm nested key",        "var(--hljs-params)",      [BASE], 4.5, "P1"),
 
     # Tables
-    ("table header",         "var(--ctp-blue)",       [MANTLE], 4.5, "P1"),
+    ("table header",         "var(--ctp-text)",       [MANTLE], 4.5, "P1"),   # neutral 600 since 2026-09-06
     ("table zebra row",      "var(--ctp-text)",
      [BASE, "var(--row-even-bg)"], 4.5, "P1"),
     ("table hover row",      "var(--ctp-text)",

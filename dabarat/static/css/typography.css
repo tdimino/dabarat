@@ -169,26 +169,31 @@ table {
   margin: 0;    /* wrapper handles spacing */
   font-size: 0.88em;   /* tracks --base-size */
 }
+/* Editorial tables (2026-09-06): authored header casing, neutral 600
+   headers, horizontal rules only. Zebra, cell grid, and row hover are the
+   dense treatment — render.js adds `table.dense` past 8 rows or 5 columns,
+   where a reader has to track a line across a matrix. */
 thead { position: sticky; top: 0; }
 th {
-  background: var(--ctp-mantle);
-  color: var(--ctp-blue);
+  background: var(--ctp-mantle);     /* opaque so the sticky header covers rows */
+  color: var(--ctp-text);
   font-weight: 600;
   text-align: left;
   padding: 10px 14px;
-  border: 1px solid var(--ctp-surface0);
+  border-bottom: 1px solid var(--ctp-surface1);
   font-size: 0.92em;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 th[align="center"] { text-align: center; }
 th[align="right"] { text-align: right; }
 td {
   padding: 8px 14px;
-  border: 1px solid var(--ctp-surface0);
+  border-bottom: 1px solid var(--ctp-surface0);
 }
-tr:nth-child(even) { background: var(--row-even-bg); }
-tr:hover { background: var(--row-hover-bg); }
+table.dense th,
+table.dense td { border: 1px solid var(--ctp-surface0); }
+table.dense th { border-bottom-color: var(--ctp-surface1); }
+table.dense tr:nth-child(even) { background: var(--row-even-bg); }
+table.dense tr:hover { background: var(--row-hover-bg); }
 
 img { max-width: 100%; border-radius: var(--radius-lg); margin: 1em 0; }
 img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -0.1em; border-radius: 0; }

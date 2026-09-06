@@ -16,6 +16,16 @@ body.home-active #content {
   display: flex;
   flex-direction: column;
   min-height: calc(100vh - 34px);
+  /* Accent wash on the home ground: white cards on a bare neutral base
+     read as a slab (Latte #eff1f5, Tokyo Light #d5d6db). Two soft radial
+     washes in the theme's own accents lift the centre between the two
+     mantle rails without a single new hex — every theme keeps its
+     identity, dark themes get a faint depth glow. The wash shifts base
+     luminance by <1%; the audit registers the "(wash)" rows on it. */
+  background:
+    radial-gradient(1100px 620px at 12% -8%, rgba(var(--ctp-blue-rgb), 0.07), transparent 62%),
+    radial-gradient(900px 560px at 104% 104%, rgba(var(--ctp-mauve-rgb), 0.05), transparent 60%),
+    var(--ctp-base);
 }
 
 /* ── Workspace Header ───────────────────────────────────── */
@@ -77,6 +87,15 @@ body.home-active #content {
 }
 
 /* ── Card ────────────────────────────────────────────────── */
+/* Light themes: the card hairline echoes the wash (a blue-tinted edge on
+   white) instead of the grey surface1 ring, so card edges belong to the
+   lit ground rather than cutting it */
+[data-theme="latte"] .home-card,
+[data-theme="vellum"] .home-card,
+[data-theme="rose-pine-dawn"] .home-card,
+[data-theme="tokyo-light"] .home-card {
+  border-color: rgba(var(--ctp-blue-rgb), 0.16);
+}
 .home-card {
   position: relative;
   background: var(--card-bg);

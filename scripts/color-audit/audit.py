@@ -165,6 +165,13 @@ SURFACE0 = "var(--ctp-surface0)"
 CRUST = "var(--ctp-crust)"
 CARD = "var(--card-bg)"
 
+HOME_WASH = [BASE, "rgba(var(--ctp-blue-rgb), 0.07)"]
+HOME_WASH_ROWS = [
+    ("home title (wash)",    "var(--ctp-text)",       HOME_WASH, 4.5, "P1"),
+    ("home meta (wash)",     "var(--home-meta)",      HOME_WASH, 4.5, "P1"),
+    ("home control (wash)",  "var(--home-control)",   HOME_WASH, 4.5, "P1"),
+]
+
 USED_PAIRS = [
     # Primary reading surfaces → P0 on failure
     ("body text",            "var(--ctp-text)",       [BASE], 4.5, "P0"),
@@ -325,6 +332,11 @@ USED_PAIRS = [
     ("home meta (card)",     "var(--home-meta)",      [CARD], 4.5, "P1"),
     ("home control (base)",  "var(--home-control)",   [BASE], 4.5, "P1"),
     ("home control (card)",  "var(--home-control)",   [CARD], 4.5, "P1"),
+    # The home ground carries a 0.07 blue radial wash at its brightest
+    # corner (home.css .home-screen, 2026-09-06) — text sitting directly
+    # on the ground (title, stats, section headers, day separators) is
+    # audited on the wash, the harder of the two
+    HOME_WASH_ROWS[0], HOME_WASH_ROWS[1], HOME_WASH_ROWS[2],
     ("home card icon",       "var(--home-icon)",      [CARD], 3.0, "P1"),
     ("home ghost control",   "var(--ctp-overlay0)",   [CARD], 4.5, "WAIVED"),
 

@@ -362,8 +362,8 @@
   /* Role-token overrides — muted accents fall below 4.5:1 on mantle */
   --hljs-comment: #89859f;
   --tpl-pill-dollar: #61a0bd;
-  --home-meta: #918da7;
-  --home-control: #918caa;
+  --home-meta: #9692ac;     /* re-solved on the home wash, 2026-09-06 */
+  --home-control: #9691af;  /* re-solved on the home wash, 2026-09-06 */
   --badge-teal-fg: #67a5c2;
   --badge-neutral-fg: #9f9bb8;
 

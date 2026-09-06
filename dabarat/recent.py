@@ -205,7 +205,7 @@ def _count_annotations(filepath):
     """Count active annotations for a file."""
     try:
         from . import annotations as _ann_mod
-        data, _ = _ann_mod.read(filepath)
+        data, _ = _ann_mod.read(filepath, quarantine=False)
         return len(data.get("annotations", []))
     except Exception:
         return 0

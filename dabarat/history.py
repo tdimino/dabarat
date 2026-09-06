@@ -82,6 +82,15 @@ _initialized_for = None       # DB_PATH whose schema/journal mode were set up
 _init_lock = threading.Lock()
 
 
+def _schema_present(conn):
+    """One sqlite_master probe per connection (~µs) so a versions.db that
+    is deleted or replaced under a running server gets its schema back
+    instead of raising "no such table" until restart."""
+    return conn.execute(
+        "SELECT 1 FROM sqlite_master WHERE type='table' AND name='versions'"
+    ).fetchone() is not None
+
+
 @contextmanager
 def _db():
     """Yield a configured connection; commit open work, always close.
@@ -102,9 +111,9 @@ def _db():
         # browse-dir row). Once per process per DB_PATH is enough; the
         # path is part of the key because harnesses redirect DB_PATH.
         global _initialized_for
-        if _initialized_for != DB_PATH:
+        if _initialized_for != DB_PATH or not _schema_present(conn):
             with _init_lock:
-                if _initialized_for != DB_PATH:
+                if _initialized_for != DB_PATH or not _schema_present(conn):
                     # WAL lets history reads overlap saves; verify it took
                     # (some filesystems refuse) and fall back to rollback
                     mode = conn.execute("PRAGMA journal_mode = WAL").fetchone()[0]

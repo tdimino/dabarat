@@ -614,12 +614,12 @@ def cmd_export_pdf(argv):
     # Export via CDP (Chrome DevTools Protocol) for reliable margin control
     from .pdf_export import print_to_pdf
 
-    date = _flag_value(argv, "--date")
-    export_date = datetime.date.today().isoformat()
-    url = f"http://127.0.0.1:{port}?theme={theme}&export=1&date={export_date}"
-    if date:
-        from urllib.parse import quote
-        url += f"&date={quote(date)}"
+    from urllib.parse import quote
+    # One date param: the shell reads the FIRST ?date= value, so the user's
+    # --date must be the only one (a default-then-override pair silently
+    # ignored the flag)
+    date = _flag_value(argv, "--date") or datetime.date.today().isoformat()
+    url = f"http://127.0.0.1:{port}?theme={theme}&export=1&date={quote(date)}"
 
     try:
         print_to_pdf(

@@ -121,10 +121,14 @@ async function _pollOnce() {
   /* Always poll active tab content (fast) */
   if (activeTabId && tabs[activeTabId]) {
     try {
-      const res = await fetch(_contentUrl(activeTabId));
+      const id = activeTabId;
+      const res = await fetch(_contentUrl(id));
       const data = await res.json();
       _editProbeFailures = 0;
       _hideServerUnreachableBanner();
+      /* A switch or close during the fetch: this response belongs to a
+         tab that is no longer active — never write it into the new one */
+      if (id === activeTabId && tabs[id]) {
       if (!data.error) {
         _setTabGhost(activeTabId, !!data.fileMissing);
         _setTabFileError(activeTabId, data.fileError || null);
@@ -142,6 +146,7 @@ async function _pollOnce() {
         tabs[activeTabId].body = data.body;
         tabs[activeTabId].mtime = data.mtime;
         tabs[activeTabId].changeKey = data.changeKey;
+        tabs[activeTabId].loaded = true;
         currentFrontmatter = data.frontmatter || null;
         tabs[activeTabId].frontmatter = currentFrontmatter;
         render(tabBody(tabs[activeTabId]));
@@ -153,6 +158,7 @@ async function _pollOnce() {
           loadVersionHistory();
         }
       }
+      }  /* end: response still belongs to the active tab */
     } catch (e) {
       /* Read mode has no save at risk, but live reload going dark for
          ~3s straight deserves the same banner edit mode gets */
@@ -224,9 +230,14 @@ async function _pollOnce() {
             activeTabId = Object.keys(tabs)[0] || null;
             lastRenderedMd = '';
             if (activeTabId) {
-              currentFrontmatter = tabs[activeTabId].frontmatter || null;
-              render(tabBody(tabs[activeTabId]));
-              document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
+              const t = tabs[activeTabId];
+              if (_tabLoaded(t)) {
+                currentFrontmatter = t.frontmatter || null;
+                render(tabBody(t));
+                document.getElementById('status-filepath').textContent = t.filepath;
+              } else {
+                fetchTabContent(activeTabId);   /* lazy successor */
+              }
             }
           }
         }

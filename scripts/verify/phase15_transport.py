@@ -106,13 +106,59 @@ def main() -> int:
             report(ok, "V2 Content-Length matches body on shell, JSON, 404, 403, shell fallback",
                    "; ".join(f"{p}:{s}:{cl}/{n}" for p, s, cl, n in checks))
 
-            # V3: POST drain — 403 with a body, then a clean GET on the same socket
-            report(r.status == 403, "V3a foreign-Origin POST answers 403",
-                   f"status={r.status}")
-            r3, body3 = raw_get(conn, "/api/tabs")
+            # V3: origin check runs BEFORE the body is read; the 403 closes
+            # the socket (an unread body can't poison a reused connection,
+            # and a foreign page can't make the thread buffer its payload)
+            report(r.status == 403 and (r.getheader("Connection") or "").lower() == "close",
+                   "V3a foreign-Origin POST answers 403 + Connection: close (body unread)",
+                   f"status={r.status} connection={r.getheader('Connection')}")
+            r3, body3 = raw_get(conn, "/api/tabs")   # http.client reconnects
             report(r3.status == 200 and json.loads(body3),
-                   "V3b next request on the same socket is not poisoned by the drained body",
+                   "V3b a following request on a fresh socket is clean",
                    f"status={r3.status}")
+            # V3c: over-cap Content-Length with a valid origin → 413 without
+            # reading (headers only are sent; a draining server would hang
+            # for the 30 s idle timeout waiting for 20 MB that never comes)
+            t0 = time.perf_counter()
+            conn.putrequest("POST", "/api/add")
+            conn.putheader("Origin", base)
+            conn.putheader("Content-Type", "application/json")
+            conn.putheader("Content-Length", str(20 * 1024 * 1024))
+            conn.endheaders()
+            r4 = conn.getresponse(); r4.read()
+            dt = time.perf_counter() - t0
+            report(r4.status == 413 and dt < 2.0
+                   and (r4.getheader("Connection") or "").lower() == "close",
+                   "V3c 20 MB Content-Length → 413 + close in <2 s, body never read",
+                   f"status={r4.status} in {dt:.2f}s")
+            # V3d: negative Content-Length → 400 + close (never rfile.read(-1))
+            t0 = time.perf_counter()
+            conn.putrequest("POST", "/api/add")
+            conn.putheader("Origin", base)
+            conn.putheader("Content-Length", "-1")
+            conn.endheaders()
+            r5 = conn.getresponse(); r5.read()
+            dt = time.perf_counter() - t0
+            report(r5.status == 400 and dt < 2.0,
+                   "V3d negative Content-Length → 400 + close in <2 s",
+                   f"status={r5.status} in {dt:.2f}s")
+            # V3e/V3f: non-numeric length and chunked encoding are both
+            # refused up front (400 + close) — never a blocking read
+            outcomes = []
+            for hdrs in ({"Content-Length": "abc"},
+                         {"Transfer-Encoding": "chunked"}):
+                t0 = time.perf_counter()
+                conn.putrequest("POST", "/api/add")
+                conn.putheader("Origin", base)
+                for k, v in hdrs.items():
+                    conn.putheader(k, v)
+                conn.endheaders()
+                r6 = conn.getresponse(); r6.read()
+                outcomes.append((r6.status, (r6.getheader("Connection") or "").lower(),
+                                 time.perf_counter() - t0))
+            report(all(st == 400 and c == "close" and dt < 2.0 for st, c, dt in outcomes),
+                   "V3e/f non-numeric Content-Length and Transfer-Encoding → 400 + close",
+                   "; ".join(f"{st}/{c}/{dt:.2f}s" for st, c, dt in outcomes))
 
             # V4: gzip — shell compressed, decompressed == identity, small JSON not
             r_id, body_id = raw_get(conn, "/", {"Accept-Encoding": "identity"})

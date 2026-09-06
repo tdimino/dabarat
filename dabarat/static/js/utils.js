@@ -33,8 +33,10 @@ function formatTimeAgoShared(isoTimestamp) {
 /* One place for "focus goes in on open and comes back on close". Modal
    dialogs also keep Tab inside. Returns {close} — call it from the
    dialog's own close path (this never removes the element). The
-   frontmatter popup pioneered this pattern; palette, lightbox and the
-   instance menu share it now. */
+   frontmatter popup pioneered this pattern and keeps its own copy (its
+   Tab trap is interleaved with scroll locking), as does the instance
+   menu (anchored, non-modal, hand-rolled in showInstanceMenu); the
+   palette and lightbox use this helper. */
 function openDialog(el, opts) {
   opts = opts || {};
   const opener = opts.returnTo || document.activeElement;

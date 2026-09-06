@@ -82,6 +82,7 @@ CLI (__main__.py)
 - Change detection: `changeKey = f"{st.st_mtime_ns}:{st.st_size}"` (ns-precision mtime + size)
 - Content polling: client fetches `/api/content?since=` every 500ms (5 s hidden) over a keep-alive HTTP/1.1 connection; the server answers `{unchanged:true}` or the full body with `changeKey`. Bodies gzip above 1400 B, the shell carries an ETag, `Server-Timing` on the hot endpoints
 - Edit-mode probes: `/api/mtime` stat-only endpoint with sleep/wake resilience
+- Instance discovery (`instances.py`): PID-file scan plus parallel 1 s probes of sibling ports in a thread pool; `<port>.tabs.json` orphans with no `.pid` older than 7 days are swept on every scan
 - Inline editing: `/api/save` snapshots pre-existing disk state, writes atomically (tempfile + `os.replace`), versions to SQLite
 - Conflict detection: saves carry `baseChangeKey`, server 409s if disk changed, client confirms overwrite
 - Version history: `/api/versions`, `/api/version`, `/api/diff-version`, `/api/version/pin`, `/api/version/label`, `/api/restore` backed by `history.py`
@@ -167,7 +168,7 @@ CLI (__main__.py)
 - **Sidecar JSON, never modify source markdown** — annotations live in separate files
 - **Polling over WebSocket** — 500ms interval with `since=` short-circuit and keep-alive, simpler than WebSocket for stdlib-only constraint; idle cost is one tiny JSON per tick, no new TCP connection
 - **Tab IDs = SHA-256 of absolute path** — deterministic, collision-resistant
-- **Orphan cleanup on read** — runs every time annotations are fetched, no separate GC process
+- **Orphan cleanup on read** — runs in `GET /api/annotations` only while the tab's `annotations_dirty` flag is set (external change, save, or a fresh tab); no separate GC process and no sidecar rewrite on an idle poll
 - **Single HTML document** — template.py inlines everything, no separate asset requests
 - **Event delegation over inline handlers** — `data-*` attributes + `addEventListener` for XSS prevention
 - **Progressive enhancement** — Motion One loaded as optional ES module; all call sites guarded with `if (window.Motion)`

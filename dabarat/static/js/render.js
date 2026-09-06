@@ -390,8 +390,9 @@ function render(md) {
 /* The Noto Hebrew families are ~2 extra font files; the README promises
    they load only when a document needs them. One regex on the markdown
    already in hand, one <link> injected once. In export mode the link goes
-   in synchronously before render, so init.js's document.fonts.ready wait
-   covers it before the render-complete sentinel. */
+   in synchronously before render; init.js then awaits the Hebrew faces
+   explicitly (fonts.ready alone would not wait for a just-added link)
+   before the render-complete sentinel. */
 const HEBREW_FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@400..700&family=Noto+Serif+Hebrew:wght@400..700&display=swap';
 function ensureHebrewFonts(md) {
   if (document.getElementById('dabarat-hebrew-fonts')) return;

@@ -34,6 +34,7 @@ async function init() {
             tabs[id].mtime = data.mtime;
             tabs[id].changeKey = data.changeKey;
             tabs[id].frontmatter = data.frontmatter || null;
+            tabs[id].loaded = true;
             currentFrontmatter = tabs[id].frontmatter;
           })
         : fetch('/api/mtime?tab=' + id).then(r => r.json()).then(data => {
@@ -80,13 +81,16 @@ async function init() {
     });
     /* Hebrew fonts are injected on demand by render(); a just-added
        stylesheet has not started its font fetches when fonts.ready is
-       first consulted, so ask for the faces explicitly */
+       first consulted, so ask for the faces explicitly. Google splits
+       each family into unicode-range faces — the default sample text
+       (a space) would only fetch the latin subset, so pass a Hebrew
+       letter to force the face the document actually needs */
     const hebrewLink = document.getElementById('dabarat-hebrew-fonts');
     const hebrewReady = hebrewLink
       ? new Promise(resolve => {
           const go = () => Promise.all([
-            document.fonts.load('400 16px "Noto Serif Hebrew"'),
-            document.fonts.load('400 16px "Noto Sans Hebrew"'),
+            document.fonts.load('400 16px "Noto Serif Hebrew"', '\u05d0'),
+            document.fonts.load('400 16px "Noto Sans Hebrew"', '\u05d0'),
           ]).then(resolve, resolve);
           if (hebrewLink.sheet) go();
           else {
@@ -96,7 +100,10 @@ async function init() {
           setTimeout(resolve, 6000);   /* never wedge an export on a CDN */
         })
       : Promise.resolve();
-    await Promise.all([...imgPromises, hebrewReady, document.fonts.ready]);
+    await Promise.all([...imgPromises, hebrewReady]);
+    /* Re-read fonts.ready AFTER the explicit loads: a promise captured
+       alongside them could already be resolved from before the link */
+    await document.fonts.ready;
     const sentinel = document.createElement('div');
     sentinel.id = 'dabarat-render-complete';
     document.body.appendChild(sentinel);

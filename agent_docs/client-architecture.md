@@ -49,10 +49,15 @@
 - **Text anchoring**: `findTextRange(container, searchText, index?)` finds anchor text across DOM nodes against a `buildTextIndex(container)` (text nodes + offsets into the concatenated string, binary-searched)
   - Exact match: prefers an occurrence wholly inside one text node over an earlier straddling one (capped scan)
   - Normalized fallback: `§`↔`Section`, whitespace collapse, case-insensitive — the normalized form is memoized on the index
-- **Highlight rendering**: `applyAnnotationHighlights()` builds the index **once**, resolves every anchor to a Range first, then wraps — `surroundContents` splits text nodes, but Ranges are live and track the splits, so the shared index stays valid (was one TreeWalker per annotation per render)
+- **Highlight rendering**: `applyAnnotationHighlights()` builds the index **once**, resolves every anchor to a Range first, then wraps — `surroundContents` splits text nodes, but Ranges are live and track the splits, so the shared index stays valid (was one TreeWalker per annotation per render). Wraps run in **descending document order** — `surroundContents` collapses any later boundary inside the wrapped span — and a range that still collapses (duplicate anchor, nested with the same start) is re-resolved against a fresh index so it lands nested inside the earlier mark
   - Multi-node spans: wraps partial range from start node when `surroundContents` can't span nodes
 - **Bubble rendering**: `renderAnnotations()` builds the gutter panel with author, timestamp, type icon, body, replies, resolve/delete buttons
 - **Carousel**: text selection triggers a floating 5-button carousel positioned above the selection; clicking a type opens the annotation form in the gutter
+
+### UI Primitives (utils.js, tabs.js)
+- **`openDialog(el, {modal, initialFocus, returnTo})`** (`utils.js`) — focus moves into the dialog on open and back to the opener on close; modal dialogs trap Tab. Used by the palette and the lightbox. The frontmatter popup and the instance menu implement the same contract by hand (the instance menu skips focus return on an outside click).
+- **`_showStatusBanner(id, message, severity, {actions, icon, timeout, dismiss})`** (`tabs.js`) — the only way a `.status-banner` is built; `data-severity="info|warn|error"` drives hue, `role="status"`/`aria-live="polite"` (or `alert`/`assertive` for errors).
+- **Tablist keyboard model** (`tabs.js`) — `role="tablist"` with roving tabindex: ArrowLeft/Right and Home/End move focus without activating, Enter/Space activate, Delete/Backspace close the focused tab. Menus use `_menuKeyNav`.
 
 ### Tab System
 - Tab bar rendered by `renderTabBar()` inside `#tab-bar-wrapper` — click to switch, X to close, + to add

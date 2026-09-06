@@ -117,7 +117,7 @@ Most markdown annotation tools either require a heavy framework (Svelte, React, 
 - **AI-native**—built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
 - **Beautiful**—Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
 
-CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap) load on first page view and are cached by the browser. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable. After first load, the tool works fully offline.
+CDN scripts load in two tiers. marked.js, marked-footnote, highlight.js, Phosphor Icons, Twemoji, and Motion One load on first page view (pinned versions with subresource-integrity hashes) and are cached by the browser. Tiptap (first edit-mode entry), Vibrant.js (the image-theme command), and the Noto Hebrew fonts (first document containing Hebrew) load on demand. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable. Once each tier has loaded once, the tool works offline; a feature you never triggered while online fetches its script the first time you use it.
 
 ## CLI Reference
 

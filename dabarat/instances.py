@@ -159,7 +159,8 @@ def discover_instances(self_port=None, self_paths=None):
     """Instance rows for GET /api/instances.
 
     The caller passes its own open filepaths so the self row never
-    round-trips over HTTP; siblings get a 1s serial probe each.
+    round-trips over HTTP; siblings are probed in parallel (1 s each,
+    ThreadPoolExecutor in scan_live / here).
     """
     rows = []
     found = scan_live(assume_running=self_port)

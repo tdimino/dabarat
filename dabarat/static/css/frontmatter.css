@@ -266,7 +266,7 @@
   max-height: 86vh;
   background: var(--ctp-base);
   border: 1px solid var(--ctp-surface1);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-2xl);
   box-shadow: var(--elevation-2), 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.08);
   overflow: hidden;
   display: flex;

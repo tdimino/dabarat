@@ -70,9 +70,14 @@ def pop_corrupt_notice(filepath):
     return _corrupt_notices.pop(filepath, None)
 
 
-def _read_json(path, default):
-    if not os.path.exists(path):
-        return default, 0
+def _read_json(path, default, *, notice_key=None, quarantine=True):
+    """Parse a sidecar. Missing → default. Unparseable → default, and when
+    `quarantine` is set the file is moved aside and a notice recorded under
+    `notice_key` (the markdown path the server asks about). Read-only
+    listings pass quarantine=False: a directory browse must never rename a
+    file another instance may still be writing. Any other OSError
+    (permissions, I/O) propagates — a read-modify-write that treated it
+    as "empty" would overwrite the sidecar with nothing."""
     try:
         mtime = os.path.getmtime(path)
         with open(path, encoding="utf-8") as f:
@@ -80,11 +85,13 @@ def _read_json(path, default):
         if not isinstance(data, dict):
             raise ValueError("sidecar root is not an object")
         return data, mtime
-    except (OSError, ValueError) as exc:
-        if isinstance(exc, ValueError):
+    except FileNotFoundError:
+        return default, 0
+    except ValueError:
+        if quarantine:
             backup = _quarantine(path)
             if backup:
-                _corrupt_notices[path] = backup
+                _corrupt_notices[notice_key or path] = backup
         return default, 0
 
 
@@ -103,15 +110,15 @@ def _write_json(path, data):
         raise
 
 
-def read(filepath):
-    """Read annotations for a file. Returns (data_dict, mtime)."""
-    path = get_path(filepath)
+def read(filepath, quarantine=True):
+    """Read annotations for a file. Returns (data_dict, mtime).
+    quarantine=False for listings (browse-dir, home cards): report the
+    sidecar as empty but leave the file alone."""
     with locked(filepath):
-        data, mtime = _read_json(path, {"version": 1, "annotations": []})
+        data, mtime = _read_json(get_path(filepath),
+                                 {"version": 1, "annotations": []},
+                                 notice_key=filepath, quarantine=quarantine)
         data.setdefault("annotations", [])
-        if path in _corrupt_notices:
-            # Re-key by the markdown path the server asks about
-            _corrupt_notices[filepath] = _corrupt_notices.pop(path)
         return data, mtime
 
 
@@ -119,7 +126,8 @@ def read_resolved(filepath):
     """Read resolved annotations archive. Returns data_dict."""
     with locked(filepath):
         data, _ = _read_json(get_resolved_path(filepath),
-                             {"version": 1, "resolved": []})
+                             {"version": 1, "resolved": []},
+                             notice_key=filepath)
         data.setdefault("resolved", [])
         return data
 
@@ -136,9 +144,9 @@ def write_resolved(filepath, data):
         _write_json(get_resolved_path(filepath), data)
 
 
-def read_tags(filepath):
+def read_tags(filepath, quarantine=True):
     """Read tags for a file. Returns list of tag strings."""
-    data, _ = read(filepath)
+    data, _ = read(filepath, quarantine=quarantine)
     return data.get("tags", [])
 
 

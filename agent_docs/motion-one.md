@@ -32,9 +32,10 @@ Two conditions:
 1. `window.Motion` — CDN loaded successfully (progressive enhancement)
 2. `!_prefersReducedMotion` — user has not set `prefers-reduced-motion: reduce`
 
-The `_prefersReducedMotion` constant is defined in `state.js`:
+`_prefersReducedMotion` is a live `let` in `state.js`, updated by a `matchMedia` change listener so a mid-session OS toggle takes effect without reload:
 ```js
-const _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', e => { _prefersReducedMotion = e.matches; });
 ```
 
 CSS also provides a `@media (prefers-reduced-motion: reduce)` block in `responsive.css` that disables CSS animations and transitions.

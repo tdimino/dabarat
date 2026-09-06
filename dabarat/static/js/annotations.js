@@ -119,9 +119,10 @@ function buildTextIndex(container) {
   return { nodes, fullText, norm: null, indexMap: null };
 }
 
-/* Binary search: the entry whose [start, end) covers pos (end-inclusive
-   for the closing boundary so a match ending exactly at a node edge
-   resolves to that node, matching the original linear scan) */
+/* Binary search: the entry whose [start, end) covers pos. With
+   inclusiveEnd a pos on a node boundary is ambiguous (it is one node's
+   end and the next node's start), so callers decide single-node matches
+   from the START entry's extent and only bisect the end for spans. */
 function _indexEntryAt(index, pos, inclusiveEnd) {
   const nodes = index.nodes;
   let lo = 0, hi = nodes.length - 1;
@@ -200,11 +201,20 @@ function findTextRange(container, searchText, index) {
     if (matchIdx < 0) break;
     const matchEnd = matchIdx + searchText.length;
     const startEntry = _indexEntryAt(index, matchIdx, false);
-    const endEntry = _indexEntryAt(index, matchEnd, true);
-    if (startEntry && endEntry) {
-      const range = makeRange(startEntry, matchIdx - startEntry.start, endEntry, matchEnd - endEntry.start);
-      if (startEntry === endEntry) return range;
-      if (!spanning) spanning = range;
+    if (startEntry) {
+      if (matchEnd <= startEntry.end) {
+        /* Wholly inside one text node (incl. a match that fills the
+           node exactly — the boundary must not be read as spanning) */
+        return makeRange(startEntry, matchIdx - startEntry.start,
+                         startEntry, matchEnd - startEntry.start);
+      }
+      if (!spanning) {
+        const endEntry = _indexEntryAt(index, matchEnd, true);
+        if (endEntry) {
+          spanning = makeRange(startEntry, matchIdx - startEntry.start,
+                               endEntry, matchEnd - endEntry.start);
+        }
+      }
     }
     from = matchIdx + 1;
   }
@@ -253,7 +263,25 @@ function applyAnnotationHighlights() {
     if (range) resolved.push({ ann, range });
   });
 
+  /* Wrap from the END of the document backwards. surroundContents
+     deletes the wrapped text from its node (replaceData), and the live-
+     range rule collapses any other boundary inside (start, end] to
+     start — a nested or exactly-adjacent LATER range would lose its
+     highlight. Going last-to-first, each wrap only touches text after
+     every range still waiting. */
+  resolved.sort((a, b) => b.range.compareBoundaryPoints(Range.START_TO_START, a.range));
+  let freshIndex = null;   /* rebuilt lazily after a wrap, only if needed */
   resolved.forEach(({ ann, range }) => {
+    /* Two annotations on the SAME text (duplicate anchors, or a nested
+       one sharing the start) can't be ordered apart: the first wrap
+       collapses the other. Re-resolve it against the mutated DOM — it
+       lands inside the new mark as a nested highlight, as before. */
+    if (range.collapsed) {
+      freshIndex = freshIndex || buildTextIndex(content);
+      range = findTextRange(content, ann.anchor.text, freshIndex);
+      if (!range || range.collapsed) return;
+    }
+    freshIndex = null;
     try {
       const mark = document.createElement('mark');
       mark.className = 'annotation-highlight';

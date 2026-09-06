@@ -347,9 +347,11 @@ async function fetchTabContent(id) {
     tabs[id].mtime = data.mtime;
     tabs[id].changeKey = data.changeKey;
     tabs[id].frontmatter = data.frontmatter || null;
+    tabs[id].loaded = true;
     if (id === activeTabId) {
       currentFrontmatter = tabs[id].frontmatter;
       render(tabBody(tabs[id]));
+      document.getElementById('status-filepath').textContent = tabs[id].filepath;
     }
   } catch (e) { /* ignore */ }
 }
@@ -400,11 +402,18 @@ async function closeTab(id) {
   if (id === activeTabId) {
     activeTabId = Object.keys(tabs)[0] || null;
     lastRenderedMd = '';
-    if (activeTabId && tabs[activeTabId].content) {
-      currentFrontmatter = tabs[activeTabId].frontmatter || null;
-      render(tabBody(tabs[activeTabId]));
-      document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
-    } else if (!activeTabId) {
+    if (activeTabId) {
+      const t = tabs[activeTabId];
+      if (_tabLoaded(t)) {
+        currentFrontmatter = t.frontmatter || null;
+        render(tabBody(t));
+        document.getElementById('status-filepath').textContent = t.filepath;
+      } else {
+        /* Never-activated successor: fetch, or the closed document
+           stays painted and the since= poll locks it in */
+        fetchTabContent(activeTabId);
+      }
+    } else {
       showHomeScreen();
     }
   }
@@ -467,7 +476,7 @@ async function _closeBulk(mode, keepIds) {
     if (activeTabId) {
       const t = tabs[activeTabId];
       currentFrontmatter = t.frontmatter || null;
-      if (t.content) {
+      if (_tabLoaded(t)) {
         render(tabBody(t));
         document.getElementById('status-filepath').textContent = t.filepath;
       } else {

@@ -44,6 +44,11 @@ _tabs_changed_warned = False
 # accepts it (below it the gzip header costs more than it saves); the
 # compressed shell is memoized by ETag so a reload costs no CPU.
 _GZIP_MIN_BYTES = 1400
+_BODY_MAX_BYTES = 10 * 1024 * 1024   # POST body cap; larger → 413 + close, never read
+
+
+class _BodyTooLarge(ValueError):
+    """Content-Length above _BODY_MAX_BYTES (raised before any read)."""
 _gz_cache = {}          # etag → gzip bytes (shell only)
 _gz_cache_lock = threading.Lock()
 _GZ_CACHE_MAX = 8
@@ -284,16 +289,21 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         return snap
 
     def _read_body(self):
-        """Consume the request body. Raises ValueError on a malformed
-        Content-Length (the caller answers 400 and closes the socket —
-        under keep-alive an unread body would be parsed as the next
-        request line)."""
+        """Consume the request body. Raises ValueError on a malformed,
+        negative, or chunked body and _BodyTooLarge above the cap; the
+        caller answers 400/413 and closes the socket rather than reading
+        (under keep-alive an unread body would be parsed as the next
+        request line, and reading it would let a foreign page make this
+        thread allocate the whole thing). Only runs after _check_origin."""
+        if self.headers.get("Transfer-Encoding"):
+            raise ValueError("chunked bodies unsupported")
         length = int(self.headers.get("Content-Length", 0))
+        if length < 0:
+            raise ValueError("negative Content-Length")
         if not length:
             return {}
-        if length > 10 * 1024 * 1024:  # 10 MB cap
-            self.rfile.read(length)  # drain
-            return {}
+        if length > _BODY_MAX_BYTES:
+            raise _BodyTooLarge(length)
         try:
             return json.loads(self.rfile.read(length))
         except (json.JSONDecodeError, ValueError):
@@ -352,23 +362,26 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
     @staticmethod
     def _timing(t0, name="total"):
         """Server-Timing header value — the project's first perf signal
-        (DevTools shows it; phase15 asserts browse-dir per-file cost)."""
+        (DevTools → Network → Timing shows it; not asserted by any net)."""
         return {"Server-Timing": f"{name};dur={(time.perf_counter() - t0) * 1000:.2f}"}
 
     def _check_origin(self):
         """Reject POST/PUT/DELETE from foreign origins (CSRF protection)."""
         if self.command in ("POST", "PUT", "DELETE"):
             origin = self.headers.get("Origin", "")
-            if not origin:
-                self._json_response({"error": "origin header required"}, 403)
-                return False
             port = self._server_port
             allowed = {
                 f"http://localhost:{port}",
                 f"http://127.0.0.1:{port}",
             }
-            if origin not in allowed:
-                self._json_response({"error": "forbidden"}, 403)
+            if not origin or origin not in allowed:
+                # Runs BEFORE the body is read: a foreign page must not be
+                # able to make this thread buffer its payload. The unread
+                # body would desync a reused socket, so close it — the
+                # Connection header also flips close_connection.
+                self._json_response(
+                    {"error": "origin header required" if not origin else "forbidden"},
+                    403, extra_headers={"Connection": "close"})
                 return False
         return True
 
@@ -484,11 +497,14 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 # against a cache that was never loaded (change_key None
                 # would orphan every annotation), and not on every tick
                 if tab.get("change_key") and tab.get("annotations_dirty", True):
+                    annotations.cleanup_orphans(filepath, tab["content"])
+                    # Clear only after a successful pass, and only if no
+                    # refresh landed meanwhile (a newer content snapshot
+                    # re-dirties the tab and must get its own pass)
                     with self._tabs_lock:
                         live = self._tabs.get(tab_id)
-                        if live is not None:
+                        if live is not None and live.get("change_key") == tab["change_key"]:
                             live["annotations_dirty"] = False
-                    annotations.cleanup_orphans(filepath, tab["content"])
                 data, mtime = annotations.read(filepath)
                 response = {
                     "annotations": data.get("annotations", []),
@@ -672,7 +688,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     file_paths.append(full)
                     # Tags + annotation count from one sidecar read
                     try:
-                        ann_data, _ = annotations.read(full)
+                        ann_data, _ = annotations.read(full, quarantine=False)
                         tags = ann_data.get("tags", [])
                         if tags:
                             entry["tags"] = tags
@@ -1012,15 +1028,19 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
     def do_POST(self):
         global _active_workspace, _active_workspace_path
         parsed = urlparse(self.path)
-        # Drain the body BEFORE the origin check: under keep-alive an
-        # unread JSON body would be parsed as the next request line
+        # Origin first (it closes the socket on failure, so the unread
+        # body can never be parsed as the next request), then the body
+        if not self._check_origin():
+            return
         try:
             body = self._read_body()
-        except ValueError:
-            self.close_connection = True
-            self._json_response({"error": "bad Content-Length"}, 400)
+        except _BodyTooLarge:
+            self._json_response({"error": "body too large"}, 413,
+                                extra_headers={"Connection": "close"})
             return
-        if not self._check_origin():
+        except ValueError:
+            self._json_response({"error": "bad request body"}, 400,
+                                extra_headers={"Connection": "close"})
             return
 
         if parsed.path == "/api/add":

@@ -180,19 +180,37 @@ function enterTextareaMode() {
 let _editModeLoading = false;
 async function enterEditMode() {
   if (editState.active || _editModeLoading) return;
-  /* Tiptap is fetched on first use (template.py loadTiptap); the raw
-     textarea remains the fallback when the CDN is unreachable */
-  if (!window.Tiptap && typeof window.loadTiptap === 'function') {
-    _editModeLoading = true;
-    updateEditStatus('Loading editor…');
-    try {
-      await window.loadTiptap();
-    } catch (e) {
-      console.warn('Tiptap unavailable, using textarea:', e);
-    } finally {
-      _editModeLoading = false;
+  const tabAtStart = activeTabId;
+  const homeAtStart = homeScreenActive;
+  if (!tabAtStart || !tabs[tabAtStart]) return;
+  _editModeLoading = true;
+  updateEditStatus('Loading editor…');
+  try {
+    /* A never-activated tab has no content yet — editing it would open
+       an empty editor whose save passes the conflict check */
+    if (!_tabLoaded(tabs[tabAtStart])) await fetchTabContent(tabAtStart);
+    /* Tiptap is fetched on first use (template.py loadTiptap); the raw
+       textarea remains the fallback when the CDN is unreachable */
+    if (!window.Tiptap && typeof window.loadTiptap === 'function') {
+      try {
+        await window.loadTiptap();
+      } catch (e) {
+        console.warn('Tiptap unavailable, using textarea:', e);
+      }
     }
-    if (editState.active) return;   /* something else opened it meanwhile */
+  } finally {
+    _editModeLoading = false;
+  }
+  if (editState.active) return;   /* something else opened it meanwhile */
+  /* The awaits above can take seconds on a slow CDN: bail if the user
+     moved on (switched/closed the tab, went Home) or the fetch failed */
+  if (activeTabId !== tabAtStart || !tabs[tabAtStart]) return;
+  if (homeScreenActive && !homeAtStart) return;
+  if (!_tabLoaded(tabs[tabAtStart])) {
+    _showStatusBanner('edit-load-failed-banner',
+      'Could not load ' + tabs[tabAtStart].filename + ' for editing — is the server reachable?',
+      'error', { timeout: 6000 });
+    return;
   }
   if (window.Tiptap) {
     enterWysiwygMode();

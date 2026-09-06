@@ -18,7 +18,7 @@ Returns JSON array of open tabs.
 ```
 
 ### `GET /api/content?tab={id}[&since={changeKey}]`
-Returns markdown content and change metadata for a tab. With `since` equal to the tab's current `changeKey` the reply is the short form `{ "unchanged": true, "changeKey": "…", "fileMissing"?: true, "fileError"?: "…" }` (200 + JSON, never 304 — ghost-state flags always ride along).
+Returns markdown content and change metadata for a tab. With `since` equal to the tab's current `changeKey` the reply is the short form `{ "unchanged": true, "changeKey": "…", "fileMissing"?: true, "fileError"?: "…", "snapshotFailed"?: true }` (200 + JSON, never 304 — ghost-state and snapshot flags always ride along).
 ```json
 {
   "content": "---\ntitle: Doc\n---\n\n# Hello\n...",
@@ -29,7 +29,7 @@ Returns markdown content and change metadata for a tab. With `since` equal to th
   "fileMissing": true
 }
 ```
-`content` is always the raw file (the editor round-trips it). `body` (frontmatter-stripped, for rendering) is present only when frontmatter exists — both derive from the same content snapshot. `changeKey` is `st_mtime_ns:size` captured via `fstat` of the descriptor that read the content (never torn). `fileMissing: true` appears when the file was deleted/moved; `fileError: "<ExceptionName>"` when it exists but cannot be read (permissions, encoding). Cached content is still served in both cases. `snapshotFailed: true` (once per tab) means an externally-detected change could not be written to version history. Client polls every 500 ms with `since=`, 5 s while the window is hidden.
+`content` is always the raw file (the editor round-trips it). `body` (frontmatter-stripped, for rendering) is present only when frontmatter exists — both derive from the same content snapshot. `changeKey` is `st_mtime_ns:size` captured via `fstat` of the descriptor that read the content (never torn). `fileMissing: true` appears when the file was deleted/moved; `fileError: "<ExceptionName>"` when it exists but cannot be read (permissions, encoding). Cached content is still served in both cases. `snapshotFailed: true` means an externally-detected change could not be written to version history — reported once per failure, then cleared (a later failure reports again). Client polls every 500 ms with `since=`, 5 s while the window is hidden.
 
 ### `GET /api/mtime?tab={id}`
 Stat-only change probe — no file read. Used by edit mode to watch for external modifications while full polling is paused.
@@ -68,7 +68,7 @@ Returns user config from `~/.dabarat/config.json`. Empty object `{}` if no confi
 ```
 
 ### `GET /api/instances`
-Returns all live dabarat instances on this machine (via `instances.discover_instances()` — PID files in `~/.dabarat/instances/` plus serial 1s HTTP probes of siblings). The self row's tabs come from in-memory `self._tabs` under lock, never a self-probe. Sorted by port, self first.
+Returns all live dabarat instances on this machine (via `instances.discover_instances()` — PID files in `~/.dabarat/instances/` plus parallel 1 s HTTP probes of siblings). The self row's tabs come from in-memory `self._tabs` under lock, never a self-probe. Sorted by port, self first.
 ```json
 {
   "instances": [

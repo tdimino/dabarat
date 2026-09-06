@@ -257,16 +257,19 @@ USED_PAIRS = [
     # Editor selection wash
     ("selection (editor)",   "var(--ctp-text)",
      [BASE, "rgba(var(--ctp-blue-rgb), 0.25)"], 4.5, "P1"),
-    # Editor chrome (editor.css): toolbar sits on crust, the surface is base
+    # Editor chrome (editor.css): toolbar sits on mantle (2026-09-06, was
+    # crust), the surface is base
     ("editor caret",         "var(--stat-chg)",       [BASE], 3.0, "P1"),
-    ("editor fmt button",    "var(--ctp-subtext0)",   [CRUST], 4.5, "P1", DARK_THEMES),
-    ("editor fmt button",    "var(--ctp-subtext1)",   [CRUST], 4.5, "P1", LIGHT_THEMES),
-    ("editor status",        "var(--ctp-subtext0)",   [CRUST], 4.5, "P1", DARK_THEMES),
-    ("editor status",        "var(--ctp-subtext1)",   [CRUST], 4.5, "P1", LIGHT_THEMES),
-    ("edit-mode badge",      "var(--ctp-yellow)",
-     [CRUST, "rgba(var(--ctp-yellow-rgb), 0.10)"], 4.5, "P1", DARK_THEMES),
-    ("edit-mode badge",      "var(--ctp-text)",
-     [CRUST, "rgba(var(--ctp-yellow-rgb), 0.15)"], 4.5, "P1", LIGHT_THEMES),
+    ("editor fmt button",    "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1", DARK_THEMES),
+    ("editor fmt button",    "var(--ctp-subtext1)",   [MANTLE], 4.5, "P1", LIGHT_THEMES),
+    ("editor status",        "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1", DARK_THEMES),
+    ("editor status",        "var(--ctp-subtext1)",   [MANTLE], 4.5, "P1", LIGHT_THEMES),
+    ("edit-mode badge (clean)", "var(--home-control)",
+     [MANTLE, "rgba(var(--ctp-overlay1-rgb), 0.12)"], 4.5, "P1"),
+    ("edit-mode badge (dirty)", "var(--ctp-yellow)",
+     [MANTLE, "rgba(var(--ctp-yellow-rgb), 0.10)"], 4.5, "P1", DARK_THEMES),
+    ("edit-mode badge (dirty)", "var(--ctp-text)",
+     [MANTLE, "rgba(var(--ctp-yellow-rgb), 0.15)"], 4.5, "P1", LIGHT_THEMES),
     # Annotation bubble type icons: bubbles are surface0 on dark themes and
     # mantle on light ones (annotations.css light override)
     ("ann icon comment",     "var(--badge-yellow-fg)", [SURFACE0], 3.0, "P1", DARK_THEMES),

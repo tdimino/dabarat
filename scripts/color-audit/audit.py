@@ -380,6 +380,12 @@ USED_PAIRS = [
      [CARD, "rgba(var(--ctp-lavender-rgb), 0.18)"], 4.5, "P1"),
     ("badge neutral .18",    "var(--badge-neutral-fg)",
      [CARD, "rgba(var(--ctp-overlay1-rgb), 0.18)"], 4.5, "P1"),
+    # Descriptive metadata chips (type/model/version) — neutral on the card
+    # and, in the frontmatter bar, on base (2026-09-06)
+    ("badge neutral .15",    "var(--badge-neutral-fg)",
+     [CARD, "rgba(var(--ctp-overlay1-rgb), 0.15)"], 4.5, "P1"),
+    ("fm chip neutral .15 (base)", "var(--badge-neutral-fg)",
+     [BASE, "rgba(var(--ctp-overlay1-rgb), 0.15)"], 4.5, "P1"),
 
     # Instance dropdown + overflow menu — both sit on --card-bg
     # (base-layout.css .instance-menu / .tab-overflow-menu). Registered

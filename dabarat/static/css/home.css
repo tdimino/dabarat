@@ -262,11 +262,13 @@ body.home-active #content {
   white-space: nowrap;
 }
 .home-badge i { font-size: 11px; }
-/* Frontmatter badges — text uses --badge-*-fg role tokens (solved per
-   theme against the wash-on-card surface); washes keep the raw accents */
-.home-badge-type   { background: rgba(var(--ctp-blue-rgb), 0.15); color: var(--badge-blue-fg); }
-.home-badge-model  { background: rgba(var(--ctp-mauve-rgb), 0.15); color: var(--badge-mauve-fg); }
-.home-badge-version { background: rgba(var(--ctp-green-rgb), 0.15); color: var(--badge-green-fg); }
+/* Frontmatter badges — descriptive fields (type, model, version) are
+   neutral chips, the same chip the frontmatter bar uses, so a field never
+   changes hue between surfaces (2026-09-06). Hue is reserved for state:
+   status keeps peach (awareness). Text uses --badge-*-fg role tokens. */
+.home-badge-type,
+.home-badge-model,
+.home-badge-version { background: rgba(var(--ctp-overlay1-rgb), 0.15); color: var(--badge-neutral-fg); }
 .home-badge-status { background: rgba(var(--ctp-peach-rgb), 0.15); color: var(--badge-peach-fg); }
 
 /* Smart file-type badges */

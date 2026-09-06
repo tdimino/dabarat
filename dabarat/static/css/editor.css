@@ -11,15 +11,19 @@
 }
 
 /* ── Toolbar ─────────────────────────────────────────────── */
+/* Toolbar sits on mantle like the sidebar — one step above the page, not
+   the crust slab (2026-09-06, same diagnosis as the tab bar). 32px controls
+   in groups 12px apart; hover is one neutral wash, active is one blue wash;
+   "Editing" stays neutral until changes are pending (body.edit-dirty). */
 .edit-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 6px 16px;
-  background: var(--crust-bg, var(--ctp-crust));
+  background: var(--toc-bg, var(--ctp-mantle));
   border-bottom: 1px solid var(--ctp-surface0);
   flex-shrink: 0;
-  min-height: 36px;
+  min-height: 40px;
 }
 
 .edit-mode-badge {
@@ -27,36 +31,42 @@
   align-items: center;
   gap: 5px;
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--ctp-yellow);
-  background: rgba(var(--ctp-yellow-rgb), 0.1);
-  border: 1px solid rgba(var(--ctp-yellow-rgb), 0.25);
+  letter-spacing: 1.5px;
+  color: var(--home-control);
+  background: rgba(var(--ctp-overlay1-rgb), 0.12);
+  border: 1px solid rgba(var(--ctp-overlay1-rgb), 0.25);
   border-radius: var(--radius-xl);
   padding: 2px 10px 2px 7px;
-  margin-right: 8px;
+  margin-right: 12px;
   user-select: none;
+  transition: color var(--dur-base), background var(--dur-base), border-color var(--dur-base);
 }
 .edit-mode-badge i {
   font-size: 12px;
+}
+/* Pending work is yellow (attention-hue convention) */
+body.edit-dirty .edit-mode-badge {
+  color: var(--ctp-yellow);
+  background: rgba(var(--ctp-yellow-rgb), 0.1);
+  border-color: rgba(var(--ctp-yellow-rgb), 0.25);
 }
 
 .edit-fmt-btn {
   background: none;
   border: 1px solid transparent;
   color: var(--ctp-subtext0);
-  font-size: 14px;
-  width: 28px;
-  height: 28px;
+  font-size: 15px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background var(--dur-base), color var(--dur-base), border-color var(--dur-mid) ease-out,
-              box-shadow var(--dur-mid) ease-out, transform var(--dur-fast);
+  transition: background var(--dur-base), color var(--dur-base), transform var(--dur-fast);
 }
 .edit-fmt-btn:focus-visible {
   outline: 2px solid var(--ctp-blue);
@@ -64,28 +74,22 @@
 }
 .edit-fmt-btn:hover {
   color: var(--ctp-text);
-  border-color: rgba(var(--ctp-blue-rgb), 0.4);
-  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.1),
-              0 0 6px rgba(var(--ctp-blue-rgb), 0.15),
-              inset 0 -2px 0 0 var(--ctp-blue);
+  background: var(--interactive-muted-bg);
 }
 .edit-fmt-btn.active {
   background: rgba(var(--ctp-blue-rgb), 0.12);
   color: var(--ctp-blue);
-  border-color: rgba(var(--ctp-blue-rgb), 0.3);
-  box-shadow: inset 0 -2px 0 0 var(--ctp-blue);
 }
 .edit-fmt-btn.active:hover {
-  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
-              0 0 6px rgba(var(--ctp-blue-rgb), 0.2),
-              inset 0 -2px 0 0 var(--ctp-blue);
+  background: rgba(var(--ctp-blue-rgb), 0.18);
 }
 
+/* Group gap: a hairline with 6px either side ≈ 12px between groups */
 .edit-toolbar-sep {
   width: 1px;
   height: 18px;
   background: var(--ctp-surface1);
-  margin: 0 4px;
+  margin: 0 6px;
   flex-shrink: 0;
 }
 
@@ -93,7 +97,7 @@
 
 #edit-status {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--ctp-subtext0);
   margin-right: 8px;
   user-select: none;
@@ -223,10 +227,10 @@ body.edit-mode .edit-body {
 }
 
 /* ── Light theme adjustments ─────────────────────────────── */
-[data-theme="latte"] .edit-mode-badge,
-[data-theme="vellum"] .edit-mode-badge,
-[data-theme="rose-pine-dawn"] .edit-mode-badge,
-[data-theme="tokyo-light"] .edit-mode-badge {
+[data-theme="latte"] body.edit-dirty .edit-mode-badge,
+[data-theme="vellum"] body.edit-dirty .edit-mode-badge,
+[data-theme="rose-pine-dawn"] body.edit-dirty .edit-mode-badge,
+[data-theme="tokyo-light"] body.edit-dirty .edit-mode-badge {
   background: rgba(var(--ctp-yellow-rgb), 0.15);
   border-color: rgba(var(--ctp-yellow-rgb), 0.35);
   color: var(--ctp-text);
@@ -258,15 +262,6 @@ body.edit-mode .edit-body {
 [data-theme="rose-pine-dawn"] .edit-toolbar-sep,
 [data-theme="tokyo-light"] .edit-toolbar-sep {
   background: var(--ctp-surface2);
-}
-
-[data-theme="latte"] .edit-fmt-btn:hover,
-[data-theme="vellum"] .edit-fmt-btn:hover,
-[data-theme="rose-pine-dawn"] .edit-fmt-btn:hover,
-[data-theme="tokyo-light"] .edit-fmt-btn:hover {
-  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
-              0 0 8px rgba(var(--ctp-blue-rgb), 0.12),
-              inset 0 -2px 0 0 var(--ctp-blue);
 }
 
 [data-theme="latte"] #edit-save-btn.dirty,
@@ -338,6 +333,7 @@ body.home-active #edit-toggle { display: none; }
 }
 
 /* ── Transition ──────────────────────────────────────────── */
-body.edit-mode #tab-bar {
+/* The yellow rule under the tab bar marks pending work, not edit mode */
+body.edit-dirty #tab-bar {
   border-bottom-color: var(--ctp-yellow);
 }

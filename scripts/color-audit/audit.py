@@ -184,11 +184,9 @@ USED_PAIRS = [
     # Inline code sits on --code-bg: surface0 on dark themes, a rose wash
     # over base on the four light themes (2026-09-06)
     ("inline code",          "var(--code-fg)",        [BASE, "var(--code-bg)"], 4.5, "P0"),
-    ("inline code (in blockquote)", "var(--code-fg)",
-     [BASE, "var(--blockquote-bg)", "var(--code-bg)"], 4.5, "P1"),
     ("code block text",      "var(--ctp-text)",       [MANTLE], 4.5, "P0"),
-    ("blockquote",           "var(--blockquote-color)",
-     [BASE, "var(--blockquote-bg)"], 4.5, "P0"),
+    # Blockquotes lost their fill (2026-09-06): the quote sits on base
+    ("blockquote",           "var(--blockquote-color)", [BASE], 4.5, "P0"),
 
     # Only h1 (2em) and h2 (1.5em ≈ 22.5px semibold) qualify as WCAG large
     # text at the 15px default; h3/h4/h5 render at 18/15.75/14.25px (and
@@ -224,7 +222,7 @@ USED_PAIRS = [
     ("fm nested key",        "var(--hljs-params)",      [BASE], 4.5, "P1"),
 
     # Tables
-    ("table header",         "var(--ctp-blue)",       [MANTLE], 4.5, "P1"),
+    ("table header",         "var(--ctp-text)",       [MANTLE], 4.5, "P1"),   # neutral 600 since 2026-09-06
     ("table zebra row",      "var(--ctp-text)",
      [BASE, "var(--row-even-bg)"], 4.5, "P1"),
     ("table hover row",      "var(--ctp-text)",
@@ -259,16 +257,19 @@ USED_PAIRS = [
     # Editor selection wash
     ("selection (editor)",   "var(--ctp-text)",
      [BASE, "rgba(var(--ctp-blue-rgb), 0.25)"], 4.5, "P1"),
-    # Editor chrome (editor.css): toolbar sits on crust, the surface is base
+    # Editor chrome (editor.css): toolbar sits on mantle (2026-09-06, was
+    # crust), the surface is base
     ("editor caret",         "var(--stat-chg)",       [BASE], 3.0, "P1"),
-    ("editor fmt button",    "var(--ctp-subtext0)",   [CRUST], 4.5, "P1", DARK_THEMES),
-    ("editor fmt button",    "var(--ctp-subtext1)",   [CRUST], 4.5, "P1", LIGHT_THEMES),
-    ("editor status",        "var(--ctp-subtext0)",   [CRUST], 4.5, "P1", DARK_THEMES),
-    ("editor status",        "var(--ctp-subtext1)",   [CRUST], 4.5, "P1", LIGHT_THEMES),
-    ("edit-mode badge",      "var(--ctp-yellow)",
-     [CRUST, "rgba(var(--ctp-yellow-rgb), 0.10)"], 4.5, "P1", DARK_THEMES),
-    ("edit-mode badge",      "var(--ctp-text)",
-     [CRUST, "rgba(var(--ctp-yellow-rgb), 0.15)"], 4.5, "P1", LIGHT_THEMES),
+    ("editor fmt button",    "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1", DARK_THEMES),
+    ("editor fmt button",    "var(--ctp-subtext1)",   [MANTLE], 4.5, "P1", LIGHT_THEMES),
+    ("editor status",        "var(--ctp-subtext0)",   [MANTLE], 4.5, "P1", DARK_THEMES),
+    ("editor status",        "var(--ctp-subtext1)",   [MANTLE], 4.5, "P1", LIGHT_THEMES),
+    ("edit-mode badge (clean)", "var(--home-control)",
+     [MANTLE, "rgba(var(--ctp-overlay1-rgb), 0.12)"], 4.5, "P1"),
+    ("edit-mode badge (dirty)", "var(--ctp-yellow)",
+     [MANTLE, "rgba(var(--ctp-yellow-rgb), 0.10)"], 4.5, "P1", DARK_THEMES),
+    ("edit-mode badge (dirty)", "var(--ctp-text)",
+     [MANTLE, "rgba(var(--ctp-yellow-rgb), 0.15)"], 4.5, "P1", LIGHT_THEMES),
     # Annotation bubble type icons: bubbles are surface0 on dark themes and
     # mantle on light ones (annotations.css light override)
     ("ann icon comment",     "var(--badge-yellow-fg)", [SURFACE0], 3.0, "P1", DARK_THEMES),
@@ -381,6 +382,12 @@ USED_PAIRS = [
      [CARD, "rgba(var(--ctp-lavender-rgb), 0.18)"], 4.5, "P1"),
     ("badge neutral .18",    "var(--badge-neutral-fg)",
      [CARD, "rgba(var(--ctp-overlay1-rgb), 0.18)"], 4.5, "P1"),
+    # Descriptive metadata chips (type/model/version) — neutral on the card
+    # and, in the frontmatter bar, on base (2026-09-06)
+    ("badge neutral .15",    "var(--badge-neutral-fg)",
+     [CARD, "rgba(var(--ctp-overlay1-rgb), 0.15)"], 4.5, "P1"),
+    ("fm chip neutral .15 (base)", "var(--badge-neutral-fg)",
+     [BASE, "rgba(var(--ctp-overlay1-rgb), 0.15)"], 4.5, "P1"),
 
     # Instance dropdown + overflow menu — both sit on --card-bg
     # (base-layout.css .instance-menu / .tab-overflow-menu). Registered

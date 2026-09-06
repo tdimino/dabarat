@@ -493,13 +493,13 @@
   border-radius: var(--radius-xl);
   letter-spacing: 0.3px;
 }
-.pmc-version {
-  background: rgba(var(--ctp-blue-rgb), 0.15);
-  color: var(--ctp-blue);
-}
+/* Same neutral chip as the indicator bar and the home card — a field
+   never changes hue between surfaces (the popup was missed on the first
+   pass and showed "refactor" green here, grey in the bar; 2026-09-06) */
+.pmc-version,
 .pmc-type {
-  background: rgba(var(--ctp-green-rgb), 0.15);
-  color: var(--ctp-green);
+  background: rgba(var(--ctp-overlay1-rgb), 0.15);
+  color: var(--badge-neutral-fg);
 }
 .pmc-detail {
   font-family: var(--font-mono);
@@ -533,20 +533,6 @@
 .pmc-row-tags { margin-top: 6px; }
 
 /* Latte overrides */
-[data-theme="latte"] .pmc-version,
-[data-theme="vellum"] .pmc-version,
-[data-theme="rose-pine-dawn"] .pmc-version,
-[data-theme="tokyo-light"] .pmc-version {
-  background: rgba(var(--ctp-blue-rgb), 0.10);
-  color: var(--ctp-blue);
-}
-[data-theme="latte"] .pmc-type,
-[data-theme="vellum"] .pmc-type,
-[data-theme="rose-pine-dawn"] .pmc-type,
-[data-theme="tokyo-light"] .pmc-type {
-  background: rgba(var(--ctp-green-rgb), 0.10);
-  color: var(--ctp-green);
-}
 [data-theme="latte"] .pmc-label,
 [data-theme="vellum"] .pmc-label,
 [data-theme="rose-pine-dawn"] .pmc-label,

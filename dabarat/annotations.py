@@ -1,7 +1,25 @@
-"""Sidecar JSON I/O for margin annotations."""
+"""Sidecar JSON I/O for margin annotations.
+
+Integrity (2026-09-06): every write is atomic (tempfile + os.replace, the
+_write_config precedent) and every read-modify-write runs under a per-file
+lock — the polling GET, the annotate/resolve/reply POSTs and orphan cleanup
+all touch the same sidecar from different ThreadingHTTPServer threads, and
+a bare open("w") let the last writer win. A sidecar that fails to parse is
+set aside as `<sidecar>.corrupt-<timestamp>` instead of being read as empty
+and then overwritten; the notice is surfaced once to the client.
+"""
 
 import json
 import os
+import sys
+import tempfile
+import threading
+import time
+from contextlib import contextmanager
+
+_locks = {}                 # sidecar path → RLock
+_locks_guard = threading.Lock()
+_corrupt_notices = {}       # filepath → backup path (consumed by the server)
 
 
 def get_path(filepath):
@@ -14,44 +32,108 @@ def get_resolved_path(filepath):
     return filepath + ".annotations.resolved.json"
 
 
+def _lock_for(filepath):
+    key = os.path.abspath(filepath)
+    with _locks_guard:
+        lock = _locks.get(key)
+        if lock is None:
+            lock = _locks[key] = threading.RLock()
+        return lock
+
+
+@contextmanager
+def locked(filepath):
+    """Hold the sidecar lock across a read-modify-write. Re-entrant, so
+    read()/write() inside the block take it again without deadlocking."""
+    lock = _lock_for(filepath)
+    lock.acquire()
+    try:
+        yield
+    finally:
+        lock.release()
+
+
+def _quarantine(path):
+    """Move a sidecar that no longer parses out of the way, keeping it."""
+    backup = f"{path}.corrupt-{int(time.time())}"
+    try:
+        os.replace(path, backup)
+    except OSError:
+        return None
+    print(f"Warning: annotation sidecar {path} did not parse — kept as "
+          f"{os.path.basename(backup)}", file=sys.stderr)
+    return backup
+
+
+def pop_corrupt_notice(filepath):
+    """Backup path of a sidecar quarantined since the last call, or None."""
+    return _corrupt_notices.pop(filepath, None)
+
+
+def _read_json(path, default):
+    if not os.path.exists(path):
+        return default, 0
+    try:
+        mtime = os.path.getmtime(path)
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            raise ValueError("sidecar root is not an object")
+        return data, mtime
+    except (OSError, ValueError) as exc:
+        if isinstance(exc, ValueError):
+            backup = _quarantine(path)
+            if backup:
+                _corrupt_notices[path] = backup
+        return default, 0
+
+
+def _write_json(path, data):
+    directory = os.path.dirname(path) or "."
+    fd, tmp = tempfile.mkstemp(dir=directory, prefix=".ann-", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def read(filepath):
     """Read annotations for a file. Returns (data_dict, mtime)."""
     path = get_path(filepath)
-    if os.path.exists(path):
-        try:
-            mtime = os.path.getmtime(path)
-            with open(path) as f:
-                data = json.load(f)
-            return data, mtime
-        except Exception:
-            pass
-    return {"version": 1, "annotations": []}, 0
+    with locked(filepath):
+        data, mtime = _read_json(path, {"version": 1, "annotations": []})
+        data.setdefault("annotations", [])
+        if path in _corrupt_notices:
+            # Re-key by the markdown path the server asks about
+            _corrupt_notices[filepath] = _corrupt_notices.pop(path)
+        return data, mtime
 
 
 def read_resolved(filepath):
     """Read resolved annotations archive. Returns data_dict."""
-    path = get_resolved_path(filepath)
-    if os.path.exists(path):
-        try:
-            with open(path) as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {"version": 1, "resolved": []}
+    with locked(filepath):
+        data, _ = _read_json(get_resolved_path(filepath),
+                             {"version": 1, "resolved": []})
+        data.setdefault("resolved", [])
+        return data
 
 
 def write(filepath, data):
-    """Write annotations to the sidecar JSON file."""
-    path = get_path(filepath)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    """Write annotations to the sidecar JSON file (atomic, locked)."""
+    with locked(filepath):
+        _write_json(get_path(filepath), data)
 
 
 def write_resolved(filepath, data):
-    """Write resolved archive to the sidecar JSON file."""
-    path = get_resolved_path(filepath)
-    with open(path, "w") as f:
-        json.dump(data, f, indent=2)
+    """Write resolved archive to the sidecar JSON file (atomic, locked)."""
+    with locked(filepath):
+        _write_json(get_resolved_path(filepath), data)
 
 
 def read_tags(filepath):
@@ -62,48 +144,51 @@ def read_tags(filepath):
 
 def add_tag(filepath, tag):
     """Add a tag to a file. Returns updated tag list."""
-    data, _ = read(filepath)
-    tags = data.get("tags", [])
-    tag = tag.strip().lower()
-    if tag and tag not in tags:
-        tags.append(tag)
-        data["tags"] = tags
-        write(filepath, data)
-    return tags
+    with locked(filepath):
+        data, _ = read(filepath)
+        tags = data.get("tags", [])
+        tag = tag.strip().lower()
+        if tag and tag not in tags:
+            tags.append(tag)
+            data["tags"] = tags
+            write(filepath, data)
+        return tags
 
 
 def remove_tag(filepath, tag):
     """Remove a tag from a file. Returns updated tag list."""
-    data, _ = read(filepath)
-    tags = data.get("tags", [])
-    tag = tag.strip().lower()
-    tags = [t for t in tags if t != tag]
-    data["tags"] = tags
-    write(filepath, data)
-    return tags
+    with locked(filepath):
+        data, _ = read(filepath)
+        tags = data.get("tags", [])
+        tag = tag.strip().lower()
+        tags = [t for t in tags if t != tag]
+        data["tags"] = tags
+        write(filepath, data)
+        return tags
 
 
 def cleanup_orphans(filepath, content):
     """Remove annotations whose anchor text no longer exists in the document.
 
     Returns the number of orphans removed."""
-    data, _ = read(filepath)
-    anns = data.get("annotations", [])
-    if not anns:
-        return 0
+    with locked(filepath):
+        data, _ = read(filepath)
+        anns = data.get("annotations", [])
+        if not anns:
+            return 0
 
-    kept = []
-    removed = 0
-    for ann in anns:
-        anchor = ann.get("anchor", {})
-        anchor_text = anchor.get("text", "") if isinstance(anchor, dict) else ""
-        if anchor_text and anchor_text not in content:
-            removed += 1
-        else:
-            kept.append(ann)
+        kept = []
+        removed = 0
+        for ann in anns:
+            anchor = ann.get("anchor", {})
+            anchor_text = anchor.get("text", "") if isinstance(anchor, dict) else ""
+            if anchor_text and anchor_text not in content:
+                removed += 1
+            else:
+                kept.append(ann)
 
-    if removed > 0:
-        data["annotations"] = kept
-        write(filepath, data)
+        if removed > 0:
+            data["annotations"] = kept
+            write(filepath, data)
 
-    return removed
+        return removed

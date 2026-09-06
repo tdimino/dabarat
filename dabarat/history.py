@@ -227,11 +227,16 @@ def commit(filepath, content=None, source="save"):
 
 
 def snapshot_external(filepath, content):
-    """Version externally-detected disk content. Never raises."""
+    """Version externally-detected disk content. Never raises; returns
+    False when the snapshot could not be stored so the caller can say so —
+    "every change is revertible" is an invariant worth a banner."""
     try:
         commit(filepath, content=content, source="external")
-    except Exception:
-        pass
+        return True
+    except Exception as exc:
+        print(f"Warning: external change to {os.path.basename(filepath)} "
+              f"not snapshotted ({exc.__class__.__name__}: {exc})", file=sys.stderr)
+        return False
 
 
 def list_versions(filepath, limit=50):

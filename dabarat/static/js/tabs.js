@@ -840,14 +840,20 @@ function _setTabGhost(id, missing) {
    and a polite live region so the message is announced, not just drawn.
    Keyed by id — calling again with the same id replaces the text in
    place. Message is set via textContent (error names come from the OS). */
-function _showStatusBanner(id, message) {
+function _showStatusBanner(id, message, severity) {
   _hideStatusBanner(id);
   const banner = document.createElement('div');
   banner.id = id;
   banner.className = 'status-banner';
-  banner.setAttribute('role', 'status');
-  banner.setAttribute('aria-live', 'polite');
-  banner.innerHTML = '<i class="ph ph-warning" aria-hidden="true"></i><span></span>' +
+  /* Severity drives the border/icon hue (attention-hue convention:
+     yellow = pending work / warn, red = failure, blue = info) and the
+     live-region politeness */
+  const sev = severity || 'warn';
+  banner.dataset.severity = sev;
+  banner.setAttribute('role', sev === 'error' ? 'alert' : 'status');
+  banner.setAttribute('aria-live', sev === 'error' ? 'assertive' : 'polite');
+  const icon = sev === 'error' ? 'ph-x-circle' : sev === 'info' ? 'ph-info' : 'ph-warning';
+  banner.innerHTML = '<i class="ph ' + icon + '" aria-hidden="true"></i><span></span>' +
     '<button type="button" data-action="dismiss">Dismiss</button>';
   banner.querySelector('span').textContent = message;
   banner.addEventListener('click', (e) => {

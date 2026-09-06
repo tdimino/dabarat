@@ -128,6 +128,14 @@ async function _pollOnce() {
       if (!data.error) {
         _setTabGhost(activeTabId, !!data.fileMissing);
         _setTabFileError(activeTabId, data.fileError || null);
+        /* The server reports this once per failure — "every change is
+           revertible" just stopped being true for this file */
+        if (data.snapshotFailed) {
+          _showStatusBanner('snapshot-failed-banner',
+            'An external change to ' + tabs[activeTabId].filename +
+            ' could not be saved to version history — check the terminal for the cause.',
+            'warn');
+        }
       }
       if (!data.error && !data.unchanged && data.changeKey !== tabs[activeTabId].changeKey) {
         tabs[activeTabId].content = data.content;
@@ -232,6 +240,11 @@ async function _pollOnce() {
     try {
       const res = await fetch('/api/annotations?tab=' + activeTabId);
       const data = await res.json();
+      if (data.corruptBackup) {
+        _showStatusBanner('annotations-corrupt-banner',
+          'The annotation sidecar for this file did not parse and was set aside as ' +
+          data.corruptBackup.split('/').pop() + ' — starting a fresh one.', 'error');
+      }
       if (data.mtime !== (lastAnnotationMtimes[activeTabId] || 0)) {
         lastAnnotationMtimes[activeTabId] = data.mtime;
         annotationsCache[activeTabId] = data.annotations;

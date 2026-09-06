@@ -206,6 +206,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 tab["mtime"] = mtime
                 tab["change_key"] = change_key
                 tab["auto"] = False  # the user saved it — it is theirs now
+                tab["annotations_dirty"] = True  # orphan check due on next fetch
         return mtime, change_key
 
     @classmethod
@@ -255,7 +256,15 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 # polling observes it — every change to an open file is
                 # revertible no matter who wrote it (dedups by hash)
                 if accepted:
-                    history.snapshot_external(filepath, content)
+                    ok = history.snapshot_external(filepath, content)
+                    with cls._tabs_lock:
+                        tab = cls._tabs.get(tab_id)
+                        if tab is not None:
+                            # New content → orphan check is due on the next
+                            # annotations fetch (not on every tick)
+                            tab["annotations_dirty"] = True
+                            if not ok:
+                                tab["snapshot_failed"] = True
         except FileNotFoundError:
             # Deleted/moved underneath us — keep serving the cached content
             # (a save can recreate the file) but tell the client
@@ -389,6 +398,13 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     response["fileMissing"] = True
                 if tab.get("file_error"):
                     response["fileError"] = tab["file_error"]
+                if tab.get("snapshot_failed"):
+                    # Reported once per failure, then cleared
+                    response["snapshotFailed"] = True
+                    with self._tabs_lock:
+                        live = self._tabs.get(tab_id)
+                        if live is not None:
+                            live.pop("snapshot_failed", None)
                 self._json_response(response)
             else:
                 self._json_response({"error": "tab not found"}, 404)
@@ -453,16 +469,25 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     tab = dict(t) if t else None
             if tab:
                 filepath = tab["filepath"]
-                # Auto-cleanup orphaned annotations — only against content
-                # that was actually read (change_key None = never loaded;
-                # an empty cache would orphan every annotation)
-                if tab.get("change_key"):
+                # Orphan cleanup runs when the document changed since the
+                # last check (refresh/save set annotations_dirty), never
+                # against a cache that was never loaded (change_key None
+                # would orphan every annotation), and not on every tick
+                if tab.get("change_key") and tab.get("annotations_dirty", True):
+                    with self._tabs_lock:
+                        live = self._tabs.get(tab_id)
+                        if live is not None:
+                            live["annotations_dirty"] = False
                     annotations.cleanup_orphans(filepath, tab["content"])
                 data, mtime = annotations.read(filepath)
-                self._json_response({
+                response = {
                     "annotations": data.get("annotations", []),
                     "mtime": mtime,
-                })
+                }
+                backup = annotations.pop_corrupt_notice(filepath)
+                if backup:
+                    response["corruptBackup"] = backup
+                self._json_response(response)
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
@@ -1189,20 +1214,21 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
 
-            ann = {
-                "id": uuid.uuid4().hex[:6],
-                "anchor": body.get("anchor", {}),
-                "author": body.get("author", {}),
-                "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "body": body.get("body", ""),
-                "type": body.get("type", "comment"),
-                "resolved": False,
-                "replies": [],
-            }
-            data["annotations"].append(ann)
-            annotations.write(filepath, data)
+                ann = {
+                    "id": uuid.uuid4().hex[:6],
+                    "anchor": body.get("anchor", {}),
+                    "author": body.get("author", {}),
+                    "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "body": body.get("body", ""),
+                    "type": body.get("type", "comment"),
+                    "resolved": False,
+                    "replies": [],
+                }
+                data["annotations"].append(ann)
+                annotations.write(filepath, data)
 
             # Save bookmarks to global ~/.claude/bookmarks/
             if ann["type"] == "bookmark":
@@ -1229,35 +1255,36 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
-            target = None
-            for ann in data["annotations"]:
-                if ann["id"] == ann_id:
-                    target = ann
-                    break
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
+                target = None
+                for ann in data["annotations"]:
+                    if ann["id"] == ann_id:
+                        target = ann
+                        break
 
-            if target:
-                was_resolved = target.get("resolved", False)
-                if not was_resolved:
-                    # Resolve: mark resolved, add timestamp, archive it
-                    target["resolved"] = True
-                    target["resolved_at"] = datetime.datetime.now(
-                        datetime.timezone.utc
-                    ).isoformat()
-                    # Move to resolved archive
-                    archive = annotations.read_resolved(filepath)
-                    archive["resolved"].append(target)
-                    annotations.write_resolved(filepath, archive)
-                    # Remove from active annotations
-                    data["annotations"] = [
-                        a for a in data["annotations"] if a["id"] != ann_id
-                    ]
-                else:
-                    # Unresolve: toggle back
-                    target["resolved"] = False
-                    target.pop("resolved_at", None)
+                if target:
+                    was_resolved = target.get("resolved", False)
+                    if not was_resolved:
+                        # Resolve: mark resolved, add timestamp, archive it
+                        target["resolved"] = True
+                        target["resolved_at"] = datetime.datetime.now(
+                            datetime.timezone.utc
+                        ).isoformat()
+                        # Move to resolved archive
+                        archive = annotations.read_resolved(filepath)
+                        archive["resolved"].append(target)
+                        annotations.write_resolved(filepath, archive)
+                        # Remove from active annotations
+                        data["annotations"] = [
+                            a for a in data["annotations"] if a["id"] != ann_id
+                        ]
+                    else:
+                        # Unresolve: toggle back
+                        target["resolved"] = False
+                        target.pop("resolved_at", None)
 
-            annotations.write(filepath, data)
+                annotations.write(filepath, data)
             self._json_response({"ok": True})
 
         elif parsed.path == "/api/reply":
@@ -1267,17 +1294,18 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
-            for ann in data["annotations"]:
-                if ann["id"] == ann_id:
-                    reply = {
-                        "author": body.get("author", {}),
-                        "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                        "body": body.get("body", ""),
-                    }
-                    ann.setdefault("replies", []).append(reply)
-                    break
-            annotations.write(filepath, data)
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
+                for ann in data["annotations"]:
+                    if ann["id"] == ann_id:
+                        reply = {
+                            "author": body.get("author", {}),
+                            "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                            "body": body.get("body", ""),
+                        }
+                        ann.setdefault("replies", []).append(reply)
+                        break
+                annotations.write(filepath, data)
             self._json_response({"ok": True})
 
         elif parsed.path == "/api/delete-annotation":
@@ -1287,9 +1315,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
-            data["annotations"] = [a for a in data["annotations"] if a["id"] != ann_id]
-            annotations.write(filepath, data)
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
+                data["annotations"] = [a for a in data["annotations"] if a["id"] != ann_id]
+                annotations.write(filepath, data)
             self._json_response({"ok": True})
 
         elif parsed.path == "/api/save":

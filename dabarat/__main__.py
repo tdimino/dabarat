@@ -7,6 +7,7 @@ Usage:
   python3 -m dabarat --add <file.md> [--port PORT]
   python3 -m dabarat --annotate <file.md> --text "..." --comment "..." [--author NAME]
   --max-instances N   Limit concurrent server instances (default 5)
+  --new-window        Always open a fresh instance on a free port (skips the reuse dialog)
 """
 
 import atexit
@@ -211,8 +212,6 @@ def cmd_annotate(argv):
     author_name = _flag_value(argv, "--author", "Claude")
     ann_type = _flag_value(argv, "--type", "comment")
 
-    data, _ = annotations.read(filepath)
-
     ann = {
         "id": uuid.uuid4().hex[:6],
         "anchor": {"text": text, "heading": "", "offset": 0},
@@ -226,8 +225,10 @@ def cmd_annotate(argv):
         "resolved": False,
         "replies": [],
     }
-    data["annotations"].append(ann)
-    annotations.write(filepath, data)
+    with annotations.locked(filepath):
+        data, _ = annotations.read(filepath)
+        data["annotations"].append(ann)
+        annotations.write(filepath, data)
 
     if ann_type == "bookmark":
         bookmarks.save(
@@ -711,7 +712,10 @@ def cmd_serve(argv):
     # Tab reuse: if any instances are running, ask what to do.
     # Every outcome here is non-destructive \u2014 running servers are never killed.
     live = _live_instances()
-    if live and files:
+    if live and files and "--new-window" in argv:
+        port = _find_free_port()
+        print(f"\033[38;2;88;91;112mOpening new window on port {port}\033[0m")
+    elif live and files:
         instances_info = []
         for inst_port, inst_pid in live:
             open_paths = _get_open_filepaths(inst_port)

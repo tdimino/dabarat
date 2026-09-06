@@ -314,13 +314,8 @@ function render(md) {
   buildToc(headings);
   applyEmojiStyle(content);
 
-  /* Wrap tables in scroll containers for horizontal overflow; large
-     matrices (>8 body rows or >5 columns) get the dense grid + zebra +
-     hover treatment, small tables stay editorial (typography.css) */
+  /* Wrap tables in scroll containers for horizontal overflow */
   content.querySelectorAll('table').forEach(table => {
-    const rows = table.tBodies.length ? table.tBodies[0].rows.length : 0;
-    const cols = table.rows.length ? table.rows[0].cells.length : 0;
-    table.classList.toggle('dense', rows > 8 || cols > 5);
     if (table.parentElement.classList.contains('table-scroll')) return;
     const wrapper = document.createElement('div');
     wrapper.className = 'table-scroll';

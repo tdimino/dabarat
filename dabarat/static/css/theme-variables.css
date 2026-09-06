@@ -59,7 +59,8 @@
      standalone [data-theme="mocha"] block below. */
   --bold-color: var(--ctp-text);
   --italic-color: var(--ctp-sky);
-  --blockquote-color: var(--ctp-text);   /* quotes read in body ink; only Ink/Vellum tint them */
+  --blockquote-color: var(--ctp-mauve);
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.6);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
@@ -165,6 +166,7 @@
 [data-theme="mocha"] {
   --bold-color: #e6edf3;
   --italic-color: #a5d6ff;
+  --blockquote-color: #d4a5ff;
   --hljs-comment: #8589a0;  /* lifted overlay0 — 5.11:1 on mantle */
   --home-meta: #a1a5bd;
   --home-control: #a0a5be;
@@ -234,6 +236,8 @@
 
   --bold-color: #2c2d3a;
   --italic-color: #1a5cd7;  /* tracks the darkened blue */
+  --blockquote-color: #7d2fe5;  /* darkened mauve — clears the 4.5:1 margin */
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
@@ -351,6 +355,8 @@
 
   --bold-color: #eae8ff;
   --italic-color: #c4a7e7;
+  --blockquote-color: #c4a7e7;
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.6);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
@@ -438,6 +444,8 @@
 
   --bold-color: #3e3a58;
   --italic-color: #39707b;      /* tracks the darkened foam */
+  --blockquote-color: #6d5a8a;  /* darkened iris — 5.58:1 over the wash */
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
@@ -557,6 +565,8 @@
 
   --bold-color: #d5deff;
   --italic-color: #7aa2f7;
+  --blockquote-color: #bb9af7;
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.6);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.25);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);
@@ -665,6 +675,7 @@
   --bold-color:       #f0eada;                             /* brightest vellum */
   --italic-color:     #c8a478;                             /* softer tungsten */
   --blockquote-color: #c9c3b0;                             /* faded vellum — quoted, not shouted */
+  --blockquote-bg:    rgba(var(--ctp-mantle-rgb), 0.6);
   /* Functional marks (current section, row hover, selection) are blue like
      every other theme; the signature pigments go to the title and the h3
      rubric instead (2026-09-06) */
@@ -790,6 +801,7 @@
   --bold-color:       #1a1a1f;                             /* deepest ink */
   --italic-color:     #3d4d6a;                             /* iron-gall — signature italic */
   --blockquote-color: #6b5a3a;                             /* sepia brown — aged quotation */
+  --blockquote-bg:    rgba(var(--ctp-mantle-rgb), 0.75);
   --toc-active-bg:    rgba(var(--ctp-blue-rgb), 0.10);
   --row-even-bg:      rgba(var(--ctp-surface0-rgb), 0.5);
   --row-hover-bg:     rgba(var(--ctp-peach-rgb), 0.06);    /* rubricated row hover */
@@ -906,6 +918,8 @@
 
   --bold-color: #24293f;
   --italic-color: #2959aa;
+  --blockquote-color: #743db3;  /* darkened mauve — clears the 4.5:1 margin */
+  --blockquote-bg: rgba(var(--ctp-mantle-rgb), 0.8);
   --toc-active-bg: rgba(var(--ctp-blue-rgb), 0.08);
   --row-even-bg: rgba(var(--ctp-surface0-rgb), 0.3);
   --row-hover-bg: rgba(var(--ctp-blue-rgb), 0.04);

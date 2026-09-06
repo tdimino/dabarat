@@ -28,8 +28,13 @@ let currentFrontmatter = null;
 /* Emoji style: twitter | openmoji | noto | native */
 let emojiStyle = localStorage.getItem('dabarat-emoji-style') || 'twitter';
 
-/* Reduced-motion preference — checked once at load */
-const _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* Reduced-motion preference — live: the CSS blanket already follows the
+   OS toggle, and the Motion One guards (`window.Motion && !_prefersReducedMotion`)
+   read this variable at call time, so it must follow too */
+let _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+  _prefersReducedMotion = e.matches;
+});
 
 /* Variable manifest panel state */
 let activeGutterTab = 'notes';

@@ -30,7 +30,7 @@
   margin-bottom: 12px;
 }
 .ann-gutter-title {
-  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', serif;
+  font-family: var(--font-serif);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 1.5px;
@@ -38,7 +38,7 @@
   color: var(--ctp-overlay1);
 }
 .ann-gutter-count {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   color: var(--ctp-overlay0);
   background: var(--ctp-surface0);
@@ -105,7 +105,7 @@
 
 /* Author line */
 .ann-author {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 600;
   margin-bottom: 5px;
@@ -116,7 +116,7 @@
 .ann-author.human { color: var(--ctp-blue); }
 .ann-author.ai { color: var(--ctp-mauve); }
 .ann-time {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   color: var(--ctp-overlay0);
   font-weight: 400;
@@ -148,7 +148,7 @@
 
 /* Body text */
 .ann-body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11.5px;
   color: var(--ctp-subtext1);
   line-height: 1.5;
@@ -159,7 +159,7 @@
 
 /* Anchor snippet */
 .ann-anchor-text {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   color: var(--ctp-overlay0);
   margin-top: 6px;
@@ -183,7 +183,7 @@
   margin-bottom: 4px;
 }
 .ann-reply-author {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 600;
   color: var(--ctp-overlay1);
@@ -191,13 +191,13 @@
 .ann-reply-author.ai { color: var(--ctp-mauve); }
 .ann-reply-author.human { color: var(--ctp-blue); }
 .ann-reply-time {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   color: var(--ctp-overlay0);
   margin-left: 6px;
 }
 .ann-reply-body {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10.5px;
   color: var(--ctp-subtext0);
   margin-top: 2px;
@@ -216,7 +216,7 @@
   border: 1px solid var(--ctp-surface1);
   border-radius: 4px;
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10.5px;
   padding: 4px 8px;
   outline: none;
@@ -240,7 +240,7 @@
   background: none;
   border: none;
   color: var(--ctp-overlay0);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   cursor: pointer;
   padding: 4px 0 0;
@@ -253,7 +253,7 @@
 .ann-hint {
   color: var(--ctp-overlay0);
   font-size: 10px;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   padding: 20px 8px;
   text-align: center;
   line-height: 1.6;
@@ -308,7 +308,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   border: 1.5px solid var(--ctp-surface1);
   background: none;
   color: var(--ctp-overlay1);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 9.5px;
   cursor: pointer;
   transition: all 0.15s;
@@ -373,7 +373,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
 }
 .carousel-btn i { font-size: 16px; }
 .carousel-btn span {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.3px;
@@ -408,7 +408,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   box-shadow: var(--elevation-1);
 }
 .ann-form-label {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
   letter-spacing: 0.8px;
@@ -420,7 +420,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   background: var(--ctp-surface1);
   border: 1px solid var(--ctp-surface2);
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   padding: 5px 8px;
   border-radius: 4px;
@@ -437,7 +437,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   background: var(--ctp-surface1);
   border: 1px solid var(--ctp-surface2);
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   padding: 6px 8px;
   border-radius: 4px;
@@ -459,7 +459,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   background: var(--ctp-blue);
   color: var(--ctp-base);
   border: none;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   padding: 5px 14px;
@@ -474,7 +474,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   background: none;
   color: var(--ctp-overlay1);
   border: none;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   padding: 5px 8px;
   cursor: pointer;

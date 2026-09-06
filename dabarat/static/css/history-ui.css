@@ -37,7 +37,7 @@
 }
 
 .version-panel-label {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
@@ -55,7 +55,7 @@
 
 /* Which file this timeline is about — the panel's identity line */
 #version-panel-filename {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 600;
   color: var(--ctp-text);
@@ -150,7 +150,7 @@
 
 /* ── Entry content ───────────────────────────────────── */
 .version-date {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 500;
   color: var(--ctp-subtext0);
@@ -183,7 +183,7 @@
   background: rgba(var(--ctp-blue-rgb), 0.10);
 }
 .version-excerpt {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1.5;
   margin: 6px 0 2px;
@@ -200,7 +200,7 @@
 .version-excerpt-line.ctx { color: var(--ctp-subtext1); }
 .version-excerpt-line.more { color: var(--home-meta); }
 .version-excerpt-none {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   color: var(--home-meta);
 }
@@ -214,12 +214,12 @@
 }
 .version-stat-add {
   color: var(--stat-add);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 .version-stat-del {
   color: var(--stat-del);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 
@@ -243,7 +243,7 @@
   background: var(--card-bg, var(--ctp-mantle));
   border: 1px solid var(--ctp-overlay0);
   color: var(--ctp-subtext0);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   padding: 0 9px;
   min-height: 26px;          /* sidebar control: comfortable, not touch-sized */
@@ -286,7 +286,7 @@
   opacity: 0.5;
 }
 .version-empty p {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   margin: 4px 0;
 }
@@ -395,7 +395,7 @@ body.home-active #history-toggle {
   right: -8px;
   background: var(--ctp-blue);
   color: var(--ctp-crust);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 700;
   line-height: 1;
@@ -447,7 +447,7 @@ body.home-active #history-toggle {
 
 /* ── Global activity entries ─────────────────────────── */
 .version-entry.global .version-file {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   color: var(--ctp-text);
   margin: 1px 0 2px;
@@ -466,7 +466,7 @@ body.home-active #history-toggle {
 
 /* ── Day separators ──────────────────────────────────── */
 .version-day-sep {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -479,7 +479,7 @@ body.home-active #history-toggle {
 
 /* ── Source badges + pins + labels ───────────────────── */
 .version-source-badge {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -513,7 +513,7 @@ body.home-active #history-toggle {
 }
 
 .version-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-style: italic;
   color: var(--ctp-text);
@@ -546,7 +546,7 @@ body.home-active #history-toggle {
   border: 1px solid var(--ctp-surface1);
   border-radius: 4px;
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   padding: 2px 6px;
   outline: none;
@@ -600,7 +600,7 @@ body.version-panel-open #justify-toggle {
   opacity: 0;
   overflow: hidden;
   white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
   transition: max-width 0.25s ease, opacity 0.2s ease, margin-right 0.25s ease;

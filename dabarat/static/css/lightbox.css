@@ -72,7 +72,7 @@
 
 /* Caption */
 .lightbox-caption {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   color: var(--ctp-subtext1);
   margin-top: 16px;
@@ -112,7 +112,7 @@
 }
 
 .lightbox-counter {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ctp-overlay1);
 }

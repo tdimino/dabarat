@@ -18,7 +18,7 @@
   border-bottom: 2px solid transparent;
   background: none;
   color: var(--ctp-overlay1);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.5px;
@@ -34,7 +34,7 @@
   border-bottom-color: var(--ctp-blue);
 }
 .gutter-tab-count {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   color: var(--ctp-overlay0);
   background: var(--ctp-surface0);
@@ -83,13 +83,13 @@
   flex-wrap: wrap;
 }
 .var-card-name {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   font-weight: 600;
   color: var(--ctp-mauve);
 }
 .var-card-badge {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8.5px;
   font-weight: 600;
   padding: 1px 5px;
@@ -111,14 +111,14 @@
   color: var(--ctp-subtext0);
 }
 .var-card-desc {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   color: var(--ctp-overlay1);
   margin-top: 4px;
   line-height: 1.4;
 }
 .var-card-default {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9.5px;
   color: var(--ctp-subtext0);
   margin-top: 3px;
@@ -127,7 +127,7 @@
 
 /* ── Undeclared Section Divider ──────────────────────── */
 .var-section-header {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 600;
   text-transform: uppercase;
@@ -157,7 +157,7 @@
   border: 1px solid var(--ctp-surface1);
   background: none;
   color: var(--ctp-overlay1);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
@@ -178,7 +178,7 @@
   background: var(--ctp-surface1);
   border: 1px solid var(--ctp-surface2);
   color: var(--ctp-text);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   padding: 5px 8px;
   border-radius: 4px;
@@ -202,7 +202,7 @@
   padding: 6px 12px;
   border-radius: 6px;
   border: none;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
@@ -236,14 +236,14 @@
   border-bottom: 1px solid var(--ctp-surface0);
 }
 #var-preview-overlay .preview-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
   font-weight: 600;
   color: var(--ctp-text);
   flex: 1;
 }
 #var-preview-overlay .preview-badge {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 8px;
@@ -264,7 +264,7 @@
   flex: 1;
   overflow-y: auto;
   padding: 48px 56px 80px;
-  max-width: 900px;
+  max-width: var(--measure);
   width: 100%;
   margin: 0 auto;
 }
@@ -287,7 +287,7 @@
 .var-hint {
   color: var(--ctp-overlay0);
   font-size: 10px;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   padding: 20px 8px;
   text-align: center;
   line-height: 1.6;

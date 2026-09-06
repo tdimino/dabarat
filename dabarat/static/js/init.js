@@ -74,7 +74,25 @@ async function init() {
         img.addEventListener('error', resolve, { once: true });
       });
     });
-    await Promise.all([...imgPromises, document.fonts.ready]);
+    /* Hebrew fonts are injected on demand by render(); a just-added
+       stylesheet has not started its font fetches when fonts.ready is
+       first consulted, so ask for the faces explicitly */
+    const hebrewLink = document.getElementById('dabarat-hebrew-fonts');
+    const hebrewReady = hebrewLink
+      ? new Promise(resolve => {
+          const go = () => Promise.all([
+            document.fonts.load('400 16px "Noto Serif Hebrew"'),
+            document.fonts.load('400 16px "Noto Sans Hebrew"'),
+          ]).then(resolve, resolve);
+          if (hebrewLink.sheet) go();
+          else {
+            hebrewLink.addEventListener('load', go, { once: true });
+            hebrewLink.addEventListener('error', resolve, { once: true });
+          }
+          setTimeout(resolve, 6000);   /* never wedge an export on a CDN */
+        })
+      : Promise.resolve();
+    await Promise.all([...imgPromises, hebrewReady, document.fonts.ready]);
     const sentinel = document.createElement('div');
     sentinel.id = 'dabarat-render-complete';
     document.body.appendChild(sentinel);

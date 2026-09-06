@@ -134,8 +134,13 @@
     0 6px 12px -4px rgba(0, 0, 0, 0.16),
     0 2px 4px -1px rgba(0, 0, 0, 0.10);
 
+  /* Type stacks — one definition each; the Hebrew fallbacks ride along
+     everywhere, not only where someone remembered to type them */
+  --font-sans: 'DM Sans', 'Noto Sans Hebrew', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: 'Cormorant Garamond', 'Noto Serif Hebrew', Georgia, serif;
+  --font-mono: 'Victor Mono', 'Fira Code', monospace;
+  --measure: 900px;   /* prose column; read/edit/frontmatter/variables share it */
   --base-size: 15px;
-  --heading-scale: 1;
   color-scheme: dark;
 }
 

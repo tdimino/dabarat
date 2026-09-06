@@ -108,7 +108,7 @@ function enterWysiwygMode() {
       textarea.spellcheck = true;
       textarea.placeholder = 'Start writing... (Tiptap failed — raw markdown mode)';
       textarea.value = editState.savedContent;
-      textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:"Victor Mono",monospace;font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
+      textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:var(--font-mono);font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
       mount.appendChild(textarea);
       textarea.focus();
       textarea.addEventListener('input', () => {
@@ -157,7 +157,7 @@ function enterTextareaMode() {
   textarea.spellcheck = true;
   textarea.placeholder = 'Start writing... (Tiptap unavailable — raw markdown mode)';
   textarea.value = editState.savedContent;
-  textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:"Victor Mono",monospace;font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
+  textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:var(--font-mono);font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
   mount.appendChild(textarea);
   textarea.focus();
 

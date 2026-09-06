@@ -13,7 +13,7 @@
      informational text sits on --home-meta, controls on --home-control,
      both solved on --ctp-crust in theme-variables.css */
   color: var(--home-meta);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   padding: 4px 16px;
   display: flex;
@@ -70,7 +70,7 @@
   color: var(--home-control);
   cursor: pointer;
   padding: 0 4px;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1;
   flex-shrink: 0;

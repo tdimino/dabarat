@@ -59,7 +59,7 @@
   top: -5px; right: -5px;
   background: var(--ctp-mauve);
   color: var(--ctp-base);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
   min-width: 16px;

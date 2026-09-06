@@ -20,7 +20,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  z-index: 30;
+  z-index: var(--z-status);
 }
 #status .filepath {
   color: var(--home-meta);
@@ -77,14 +77,14 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
 }
 #instance-indicator:hover { color: var(--ctp-blue); }
 #instance-indicator i { font-size: 12px; }
 #instance-indicator .instance-count {
   background: rgba(var(--ctp-peach-rgb), 0.18);
   color: var(--external-badge-fg);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 1px 5px;
   font-size: 9px;
   display: none;
@@ -99,7 +99,7 @@
   font-size: 12px;
   line-height: 1;
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
 }
 #status-copy-path:hover {
   color: var(--ctp-blue);
@@ -116,7 +116,7 @@
   font-size: 13px;
   line-height: 1;
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
 }
 #status-export-pdf:hover {
   color: var(--ctp-blue);

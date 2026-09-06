@@ -43,7 +43,7 @@
   color: var(--ctp-overlay0);
   background: var(--ctp-surface0);
   padding: 1px 6px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
 }
 .ann-gutter-close {
   margin-left: auto;
@@ -53,8 +53,8 @@
   cursor: pointer;
   font-size: 14px;
   padding: 2px;
-  border-radius: 4px;
-  transition: color 0.15s;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-base);
   display: none;
 }
 .ann-gutter-close:hover { color: var(--ctp-text); }
@@ -62,11 +62,11 @@
 /* Annotation bubble cards */
 .ann-bubble {
   background: var(--ctp-surface0);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 10px 12px 8px;
   margin-bottom: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color var(--dur-mid) ease, background-color var(--dur-mid) ease, border-color var(--dur-mid) ease, box-shadow var(--dur-mid) ease, transform var(--dur-mid) ease, opacity var(--dur-mid) ease;
   border-left: 3px solid transparent;
   animation: annSlideIn 0.2s ease both;
 }
@@ -137,8 +137,8 @@
   font-size: 11px;
   cursor: pointer;
   padding: 2px 3px;
-  border-radius: 3px;
-  transition: all 0.15s;
+  border-radius: var(--radius-xs);
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   opacity: 0;
 }
 .ann-bubble:hover .ann-resolve-btn,
@@ -214,7 +214,7 @@
   flex: 1;
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--ctp-text);
   font-family: var(--font-sans);
   font-size: 10.5px;
@@ -226,12 +226,12 @@
 .ann-reply-send {
   background: none;
   border: 1px solid var(--ctp-surface1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--ctp-overlay1);
   cursor: pointer;
   padding: 4px 8px;
   font-size: 11px;
-  transition: all 0.15s;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
 }
 .ann-reply-send:hover { border-color: var(--ctp-blue); color: var(--ctp-blue); }
 
@@ -245,7 +245,7 @@
   cursor: pointer;
   padding: 4px 0 0;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-base);
 }
 .ann-bubble:hover .ann-reply-toggle { opacity: 1; }
 
@@ -263,11 +263,11 @@
 mark.annotation-highlight {
   background: rgba(var(--ctp-yellow-rgb), 0.25);
   border-bottom: none;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   color: inherit;
   cursor: pointer;
   padding: 1px 0;
-  transition: background 0.2s;
+  transition: background var(--dur-mid);
 }
 mark.annotation-highlight:hover {
   background: rgba(var(--ctp-yellow-rgb), 0.45);
@@ -304,14 +304,14 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   align-items: center;
   gap: 3px;
   padding: 4px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--ctp-surface1);
   background: none;
   color: var(--ctp-overlay1);
   font-family: var(--font-sans);
   font-size: 9.5px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   white-space: nowrap;
 }
 .ann-type-btn i { font-size: 12px; }
@@ -348,13 +348,13 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   display: none;
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 12px;
+  border-radius: var(--radius-2xl);
   padding: 6px 6px 4px;
   gap: 2px;
   align-items: stretch;
-  z-index: 20;
+  z-index: var(--z-float);
   box-shadow: var(--elevation-2), 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.1);
-  animation: carouselPop 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: carouselPop 0.18s var(--ease-out-back);
 }
 #annotate-carousel.visible { display: flex; }
 
@@ -364,12 +364,12 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   align-items: center;
   gap: 2px;
   padding: 5px 8px 4px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   border: 1.5px solid transparent;
   background: none;
   color: var(--ctp-overlay1);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color var(--dur-base) ease, background-color var(--dur-base) ease, border-color var(--dur-base) ease, box-shadow var(--dur-base) ease, transform var(--dur-base) ease, opacity var(--dur-base) ease;
 }
 .carousel-btn i { font-size: 16px; }
 .carousel-btn span {
@@ -401,7 +401,7 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
 /* Annotation form */
 #annotation-form {
   background: var(--ctp-surface0);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 12px;
   margin-bottom: 12px;
   border: 1px solid var(--ctp-blue);
@@ -423,12 +423,12 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   font-family: var(--font-sans);
   font-size: 11px;
   padding: 5px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   width: 100%;
   outline: none;
   margin-bottom: 8px;
   box-sizing: border-box;
-  transition: border-color 0.15s;
+  transition: border-color var(--dur-base);
 }
 #annotation-form input[type="text"]:focus {
   border-color: var(--ctp-blue);
@@ -440,13 +440,13 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   font-family: var(--font-sans);
   font-size: 11px;
   padding: 6px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   width: 100%;
   outline: none;
   resize: vertical;
   box-sizing: border-box;
   margin-bottom: 8px;
-  transition: border-color 0.15s;
+  transition: border-color var(--dur-base);
 }
 #annotation-form textarea:focus {
   border-color: var(--ctp-blue);
@@ -463,9 +463,9 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   font-size: 10px;
   font-weight: 600;
   padding: 5px 14px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
 }
 .ann-btn-primary:hover {
   box-shadow: 0 2px 8px rgba(var(--ctp-blue-rgb), 0.3);
@@ -478,8 +478,8 @@ mark.annotation-highlight[data-type="bookmark"]:hover   { background: rgba(var(-
   font-size: 10px;
   padding: 5px 8px;
   cursor: pointer;
-  border-radius: 4px;
-  transition: color 0.15s;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-base);
 }
 .ann-btn-ghost:hover { color: var(--ctp-text); }
 

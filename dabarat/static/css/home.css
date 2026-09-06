@@ -55,20 +55,11 @@ body.home-active #content {
 .home-action-btn {
   background: var(--card-bg);
   color: var(--ctp-subtext0);
-  border: 1px solid var(--ctp-surface1);
-  font-family: var(--font-sans);
   font-size: 12px;
   padding: 6px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .home-action-btn:hover {
   background: var(--interactive-hover-bg);
-  color: var(--ctp-text);
   border-color: var(--ctp-surface2);
 }
 .home-action-btn.active {
@@ -90,10 +81,10 @@ body.home-active #content {
   position: relative;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   box-shadow: var(--elevation-1);
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  transition: border-color var(--dur-mid) ease, box-shadow var(--dur-mid) ease, transform var(--dur-mid) ease;
   cursor: pointer;
   display: flex;
   flex-direction: column;
@@ -127,7 +118,7 @@ body.home-active #content {
   height: 22px;
   background: var(--interactive-muted-bg);
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--ctp-overlay0);
   font-size: 12px;
   cursor: pointer;
@@ -135,7 +126,7 @@ body.home-active #content {
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  transition: opacity var(--dur-base), background var(--dur-base), color var(--dur-base);
   z-index: 2;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -246,7 +237,7 @@ body.home-active #content {
   font-family: var(--font-mono);
   font-size: 10px;
   padding: 3px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -341,13 +332,13 @@ body.home-active #content {
   font-size: 10px;
   background: var(--ctp-surface1);
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 .home-card-preview-md pre {
   font-size: 10px;
   padding: 6px 8px;
   background: var(--ctp-surface1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   margin: 4px 0;
 }
@@ -445,14 +436,14 @@ body.home-active #content {
   color: var(--home-control);
   background: none;
   border: none;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 2px 5px;
   margin: 0 -5px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--dur-base), background var(--dur-base);
 }
 .home-card-versions:hover {
   color: var(--ctp-blue);
@@ -469,7 +460,7 @@ body.home-active #content {
   font-family: var(--font-mono);
   font-size: 9px;
   padding: 2px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 
 /* ── TOC Sidebar as Workspace Browser ───────────────────── */
@@ -490,10 +481,10 @@ body.home-active #content {
   display: flex;
   align-items: center;
   gap: 4px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 2px 4px;
   margin: -2px -4px;
-  transition: background 0.15s, color 0.15s;
+  transition: background var(--dur-base), color var(--dur-base);
 }
 .ws-path:hover {
   background: var(--ctp-surface0);
@@ -502,7 +493,7 @@ body.home-active #content {
 .ws-path-edit {
   font-size: 9px;
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-base);
 }
 .ws-path:hover .ws-path-edit {
   opacity: 0.6;
@@ -516,31 +507,23 @@ body.home-active #content {
   display: flex;
   gap: 1px;
   background: rgba(var(--ctp-surface0-rgb), 0.5);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 2px;
 }
 .ws-toggle .ws-btn {
   border-color: transparent;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
 }
 .ws-btn {
   background: var(--card-bg);
   color: var(--ctp-subtext0);
-  border: 1px solid var(--card-border);
-  font-family: var(--font-sans);
-  font-size: 11px;
+  border-color: var(--card-border);
   padding: 5px 10px;
   min-height: 28px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
   gap: 4px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
 .ws-btn:hover {
   background: var(--interactive-hover-bg);
-  color: var(--ctp-text);
 }
 .ws-btn.active {
   background: rgba(var(--ctp-blue-rgb), 0.15);
@@ -572,7 +555,7 @@ body.home-active #content {
   font-family: var(--font-sans);
   font-size: 12px;
   color: var(--ctp-subtext1);
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--dur-fast), color var(--dur-fast);
 }
 .ws-entry:hover {
   background: var(--ctp-surface0);
@@ -652,14 +635,14 @@ body.home-active #content {
   border-inline-start: 1px solid rgba(var(--ctp-lavender-rgb), 0.35);
   margin: 0;
   padding: 32px 48px 28px 40px;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-slower) ease;
   position: relative;
   /* Soft radial glow — atmosphere, not containment */
   background: radial-gradient(ellipse at 20% 40%,
     rgba(var(--ctp-surface0-rgb), 0.30) 0%,
     rgba(var(--ctp-surface0-rgb), 0.08) 65%,
     transparent 100%);
-  border-radius: 0 24px 24px 0;
+  border-radius: 0 var(--radius-pill) var(--radius-pill) 0;
 }
 /* Short rule above — extends on hover */
 .home-quote::before {
@@ -670,7 +653,7 @@ body.home-active #content {
   width: 32px;
   height: 1px;
   background: rgba(var(--ctp-lavender-rgb), 0.35);
-  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: width 0.4s var(--ease-out-expo);
 }
 .home-quote:hover::before { width: 64px; }
 /* Hairline divider between quote and attribution */
@@ -717,9 +700,9 @@ body.home-active #content {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   opacity: 0;
-  transition: opacity 0.2s, color 0.15s, background 0.15s;
+  transition: opacity var(--dur-mid), color var(--dur-base), background var(--dur-base);
   z-index: 2;
 }
 .home-quote:hover .home-quote-refresh { opacity: 0.5; }
@@ -734,25 +717,14 @@ body.home-active #content {
   opacity: 1;
 }
 .home-open-btn {
-  background: transparent;
-  color: var(--home-control);
-  border: 1px solid var(--ctp-surface1);
-  font-family: var(--font-sans);
   font-size: 12px;
   padding: 7px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
 }
 .home-open-btn i {
   font-size: 14px;
 }
 .home-open-btn:hover {
   background: var(--ctp-surface0);
-  color: var(--ctp-text);
   border-color: var(--ctp-surface2);
   transform: translateY(-1px);
 }
@@ -788,13 +760,13 @@ body.home-active #content {
   color: var(--home-control);
   width: 26px;
   height: 26px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  transition: background var(--dur-fast), color var(--dur-fast), border-color var(--dur-fast);
 }
 .ws-action-btn:hover {
   background: var(--ctp-surface0);
@@ -821,7 +793,7 @@ body.home-active #content {
 .ws-section-caret {
   font-size: 10px;
   color: var(--home-control);
-  transition: transform 0.15s;
+  transition: transform var(--dur-base);
   flex-shrink: 0;
 }
 .ws-section.collapsed .ws-section-caret {
@@ -848,14 +820,14 @@ body.home-active #content {
   color: var(--ctp-overlay0);
   width: 20px;
   height: 20px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 10px;
   opacity: 0;
-  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  transition: opacity var(--dur-fast), background var(--dur-fast), color var(--dur-fast);
   flex-shrink: 0;
 }
 .ws-section-header:hover .ws-section-remove { opacity: 1; }
@@ -871,14 +843,14 @@ body.home-active #content {
   color: var(--ctp-overlay0);
   width: 18px;
   height: 18px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 9px;
   opacity: 0;
-  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  transition: opacity var(--dur-fast), background var(--dur-fast), color var(--dur-fast);
   flex-shrink: 0;
 }
 .ws-entry:hover .ws-entry-remove { opacity: 1; }
@@ -895,9 +867,9 @@ body.home-active #content {
   margin-top: 4px;
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 4px;
-  z-index: 100;
+  z-index: var(--z-menu);
   box-shadow: var(--elevation-1);
   min-width: 180px;
 }
@@ -912,9 +884,9 @@ body.home-active #content {
   font-family: var(--font-sans);
   font-size: 12px;
   padding: 7px 12px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.1s, color 0.1s;
+  transition: background var(--dur-fast), color var(--dur-fast);
 }
 .ws-add-menu button:hover {
   background: var(--ctp-surface1);
@@ -964,7 +936,7 @@ body.home-active #content {
   color: var(--ctp-overlay0);
   width: 22px;
   height: 22px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -972,7 +944,7 @@ body.home-active #content {
   font-size: 11px;
   margin-left: auto;
   opacity: 0;
-  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  transition: opacity var(--dur-fast), background var(--dur-fast), color var(--dur-fast);
 }
 .home-section-header:hover .home-section-remove { opacity: 1; }
 .home-section-remove:hover {
@@ -1009,7 +981,7 @@ body.home-active #content {
 .home-ws-card {
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 10px 16px;
   display: flex;
   align-items: center;
@@ -1017,7 +989,7 @@ body.home-active #content {
   cursor: pointer;
   white-space: nowrap;
   min-width: 0;
-  transition: border-color 0.15s, background 0.15s, transform 0.15s;
+  transition: border-color var(--dur-base), background var(--dur-base), transform var(--dur-base);
 }
 .home-ws-card:hover {
   border-color: rgba(var(--ctp-lavender-rgb), 0.3);

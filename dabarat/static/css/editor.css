@@ -34,7 +34,7 @@
   color: var(--ctp-yellow);
   background: rgba(var(--ctp-yellow-rgb), 0.1);
   border: 1px solid rgba(var(--ctp-yellow-rgb), 0.25);
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
   padding: 2px 10px 2px 7px;
   margin-right: 8px;
   user-select: none;
@@ -53,10 +53,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.2s ease-out,
-              box-shadow 0.2s ease-out, transform 0.1s;
+  transition: background var(--dur-base), color var(--dur-base), border-color var(--dur-mid) ease-out,
+              box-shadow var(--dur-mid) ease-out, transform var(--dur-fast);
 }
 .edit-fmt-btn:focus-visible {
   outline: 2px solid var(--ctp-blue);
@@ -99,27 +99,22 @@
   user-select: none;
 }
 
+/* Save/Close ride the .btn recipe (base-layout.css); outline hover keeps
+   the accent on border + text, no fill */
 #edit-save-btn,
 #edit-discard-btn {
-  background: none;
-  border: 1px solid var(--ctp-surface1);
   color: var(--ctp-subtext0);
-  font-family: var(--font-sans);
-  font-size: 11px;
   padding: 3px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
-}
-
-#edit-save-btn:focus-visible,
-#edit-discard-btn:focus-visible {
-  outline: 2px solid var(--ctp-blue);
-  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 #edit-save-btn:hover {
+  background: transparent;
   border-color: var(--ctp-blue);
   color: var(--ctp-blue);
+}
+#edit-save-btn:disabled {
+  border-color: var(--ctp-surface1);
+  color: var(--ctp-subtext0);
 }
 
 #edit-save-btn.dirty {
@@ -133,6 +128,7 @@
 }
 
 #edit-discard-btn:hover {
+  background: transparent;
   border-color: var(--ctp-red);
   color: var(--ctp-red);
 }
@@ -207,7 +203,7 @@ body.edit-mode .edit-body {
 #tiptap-editor .ProseMirror img {
   max-width: 100%;
   height: auto;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   margin: 1em 0;
 }
 
@@ -296,9 +292,9 @@ body.edit-mode .edit-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
+  z-index: var(--z-float);
   box-shadow: var(--elevation-1);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #edit-toggle {

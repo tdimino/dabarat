@@ -140,6 +140,20 @@
   --font-serif: 'Cormorant Garamond', 'Noto Serif Hebrew', Georgia, serif;
   --font-mono: 'Victor Mono', 'Fira Code', monospace;
   --measure: 900px;   /* prose column; read/edit/frontmatter/variables share it */
+
+  /* Shape / depth / motion tokens (2026-09-06). Radii map 1:1 onto the
+     values the stylesheet already used; z-index layers are named so a new
+     surface picks a layer instead of a number; durations/easings are the
+     three curves and five speeds that were scattered as literals. */
+  --radius-xs: 3px;  --radius-sm: 4px;  --radius-md: 6px;  --radius-lg: 8px;
+  --radius-xl: 10px; --radius-2xl: 12px; --radius-pill: 999px;
+  --z-toc: 10; --z-panel: 15; --z-float: 25; --z-status: 30; --z-menu: 100;
+  --z-banner: 300; --z-palette: 500; --z-modal: 1000; --z-lightbox: 1100;
+  --z-overlay: 1200;   /* full-screen takeovers: variable preview, view transitions */
+  --dur-fast: 0.12s; --dur-base: 0.15s; --dur-mid: 0.2s; --dur-slow: 0.25s; --dur-slower: 0.3s;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
   --base-size: 15px;
   color-scheme: dark;
 }

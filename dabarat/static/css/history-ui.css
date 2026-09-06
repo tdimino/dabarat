@@ -9,8 +9,8 @@
   background: var(--toc-bg, var(--ctp-mantle));
   border-left: 1px solid var(--ctp-surface0);
   transform: translateX(100%);
-  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 15;
+  transition: transform 280ms var(--ease-standard);
+  z-index: var(--z-panel);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -76,7 +76,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.15s;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   flex-shrink: 0;
 }
 .version-panel-close:hover {
@@ -112,7 +112,7 @@
   padding: 10px 12px 10px 44px;
   position: relative;
   cursor: pointer;
-  transition: background 150ms;
+  transition: background var(--dur-base);
   outline: none;
 }
 /* Tint, not a surface swap: --ctp-surface0 is a cold grey slab on the
@@ -138,7 +138,7 @@
   border-radius: 50%;
   background: var(--ctp-surface1);
   border: 2px solid var(--toc-bg, var(--ctp-mantle));
-  transition: all 150ms;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   z-index: 1;
 }
 .version-entry:hover::before {
@@ -173,10 +173,10 @@
   font-size: 10px;
   padding: 1px 4px;
   margin-left: auto;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   display: inline-flex;
   align-items: center;
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--dur-fast), background var(--dur-fast);
 }
 .version-excerpt-toggle:hover {
   color: var(--ctp-blue);
@@ -189,10 +189,10 @@
   margin: 6px 0 2px;
   padding: 6px 8px;
   background: rgba(var(--ctp-surface0-rgb), 0.6);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   overflow-x: auto;
 }
-.version-excerpt-line { white-space: pre; }
+.version-excerpt-line { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 .version-excerpt-line.add { color: var(--stat-add); }
 .version-excerpt-line.del { color: var(--stat-del); }
 /* subtext1, not subtext0 — the surface0 wash lifts the panel's mantle
@@ -226,7 +226,7 @@
 /* Action buttons — hover reveal */
 .version-actions {
   opacity: 0;
-  transition: opacity 150ms;
+  transition: opacity var(--dur-base);
   display: flex;
   gap: 6px;
   margin-top: 6px;
@@ -237,36 +237,28 @@
 }
 
 .version-btn {
-  /* Revealed only on row hover, over the hover tint — overlay2 at 10px
-     fell under AA there, so these read at subtext tier with a card-colored
-     fill that separates them from the tinted row */
+  /* Deltas over the .btn recipe. Revealed only on row hover, over the
+     hover tint — overlay2 at 10px fell under AA there, so these read at
+     subtext tier with a card-colored fill that separates them from the
+     tinted row */
   background: var(--card-bg, var(--ctp-mantle));
-  border: 1px solid var(--ctp-overlay0);
+  border-color: var(--ctp-overlay0);
   color: var(--ctp-subtext0);
-  font-family: var(--font-sans);
-  font-size: 11px;
   padding: 0 9px;
   min-height: 26px;          /* sidebar control: comfortable, not touch-sized */
-  border-radius: 4px;
-  cursor: pointer;
+  border-radius: var(--radius-sm);
   display: flex;
-  align-items: center;
   gap: 4px;
-  transition: color 150ms, border-color 150ms, transform 150ms ease-out;
 }
-/* Hover/focus: accent on the border only — text stays at subtext tier,
-   because raw blue/yellow on --card-bg (white in light themes) is well
-   under AA. The border is a non-text indicator and clears 3:1. */
+/* Hover/focus: accent on the border only, NO fill — text stays at subtext
+   tier, because raw blue/yellow on --card-bg (white in light themes) is
+   well under AA. The border is a non-text indicator and clears 3:1. */
 .version-btn:hover,
 .version-btn:focus-visible {
+  background: var(--card-bg, var(--ctp-mantle));
   color: var(--ctp-text);
   border-color: var(--ctp-blue);
 }
-.version-btn:focus-visible {
-  outline: 2px solid var(--ctp-blue);
-  outline-offset: 1px;
-}
-.version-btn:active { transform: scale(0.96); }
 .version-btn-restore:hover,
 .version-btn-restore:focus-visible {
   border-color: var(--ctp-yellow);
@@ -303,7 +295,7 @@
 .skeleton-line {
   height: 10px;
   background: var(--ctp-surface0);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin: 6px 0;
   animation: skeletonShimmer 1.5s ease-in-out infinite;
   background-size: 200% 100%;
@@ -338,9 +330,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
+  z-index: var(--z-float);
   box-shadow: var(--elevation-1);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #history-toggle {
@@ -400,9 +392,9 @@ body.home-active #history-toggle {
   font-weight: 700;
   line-height: 1;
   padding: 3px 5px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity var(--dur-slower) ease, transform var(--dur-slower) ease;
 }
 .history-chip.out {
   opacity: 0;
@@ -485,7 +477,7 @@ body.home-active #history-toggle {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   margin-left: 6px;
   vertical-align: 1px;
 }
@@ -544,7 +536,7 @@ body.home-active #history-toggle {
   min-width: 0;
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--ctp-text);
   font-family: var(--font-sans);
   font-size: 11px;
@@ -578,12 +570,12 @@ body.home-active #history-toggle {
   width: auto;
   min-width: 34px;
   padding: 0 9px;
-  border-radius: 17px;
+  border-radius: var(--radius-pill);
   /* Restates each button's base transition list (they're identical) so
      opacity/visibility can join it for the version-panel yield below */
-  transition: transform 0.2s ease, box-shadow 0.25s ease,
-              border-color 0.2s ease, color 0.2s ease, background 0.2s ease,
-              opacity 0.2s ease, visibility 0.2s;
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease,
+              border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease,
+              opacity var(--dur-mid) ease, visibility var(--dur-mid);
 }
 /* The panel (z-index 15, right edge) occupies these buttons' footprint —
    timeline rows and excerpts would render beneath them. Yield while open;
@@ -603,7 +595,7 @@ body.version-panel-open #justify-toggle {
   font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
-  transition: max-width 0.25s ease, opacity 0.2s ease, margin-right 0.25s ease;
+  transition: max-width var(--dur-slow) ease, opacity var(--dur-mid) ease, margin-right var(--dur-slow) ease;
 }
 #annotations-toggle:hover .float-btn-label,
 #edit-toggle:hover .float-btn-label,

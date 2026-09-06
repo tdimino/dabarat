@@ -4,7 +4,7 @@
 .lightbox {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-lightbox);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,7 +14,7 @@
   -webkit-backdrop-filter: blur(16px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity var(--dur-slow) ease;
 }
 .lightbox.active {
   opacity: 1;
@@ -45,8 +45,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.15s;
-  z-index: 1001;
+  transition: background var(--dur-base), transform var(--dur-base);
+  z-index: calc(var(--z-lightbox) + 1);
 }
 .lightbox-close:hover {
   background: rgba(var(--ctp-surface1-rgb), 0.8);
@@ -65,9 +65,9 @@
   max-width: 90vw;
   max-height: 80vh;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--elevation-2);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--dur-slower) var(--ease-out-expo);
 }
 
 /* Caption */
@@ -103,7 +103,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.15s;
+  transition: background var(--dur-base), transform var(--dur-base);
 }
 .lightbox-prev:hover,
 .lightbox-next:hover {

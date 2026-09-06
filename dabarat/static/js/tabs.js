@@ -840,8 +840,9 @@ function _setTabGhost(id, missing) {
    and a polite live region so the message is announced, not just drawn.
    Keyed by id — calling again with the same id replaces the text in
    place. Message is set via textContent (error names come from the OS). */
-function _showStatusBanner(id, message, severity) {
+function _showStatusBanner(id, message, severity, opts) {
   _hideStatusBanner(id);
+  opts = opts || {};
   const banner = document.createElement('div');
   banner.id = id;
   banner.className = 'status-banner';
@@ -852,14 +853,29 @@ function _showStatusBanner(id, message, severity) {
   banner.dataset.severity = sev;
   banner.setAttribute('role', sev === 'error' ? 'alert' : 'status');
   banner.setAttribute('aria-live', sev === 'error' ? 'assertive' : 'polite');
-  const icon = sev === 'error' ? 'ph-x-circle' : sev === 'info' ? 'ph-info' : 'ph-warning';
-  banner.innerHTML = '<i class="ph ' + icon + '" aria-hidden="true"></i><span></span>' +
-    '<button type="button" data-action="dismiss">Dismiss</button>';
+  const icon = opts.icon || (sev === 'error' ? 'ph-x-circle' : sev === 'info' ? 'ph-info' : 'ph-warning');
+  banner.innerHTML = '<i class="ph ' + icon + '" aria-hidden="true"></i><span></span>';
   banner.querySelector('span').textContent = message;
+  /* Extra actions ([{label, action}]) precede Dismiss; data-action + one
+     delegated listener, never inline handlers */
+  const actions = (opts.actions || []).concat(opts.dismiss === false ? [] : [{ label: 'Dismiss' }]);
+  actions.forEach((a, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.action = a.action ? 'act-' + i : 'dismiss';
+    btn.textContent = a.label;
+    banner.appendChild(btn);
+  });
   banner.addEventListener('click', (e) => {
-    if (e.target.closest('[data-action="dismiss"]')) banner.remove();
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'dismiss') { banner.remove(); return; }
+    const a = (opts.actions || [])[parseInt(btn.dataset.action.slice(4), 10)];
+    if (a && a.action) a.action(banner);
   });
   document.body.appendChild(banner);
+  if (opts.timeout) setTimeout(() => { if (banner.isConnected) banner.remove(); }, opts.timeout);
+  return banner;
 }
 
 function _hideStatusBanner(id) {

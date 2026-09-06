@@ -25,7 +25,7 @@ body {
 body, #toc, #status, #toc-restore, #tab-bar, #annotations-gutter,
 h1, h2, h3, h4, h5, h6,
 blockquote, code, pre, th, td, tr {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color var(--dur-slower) ease, color var(--dur-slower) ease, border-color var(--dur-slower) ease;
 }
 
 /* Text selection — theme wash instead of the OS-default blue,
@@ -55,8 +55,8 @@ blockquote, code, pre, th, td, tr {
   background: var(--toc-bg, var(--ctp-mantle));
   border-right: 1px solid var(--ctp-surface0);
   padding: 0;
-  z-index: 10;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: var(--z-toc);
+  transition: transform var(--dur-slow) var(--ease-standard);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -70,8 +70,8 @@ blockquote, code, pre, th, td, tr {
   width: 6px;
   height: 100vh;
   cursor: col-resize;
-  z-index: 11;
-  transition: background 0.15s, left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: calc(var(--z-toc) + 1);
+  transition: background var(--dur-base), left var(--dur-slow) var(--ease-standard);
 }
 #toc-resize-handle:hover,
 #toc-resize-handle.dragging {
@@ -114,7 +114,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s;
+  transition: color var(--dur-mid), background-color var(--dur-mid), border-color var(--dur-mid), box-shadow var(--dur-mid), transform var(--dur-mid), opacity var(--dur-mid);
   flex-shrink: 0;
 }
 #toc-toggle:hover {
@@ -133,7 +133,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s;
+  transition: color var(--dur-mid), background-color var(--dur-mid), border-color var(--dur-mid), box-shadow var(--dur-mid), transform var(--dur-mid), opacity var(--dur-mid);
   flex-shrink: 0;
 }
 .ctrl-btn:hover {
@@ -162,9 +162,9 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   position: absolute;
   inset: 0;
   background: var(--ctp-surface1);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background var(--dur-slower) ease;
 }
 .theme-switch .slider::before {
   content: '';
@@ -173,7 +173,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   width: 10px; height: 10px;
   background: var(--ctp-overlay2);
   border-radius: 50%;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--dur-slower) var(--ease-standard);
 }
 .theme-switch input:checked + .slider {
   background: var(--ctp-blue);
@@ -187,7 +187,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  transition: opacity 0.2s;
+  transition: opacity var(--dur-mid);
 }
 .theme-icon.icon-moon { color: var(--ctp-mauve); opacity: 0.45; }
 .theme-icon.icon-sun { color: var(--ctp-yellow); opacity: 0.2; }
@@ -239,7 +239,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   display: block;
   padding: 3px 8px 3px 12px;
   border-left: 2px solid transparent;
-  transition: color 0.15s, border-color 0.2s, box-shadow 0.2s;
+  transition: color var(--dur-base), border-color var(--dur-mid), box-shadow var(--dur-mid);
   line-height: 1.45;
   word-break: break-word;
   font-family: var(--font-sans);
@@ -307,7 +307,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   padding-top: 1px;
   padding-bottom: 1px;
   opacity: 0.65;
-  transition: opacity 0.15s, color 0.15s, border-color 0.2s;
+  transition: opacity var(--dur-base), color var(--dur-base), border-color var(--dur-mid);
 }
 #toc .toc-h4:hover { opacity: 1; }
 #toc .toc-h4.active { opacity: 1; }
@@ -337,10 +337,10 @@ body.toc-collapsed #toc-restore {
   cursor: pointer;
   font-size: 16px;
   border-radius: 50%;
-  z-index: 20;
+  z-index: var(--z-float);
   box-shadow: var(--elevation-1);
-  transition: transform 0.2s ease, box-shadow 0.25s ease,
-              border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease,
+              border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #toc-restore {
@@ -368,7 +368,7 @@ body.toc-collapsed #toc-restore {
   to { opacity: 1; transform: scale(1) translateX(0); }
 }
 body.toc-collapsed #toc-restore {
-  animation: tocRestoreBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: tocRestoreBounce 0.3s var(--ease-out-back) both;
 }
 [data-theme="latte"] #toc-restore,
 [data-theme="vellum"] #toc-restore,
@@ -415,8 +415,8 @@ body.home-active.toc-collapsed #main-area {
   margin-left: var(--toc-width, 260px);
   margin-right: 260px;
   min-height: 100vh;
-  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: margin-left var(--dur-slow) var(--ease-standard),
+              margin-right var(--dur-slow) var(--ease-standard);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -450,7 +450,7 @@ body.home-active.toc-collapsed #main-area {
   border-bottom: 2px solid var(--ctp-surface0);
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, background 0.15s, border-color 0.15s, opacity 0.15s, padding 0.15s;
+  transition: color var(--dur-base), background var(--dur-base), border-color var(--dur-base), opacity var(--dur-base), padding var(--dur-base);
   user-select: none;
   overflow: hidden; /* enables width-collapse animation on close */
   flex: 0 0 auto;  /* JS sets explicit width via _computeVisibleWindow() */
@@ -481,7 +481,7 @@ body.home-active.toc-collapsed #main-area {
   top: 52px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 300;
+  z-index: var(--z-banner);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -492,7 +492,7 @@ body.home-active.toc-collapsed #main-area {
   color: var(--ctp-text);
   background: var(--card-bg, var(--ctp-mantle));
   border: 1px solid rgba(var(--ctp-yellow-rgb), 0.5);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--elevation-2);
 }
 .status-banner i { color: var(--ctp-yellow); font-size: 15px; flex-shrink: 0; }
@@ -501,19 +501,8 @@ body.home-active.toc-collapsed #main-area {
 .status-banner[data-severity="error"] i { color: var(--ctp-red); }
 .status-banner[data-severity="info"] { border-color: rgba(var(--ctp-blue-rgb), 0.5); }
 .status-banner[data-severity="info"] i { color: var(--ctp-blue); }
-.status-banner button {
-  flex-shrink: 0;
-  padding: 3px 10px;
-  font-family: inherit;
-  font-size: 11px;
-  color: var(--ctp-subtext0);
-  background: transparent;
-  border: 1px solid var(--ctp-surface1);
-  border-radius: 5px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-.status-banner button:hover { color: var(--ctp-text); border-color: var(--ctp-overlay0); }
+.status-banner button { flex-shrink: 0; padding: 3px 10px; }
+.status-banner button:hover { border-color: var(--ctp-overlay0); }
 
 .tab-close {
   display: none;
@@ -522,7 +511,7 @@ body.home-active.toc-collapsed #main-area {
   color: var(--ctp-overlay0);
   line-height: 1;
   padding: 1px 3px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 .tab:hover .tab-close { display: inline; }
 .tab-close:hover { color: var(--ctp-red); background: rgba(var(--ctp-red-rgb), 0.1); }
@@ -541,7 +530,7 @@ body.home-active.toc-collapsed #main-area {
   cursor: pointer;
   padding: 0 10px;
   font-size: 14px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -557,7 +546,7 @@ body.home-active.toc-collapsed #main-area {
   cursor: pointer;
   padding: 0 12px;
   font-size: 14px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -573,7 +562,7 @@ body.home-active.toc-collapsed #main-area {
   padding: 0 10px;
   font-family: var(--font-sans);
   font-size: 10px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
   flex-shrink: 0;
   display: none;          /* JS controls display directly */
   align-items: center;
@@ -587,7 +576,7 @@ body.home-active.toc-collapsed #main-area {
   font-family: var(--font-mono);
   font-size: 10px;
   padding: 4px 8px;
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
   outline: none;
   width: 220px;
   margin: 4px 0 4px 8px;
@@ -603,15 +592,89 @@ body.home-active.toc-collapsed #main-area {
   cursor: pointer;
   font-size: 12px;
   padding: 4px 8px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin: 4px 8px 4px 0;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  transition: all 0.15s;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
 }
 .tab-browse-btn:hover {
   color: var(--ctp-blue);
+}
+
+/* ── Secondary button recipe ──────────────────────────
+   One base for the small pill buttons (home actions, workspace buttons,
+   Open, version rows, instance rows, banner Dismiss, editor Save/Close):
+   type, padding, radius, border, hover tint, focus ring, active press,
+   disabled state. Per-class rules below and in other modules keep only
+   their deltas (accent hover hues, sizes, the version row's border-only
+   hover rationale). */
+.btn,
+.home-action-btn, .ws-btn, .home-open-btn, .version-btn,
+.instance-row-actions button, .status-banner button,
+#edit-save-btn, #edit-discard-btn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ctp-surface1);
+  background: transparent;
+  color: var(--home-control);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color var(--dur-base), background-color var(--dur-base),
+              border-color var(--dur-base), transform var(--dur-fast);
+}
+.btn:hover,
+.home-action-btn:hover, .ws-btn:hover, .home-open-btn:hover,
+.instance-row-actions button:hover, .status-banner button:hover,
+#edit-save-btn:hover, #edit-discard-btn:hover {
+  background: var(--interactive-muted-bg);
+  color: var(--ctp-text);
+}
+.btn:focus-visible,
+.home-action-btn:focus-visible, .ws-btn:focus-visible, .home-open-btn:focus-visible,
+.version-btn:focus-visible, .instance-row-actions button:focus-visible,
+.status-banner button:focus-visible,
+#edit-save-btn:focus-visible, #edit-discard-btn:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
+}
+.btn:active,
+.home-action-btn:active, .ws-btn:active, .home-open-btn:active, .version-btn:active,
+.instance-row-actions button:active, .status-banner button:active,
+#edit-save-btn:active, #edit-discard-btn:active {
+  transform: scale(0.96);
+}
+.btn:disabled,
+.home-action-btn:disabled, .ws-btn:disabled, .home-open-btn:disabled, .version-btn:disabled,
+.instance-row-actions button:disabled, .status-banner button:disabled,
+#edit-save-btn:disabled, #edit-discard-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Keyboard focus for the icon controls that had none — same ring as the
+   buttons above; hover-revealed ghosts also reveal on focus */
+.ctrl-btn:focus-visible, #toc-toggle:focus-visible, .tab-close:focus-visible,
+.tab-browse-btn:focus-visible, .gutter-tab:focus-visible, .ann-type-btn:focus-visible,
+.ann-resolve-btn:focus-visible, .ann-delete-btn:focus-visible, .ann-reply-send:focus-visible,
+.ann-reply-toggle:focus-visible, .ann-gutter-close:focus-visible, .var-fill-toggle:focus-visible,
+.var-preview-btn:focus-visible, .tp-preset-card:focus-visible, .home-card-remove:focus-visible,
+.tab-overflow-close-all:focus-visible, .preview-close:focus-visible,
+#status-copy-path:focus-visible, #status-export-pdf:focus-visible, #instance-indicator:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
+}
+.home-card-remove:focus-visible, .ann-resolve-btn:focus-visible, .ann-delete-btn:focus-visible,
+.ann-reply-toggle:focus-visible, .tab-close:focus-visible {
+  opacity: 1;
+  display: inline;
 }
 
 /* ── Tab Context Menu ────────────────────────────────── */
@@ -619,9 +682,9 @@ body.home-active.toc-collapsed #main-area {
   position: fixed;
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 4px 0;
-  z-index: 100;
+  z-index: var(--z-menu);
   box-shadow: var(--elevation-1);
   min-width: 140px;
   animation: fmFadeIn 0.08s ease;
@@ -646,10 +709,10 @@ body.home-active.toc-collapsed #main-area {
   outline: none;
 }
 .tab-context-item:first-child {
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 .tab-context-item:last-child {
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 .tab-context-sep {
   border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.6);
@@ -660,7 +723,7 @@ body.home-active.toc-collapsed #main-area {
   display: flex;
   flex-direction: column;
   background: var(--card-bg, var(--ctp-surface0));
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   min-width: 240px;
 }
 /* Overflow rows sit on --card-bg (white in light themes) where raw
@@ -698,8 +761,8 @@ body.home-active.toc-collapsed #main-area {
   font-size: 11px;
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-base), background var(--dur-base);
 }
 .tab-overflow-close-all:hover {
   color: var(--ctp-red);
@@ -712,7 +775,7 @@ body.home-active.toc-collapsed #main-area {
   font-family: var(--font-sans);
   font-size: 11px;
   padding: 4px 8px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   outline: none;
   margin: 2px 10px 6px;
   flex-shrink: 0;
@@ -738,9 +801,9 @@ body.home-active.toc-collapsed #main-area {
   line-height: 1;
   cursor: pointer;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   opacity: 0;
-  transition: opacity 0.12s, color 0.12s, background 0.12s;
+  transition: opacity var(--dur-fast), color var(--dur-fast), background var(--dur-fast);
   flex-shrink: 0;
 }
 .tab-context-item:hover .tab-overflow-close,
@@ -803,8 +866,8 @@ body.home-active.toc-collapsed #main-area {
 }
 .instance-row {
   padding: 8px 10px;
-  border-radius: 6px;
-  transition: background 0.12s;
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast);
 }
 .instance-row:hover {
   background: var(--interactive-muted-bg);
@@ -844,7 +907,7 @@ body.home-active.toc-collapsed #main-area {
   letter-spacing: 0.06em;
   color: var(--badge-blue-fg);
   background: rgba(var(--ctp-blue-rgb), 0.15);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 1px 6px;
 }
 .instance-row-ago {
@@ -868,22 +931,8 @@ body.home-active.toc-collapsed #main-area {
   gap: 6px;
   margin-top: 6px;
 }
-.instance-row-actions button {
-  background: none;
-  border: 1px solid var(--ctp-surface1);
-  color: var(--home-control);
-  font-family: var(--font-sans);
-  font-size: 10px;
-  padding: 3px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
-}
-.instance-row-actions button:hover {
-  color: var(--ctp-text);
-  border-color: var(--ctp-surface2);
-  background: var(--interactive-muted-bg);
-}
+.instance-row-actions button { font-size: 10px; padding: 3px 10px; }
+.instance-row-actions button:hover { border-color: var(--ctp-surface2); }
 .instance-row-actions button[data-action="shutdown"]:hover {
   color: var(--ctp-red);
   border-color: rgba(var(--ctp-red-rgb), 0.5);
@@ -903,7 +952,7 @@ body.home-active.toc-collapsed #main-area {
   font-family: var(--font-sans);
   font-size: 10.5px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   outline: none;
   width: 140px;
 }
@@ -920,7 +969,7 @@ body.home-active.toc-collapsed #main-area {
   z-index: 1;
 }
 ::view-transition-new(root) {
-  z-index: 9999;
+  z-index: var(--z-overlay);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -945,7 +994,7 @@ body.has-bg-image #main-area::after {
   opacity: var(--bg-image-opacity, 0);
   pointer-events: none;
   filter: blur(var(--bg-image-blur, 0px));
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-slower) ease;
 }
 
 /* Ensure content sits above the background image */
@@ -974,14 +1023,14 @@ body.has-bg-image #diff-view {
 .settings-bg-preview {
   width: 48px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background-size: cover;
   background-position: center;
   border: 1px solid var(--ctp-surface1);
   box-shadow: 0 0 0 2px var(--ctp-sapphire);  /* ring = image is active; sapphire passes WCAG 3:1 on all themes */
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-base), box-shadow var(--dur-base);
 }
 .settings-bg-preview:hover {
   border-color: var(--ctp-red);
@@ -993,12 +1042,12 @@ body.has-bg-image #diff-view {
   font-family: var(--font-sans);
   font-size: 11px;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
 }
 .settings-bg-btn:hover {
   background: var(--ctp-surface1);

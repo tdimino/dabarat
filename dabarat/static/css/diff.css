@@ -43,7 +43,7 @@
   font-family: var(--font-mono);
   font-size: 9px;
   padding: 1px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   letter-spacing: 0.3px;
   text-transform: uppercase;
   flex-shrink: 0;
@@ -63,8 +63,8 @@
   cursor: pointer;
   font-size: 16px;
   padding: 4px 6px;
-  border-radius: 4px;
-  transition: all 0.15s;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   flex-shrink: 0;
   margin-left: 12px;
 }
@@ -136,7 +136,7 @@
 .diff-panel::-webkit-scrollbar { width: 6px; }
 .diff-panel::-webkit-scrollbar-thumb {
   background: var(--ctp-surface1);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 #diff-panel-left {
   width: var(--diff-split);
@@ -171,7 +171,7 @@
 .diff-panel-content pre {
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 14px 18px;
   overflow-x: auto;
   font-family: var(--font-mono);
@@ -214,7 +214,7 @@
   cursor: col-resize;
   background: transparent;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
   z-index: 2;
 }
 .diff-resize-handle:hover,
@@ -233,10 +233,10 @@ body.diff-resizing * {
 /* ── Diff Block Highlights ───────────────────────────── */
 
 .diff-block {
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   margin: 0;
   padding: 2px 8px;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
 }
 .diff-block.diff-insert {
   background: rgba(var(--ctp-green-rgb), 0.12);

@@ -915,13 +915,9 @@ async function browsePickDir() {
   } catch (e) {
     console.error('browse-folder failed:', e);
     if (!document.getElementById('browse-failed-banner')) {
-      const banner = document.createElement('div');
-      banner.id = 'browse-failed-banner';
-      banner.className = 'status-banner';
-      banner.innerHTML = '<i class="ph ph-warning"></i>' +
-        '<span>Could not open the folder picker — is the server still running?</span>';
-      document.body.appendChild(banner);
-      setTimeout(() => banner.remove(), 4000);
+      _showStatusBanner('browse-failed-banner',
+        'Could not open the folder picker — is the server still running?',
+        'error', { timeout: 4000 });
     }
   }
 }

@@ -258,28 +258,16 @@ function exitEditMode(force) {
 /* ── External-change banner (edit mode) ──────────────── */
 function _showExternalChangeBanner() {
   if (document.getElementById('external-change-banner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'external-change-banner';
-  banner.className = 'status-banner';
-  banner.innerHTML = '<i class="ph ph-warning"></i>' +
-    '<span>File changed on disk while editing.</span>' +
-    '<button data-action="reload">Reload</button>' +
-    '<button data-action="dismiss">Dismiss</button>';
-  banner.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    if (btn.dataset.action === 'reload') {
+  _showStatusBanner('external-change-banner', 'File changed on disk while editing.', 'warn', {
+    actions: [{ label: 'Reload', action: async (banner) => {
       if (editState.dirty && !confirm('Discard your unsaved changes and reload from disk?')) return;
       banner.remove();
       const tabId = editState.tabId;
       await exitEditMode(true);  /* wait out the exit animation's doRestore */
       await fetchTabContent(tabId);
       enterWysiwygMode();
-    } else {
-      banner.remove();
-    }
+    } }],
   });
-  document.body.appendChild(banner);
 }
 
 function _hideExternalChangeBanner() {
@@ -292,15 +280,9 @@ function _hideExternalChangeBanner() {
    message since only live reload is affected there */
 function _showServerUnreachableBanner(msg) {
   if (document.getElementById('server-unreachable-banner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'server-unreachable-banner';
-  banner.className = 'status-banner';
-  const span = document.createElement('span');
-  span.textContent = msg ||
-    'Server unreachable — saving will fail; copy your work before closing.';
-  banner.innerHTML = '<i class="ph ph-plugs"></i>';
-  banner.appendChild(span);
-  document.body.appendChild(banner);
+  _showStatusBanner('server-unreachable-banner',
+    msg || 'Server unreachable — saving will fail; copy your work before closing.',
+    'error', { icon: 'ph-plugs', dismiss: false });
 }
 
 function _hideServerUnreachableBanner() {

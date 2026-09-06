@@ -76,16 +76,27 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{html.escape(title)}</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/marked-footnote@1.4.0/dist/index.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="preconnect" href="https://esm.sh" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- Classic scripts stay parser-blocking on purpose: the inline bundle at
+     the end of <body> uses marked/hljs at parse time, and defer would run
+     these after it. They are pinned (no more @latest resolution round
+     trips) and cached after the first load. -->
+<script src="https://cdn.jsdelivr.net/npm/marked@15.0.12/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked-footnote@1.4.0/dist/index.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Victor+Mono:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <!-- Hebrew families load on demand: render.js injects #dabarat-hebrew-fonts on the first document containing Hebrew (see ensureHebrewFonts) -->
-<script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
-<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@latest/dist/twemoji.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/vibrant.js/1.0.0/Vibrant.min.js"></script>
+<!-- Phosphor: the two weight stylesheets directly, not the JS package that
+     redirected through the unpkg root and injected them anyway -->
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css">
+<script src="https://cdn.jsdelivr.net/npm/@twemoji/api@17.0.3/dist/twemoji.min.js"></script>
+<!-- Vibrant.js loads on demand (theme.js loadVibrant) — only the image-theme command needs it -->
 <script type="module">
   try {{
     const {{ animate, stagger, spring }} = await import("https://cdn.jsdelivr.net/npm/@motionone/dom@10.18.0/+esm");
@@ -93,22 +104,36 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
   }} catch (e) {{ /* Motion One unavailable — CSS fallback animations remain */ }}
 </script>
 <script type="module">
-  try {{
-    const {{ Editor }} = await import("https://esm.sh/@tiptap/core@2.27.2");
-    const StarterKit = (await import("https://esm.sh/@tiptap/starter-kit@2.27.2")).default;
-    const {{ Markdown }} = await import("https://esm.sh/tiptap-markdown@0.8.10");
-    const TaskList = (await import("https://esm.sh/@tiptap/extension-task-list@2.27.2")).default;
-    const TaskItem = (await import("https://esm.sh/@tiptap/extension-task-item@2.27.2")).default;
-    const Table = (await import("https://esm.sh/@tiptap/extension-table@2.27.2")).default;
-    const TableRow = (await import("https://esm.sh/@tiptap/extension-table-row@2.27.2")).default;
-    const TableCell = (await import("https://esm.sh/@tiptap/extension-table-cell@2.27.2")).default;
-    const TableHeader = (await import("https://esm.sh/@tiptap/extension-table-header@2.27.2")).default;
-    const Placeholder = (await import("https://esm.sh/@tiptap/extension-placeholder@2.27.2")).default;
-    const Link = (await import("https://esm.sh/@tiptap/extension-link@2.27.2")).default;
-    const Image = (await import("https://esm.sh/@tiptap/extension-image@2.27.2")).default;
-    window.Tiptap = {{ Editor, StarterKit, Markdown, TaskList, TaskItem,
-                       Table, TableRow, TableCell, TableHeader, Placeholder, Link, Image }};
-  }} catch (e) {{ /* Tiptap unavailable — textarea fallback */ }}
+  /* Tiptap is loaded the first time edit mode is entered — twelve ESM
+     imports no longer sit in every read-only page load. The promise is
+     memoized; enterEditMode awaits it and falls back to the textarea on
+     failure. */
+  window.loadTiptap = () => {{
+    if (window.Tiptap) return Promise.resolve(window.Tiptap);
+    if (window._tiptapLoading) return window._tiptapLoading;
+    window._tiptapLoading = (async () => {{
+      const base = "https://esm.sh/@tiptap/";
+      const [{{ Editor }}, StarterKit, {{ Markdown }}, TaskList, TaskItem, Table, TableRow,
+             TableCell, TableHeader, Placeholder, Link, Image] = await Promise.all([
+        import(base + "core@2.27.2"),
+        import(base + "starter-kit@2.27.2").then(m => m.default),
+        import("https://esm.sh/tiptap-markdown@0.8.10"),
+        import(base + "extension-task-list@2.27.2").then(m => m.default),
+        import(base + "extension-task-item@2.27.2").then(m => m.default),
+        import(base + "extension-table@2.27.2").then(m => m.default),
+        import(base + "extension-table-row@2.27.2").then(m => m.default),
+        import(base + "extension-table-cell@2.27.2").then(m => m.default),
+        import(base + "extension-table-header@2.27.2").then(m => m.default),
+        import(base + "extension-placeholder@2.27.2").then(m => m.default),
+        import(base + "extension-link@2.27.2").then(m => m.default),
+        import(base + "extension-image@2.27.2").then(m => m.default),
+      ]);
+      window.Tiptap = {{ Editor, StarterKit, Markdown, TaskList, TaskItem,
+                         Table, TableRow, TableCell, TableHeader, Placeholder, Link, Image }};
+      return window.Tiptap;
+    }})().catch((e) => {{ window._tiptapLoading = null; throw e; }});
+    return window._tiptapLoading;
+  }};
 </script>
 <script>(function(){{var v=['ink','vellum','mocha','latte','rose-pine','rose-pine-dawn','tokyo-storm','tokyo-light','_custom'];var p=new URLSearchParams(window.location.search);var qt=p.get('theme');var st={json.dumps(server_theme)};var t=(qt&&v.indexOf(qt)!==-1)?qt:localStorage.getItem('dabarat-theme')||localStorage.getItem('mdpreview-theme')||(st&&v.indexOf(st)!==-1?st:'')||'mocha';if(v.indexOf(t)===-1)t='mocha';document.documentElement.setAttribute('data-theme',t);if(p.get('export')==='1')document.documentElement.dataset.export='1';var dd=p.get('date');if(dd)document.documentElement.dataset.date=dd;if(t==='_custom'){{try{{var a=localStorage.getItem('dabarat-custom-active')||localStorage.getItem('mdpreview-custom-active');if(a){{var th=JSON.parse(localStorage.getItem('dabarat-custom-themes')||localStorage.getItem('mdpreview-custom-themes')||'[]');for(var i=0;i<th.length;i++){{if(th[i].id===a&&th[i].variables){{var s=document.createElement('style');s.id='custom-theme-style';var r='';var vr=th[i].variables;for(var k in vr){{if(vr.hasOwnProperty(k))r+=k+':'+vr[k]+';'}}s.textContent='[data-theme="_custom"]{{'+r+'}}';document.head.appendChild(s);break}}}}}}}}catch(e){{document.documentElement.setAttribute('data-theme','mocha')}}}}}})()</script>
 <style>

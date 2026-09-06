@@ -975,12 +975,6 @@ const CommandPalette = {
     fileInput.style.display = 'none';
     imgPanel.appendChild(fileInput);
 
-    if (typeof Vibrant === 'undefined') {
-      const notice = document.createElement('div');
-      notice.className = 'tp-error';
-      notice.textContent = 'Image palette extraction unavailable (Vibrant.js not loaded)';
-      imgPanel.insertBefore(notice, dropzone);
-    }
     dropzone.addEventListener('click', () => fileInput.click());
     dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
     dropzone.addEventListener('dragleave', (e) => { if (!dropzone.contains(e.relatedTarget)) dropzone.classList.remove('dragover'); });

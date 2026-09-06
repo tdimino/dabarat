@@ -177,8 +177,23 @@ function enterTextareaMode() {
 }
 
 /* ── Enter / Exit ───────────────────────────────────── */
-function enterEditMode() {
-  if (editState.active) return;
+let _editModeLoading = false;
+async function enterEditMode() {
+  if (editState.active || _editModeLoading) return;
+  /* Tiptap is fetched on first use (template.py loadTiptap); the raw
+     textarea remains the fallback when the CDN is unreachable */
+  if (!window.Tiptap && typeof window.loadTiptap === 'function') {
+    _editModeLoading = true;
+    updateEditStatus('Loading editor…');
+    try {
+      await window.loadTiptap();
+    } catch (e) {
+      console.warn('Tiptap unavailable, using textarea:', e);
+    } finally {
+      _editModeLoading = false;
+    }
+    if (editState.active) return;   /* something else opened it meanwhile */
+  }
   if (window.Tiptap) {
     enterWysiwygMode();
   } else {

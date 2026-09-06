@@ -20,22 +20,26 @@ async function init() {
 
   renderTabBar();
 
-  /* Fetch all content in parallel */
+  /* Active tab gets its content now; inactive tabs only learn their
+     changeKey (a stat-only probe) so their 2 s poll can answer with
+     {unchanged} instead of shipping every document at startup —
+     switchTab lazy-loads content on first activation */
   await Promise.all(
     Object.keys(tabs).map(id =>
-      fetch('/api/content?tab=' + id)
-        .then(r => r.json())
-        .then(data => {
-          tabs[id].content = data.content;
-          tabs[id].body = data.body;
-          tabs[id].mtime = data.mtime;
-          tabs[id].changeKey = data.changeKey;
-          tabs[id].frontmatter = data.frontmatter || null;
-          if (id === activeTabId) {
+      (id === activeTabId
+        ? fetch('/api/content?tab=' + id).then(r => r.json()).then(data => {
+            if (data.error) return;
+            tabs[id].content = data.content;
+            tabs[id].body = data.body;
+            tabs[id].mtime = data.mtime;
+            tabs[id].changeKey = data.changeKey;
+            tabs[id].frontmatter = data.frontmatter || null;
             currentFrontmatter = tabs[id].frontmatter;
-          }
-        })
-        .catch(() => {})
+          })
+        : fetch('/api/mtime?tab=' + id).then(r => r.json()).then(data => {
+            if (!data.error && data.changeKey) tabs[id].changeKey = data.changeKey;
+          })
+      ).catch(() => {})
     )
   );
 

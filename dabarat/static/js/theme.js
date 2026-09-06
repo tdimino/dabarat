@@ -583,12 +583,26 @@ function paletteFromDescription(description) {
 }
 
 /* ── Image-to-Palette ──────────────────────────────── */
-function _extractImagePalette(file) {
+/* Vibrant.js is only needed by the image-theme command, so it loads the
+   first time that runs instead of on every page */
+const VIBRANT_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/vibrant.js/1.0.0/Vibrant.min.js';
+let _vibrantLoading = null;
+function loadVibrant() {
+  if (typeof Vibrant !== 'undefined') return Promise.resolve();
+  if (_vibrantLoading) return _vibrantLoading;
+  _vibrantLoading = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = VIBRANT_SRC;
+    script.onload = () => resolve();
+    script.onerror = () => { _vibrantLoading = null; reject(new Error('Vibrant.js failed to load')); };
+    document.head.appendChild(script);
+  });
+  return _vibrantLoading;
+}
+
+async function _extractImagePalette(file) {
+  await loadVibrant();
   return new Promise((resolve, reject) => {
-    if (typeof Vibrant === 'undefined') {
-      reject(new Error('Vibrant.js not loaded'));
-      return;
-    }
     const reader = new FileReader();
     reader.onload = function() {
       const img = new Image();

@@ -101,123 +101,132 @@ document.getElementById('ann-gutter-close').onclick = () => {
 /* Separate highlight application from bubble rendering */
 
 /**
- * Find anchor text in the content element, even when it spans
- * multiple DOM nodes (e.g. across <strong>, <em>, line breaks).
- * Returns a Range or null.
+ * Text-node index over a container: every text node with its offset into
+ * the concatenated string. Built once per applyAnnotationHighlights and
+ * shared by every annotation (the walk used to run once per annotation —
+ * O(annotations × nodes) on every content change). The normalized form
+ * is derived lazily and memoized on the index for the fuzzy fallback.
  */
-function findTextRange(container, searchText) {
-  if (!searchText) return null;
-
-  /* First pass: try single-node match (fast path) */
-  const walker1 = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-  let node1;
-  while (node1 = walker1.nextNode()) {
-    const idx = node1.textContent.indexOf(searchText);
-    if (idx >= 0) {
-      const range = document.createRange();
-      range.setStart(node1, idx);
-      range.setEnd(node1, idx + searchText.length);
-      return range;
-    }
-  }
-
-  /* Second pass: concatenate text nodes and find across boundaries */
-  const walker2 = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+function buildTextIndex(container) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   const nodes = [];
   let fullText = '';
   let n;
-  while (n = walker2.nextNode()) {
-    nodes.push({ node: n, start: fullText.length });
+  while (n = walker.nextNode()) {
+    nodes.push({ node: n, start: fullText.length, end: fullText.length + n.textContent.length });
     fullText += n.textContent;
   }
+  return { nodes, fullText, norm: null, indexMap: null };
+}
 
-  const matchIdx = fullText.indexOf(searchText);
-  if (matchIdx < 0) {
-    /*
-     * Normalized fallback: expand §↔Section, collapse whitespace,
-     * lowercase — then map the match position back to the original
-     * string using an index map built during normalization.
-     *
-     * indexMap[i] = the position in the original string that produced
-     * normalized character i. This lets us map any normalized offset
-     * back to its exact original position.
-     */
-    function buildNormalized(s) {
-      let norm = '';
-      const indexMap = []; /* indexMap[normIdx] → origIdx */
-      const expansions = { '\u00a7': 'section' };
-
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-        if (expansions[ch]) {
-          const exp = expansions[ch];
-          for (let j = 0; j < exp.length; j++) {
-            indexMap.push(i);
-            norm += exp[j];
-          }
-        } else if (/\s/.test(ch)) {
-          /* Collapse runs of whitespace to single space */
-          if (norm.length === 0 || norm[norm.length - 1] !== ' ') {
-            indexMap.push(i);
-            norm += ' ';
-          }
-        } else {
-          indexMap.push(i);
-          norm += ch.toLowerCase();
-        }
-      }
-      return { norm, indexMap };
-    }
-
-    const { norm: normSearch } = buildNormalized(searchText);
-    const { norm: normFull, indexMap } = buildNormalized(fullText);
-    const normIdx = normFull.indexOf(normSearch);
-    if (normIdx < 0) return null;
-
-    /* Map back to original fullText position */
-    const origIdx = indexMap[normIdx] || 0;
-
-    /* Find the text node at origIdx */
-    for (let i = 0; i < nodes.length; i++) {
-      const entry = nodes[i];
-      const nodeEnd = entry.start + entry.node.textContent.length;
-      if (nodeEnd > origIdx) {
-        const localIdx = Math.max(0, origIdx - entry.start);
-        const range = document.createRange();
-        range.setStart(entry.node, Math.min(localIdx, entry.node.textContent.length));
-        range.setEnd(entry.node, entry.node.textContent.length);
-        return range;
-      }
-    }
-    return null;
+/* Binary search: the entry whose [start, end) covers pos (end-inclusive
+   for the closing boundary so a match ending exactly at a node edge
+   resolves to that node, matching the original linear scan) */
+function _indexEntryAt(index, pos, inclusiveEnd) {
+  const nodes = index.nodes;
+  let lo = 0, hi = nodes.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const e = nodes[mid];
+    if (pos < e.start) hi = mid - 1;
+    else if (inclusiveEnd ? pos > e.end : pos >= e.end) lo = mid + 1;
+    else return e;
   }
+  return null;
+}
 
-  /* Find start node/offset */
-  let startNode = null, startOffset = 0;
-  let endNode = null, endOffset = 0;
-  const matchEnd = matchIdx + searchText.length;
+/*
+ * Normalized fallback: expand §↔Section, collapse whitespace,
+ * lowercase — then map the match position back to the original
+ * string using an index map built during normalization.
+ *
+ * indexMap[i] = the position in the original string that produced
+ * normalized character i. This lets us map any normalized offset
+ * back to its exact original position.
+ */
+function _buildNormalized(s) {
+  let norm = '';
+  const indexMap = []; /* indexMap[normIdx] → origIdx */
+  const expansions = { '\u00a7': 'section' };
 
-  for (let i = 0; i < nodes.length; i++) {
-    const entry = nodes[i];
-    const nodeEnd = entry.start + entry.node.textContent.length;
-
-    if (!startNode && nodeEnd > matchIdx) {
-      startNode = entry.node;
-      startOffset = matchIdx - entry.start;
-    }
-    if (nodeEnd >= matchEnd) {
-      endNode = entry.node;
-      endOffset = matchEnd - entry.start;
-      break;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (expansions[ch]) {
+      const exp = expansions[ch];
+      for (let j = 0; j < exp.length; j++) {
+        indexMap.push(i);
+        norm += exp[j];
+      }
+    } else if (/\s/.test(ch)) {
+      /* Collapse runs of whitespace to single space */
+      if (norm.length === 0 || norm[norm.length - 1] !== ' ') {
+        indexMap.push(i);
+        norm += ' ';
+      }
+    } else {
+      indexMap.push(i);
+      norm += ch.toLowerCase();
     }
   }
+  return { norm, indexMap };
+}
 
-  if (!startNode || !endNode) return null;
+/**
+ * Find anchor text in the content element, even when it spans
+ * multiple DOM nodes (e.g. across <strong>, <em>, line breaks).
+ * Returns a Range or null. `index` is an optional prebuilt
+ * buildTextIndex() result; callers resolving many anchors pass one.
+ */
+function findTextRange(container, searchText, index) {
+  if (!searchText) return null;
+  index = index || buildTextIndex(container);
+  const { nodes, fullText } = index;
+  if (!nodes.length) return null;
 
-  const range = document.createRange();
-  range.setStart(startNode, startOffset);
-  range.setEnd(endNode, endOffset);
-  return range;
+  const makeRange = (startEntry, startOff, endEntry, endOff) => {
+    const range = document.createRange();
+    range.setStart(startEntry.node, startOff);
+    range.setEnd(endEntry.node, endOff);
+    return range;
+  };
+
+  /* Exact match. A match wholly inside one text node is preferred over
+     an earlier one that straddles nodes (the old single-node fast path);
+     the scan is capped so a pathological anchor can't spin. */
+  let spanning = null;
+  let from = 0;
+  for (let tries = 0; tries < 64; tries++) {
+    const matchIdx = fullText.indexOf(searchText, from);
+    if (matchIdx < 0) break;
+    const matchEnd = matchIdx + searchText.length;
+    const startEntry = _indexEntryAt(index, matchIdx, false);
+    const endEntry = _indexEntryAt(index, matchEnd, true);
+    if (startEntry && endEntry) {
+      const range = makeRange(startEntry, matchIdx - startEntry.start, endEntry, matchEnd - endEntry.start);
+      if (startEntry === endEntry) return range;
+      if (!spanning) spanning = range;
+    }
+    from = matchIdx + 1;
+  }
+  if (spanning) return spanning;
+
+  /* Normalized fallback (memoized on the index) */
+  if (index.norm === null) {
+    const built = _buildNormalized(fullText);
+    index.norm = built.norm;
+    index.indexMap = built.indexMap;
+  }
+  const { norm: normSearch } = _buildNormalized(searchText);
+  const normIdx = index.norm.indexOf(normSearch);
+  if (normIdx < 0) return null;
+
+  /* Map back to original fullText position, anchor to the end of that node */
+  const origIdx = index.indexMap[normIdx] || 0;
+  const entry = _indexEntryAt(index, origIdx, false);
+  if (!entry) return null;
+  const localIdx = Math.max(0, origIdx - entry.start);
+  const len = entry.node.textContent.length;
+  return makeRange(entry, Math.min(localIdx, len), entry, len);
 }
 
 function applyAnnotationHighlights() {
@@ -228,20 +237,30 @@ function applyAnnotationHighlights() {
     parent.normalize();
   });
 
-  const anns = annotationsCache[activeTabId] || [];
-  anns.forEach(ann => {
-    if (!ann.anchor || !ann.anchor.text || ann.resolved) return;
-    const content = document.getElementById('content');
-    const range = findTextRange(content, ann.anchor.text);
-    if (!range) return;
+  const content = document.getElementById('content');
+  const anns = (annotationsCache[activeTabId] || [])
+    .filter(ann => ann.anchor && ann.anchor.text && !ann.resolved);
+  if (!content || !anns.length) return;
 
+  /* Resolve every anchor against one index BEFORE wrapping anything:
+     surroundContents splits text nodes, which would invalidate the
+     index — but Ranges are live and track those splits, so ranges
+     computed up front stay correct through the wrapping pass */
+  const index = buildTextIndex(content);
+  const resolved = [];
+  anns.forEach(ann => {
+    const range = findTextRange(content, ann.anchor.text, index);
+    if (range) resolved.push({ ann, range });
+  });
+
+  resolved.forEach(({ ann, range }) => {
     try {
+      const mark = document.createElement('mark');
+      mark.className = 'annotation-highlight';
+      mark.dataset.annotationId = ann.id;
+      mark.dataset.type = ann.type || 'comment';
       /* If range spans one node, surroundContents works */
       if (range.startContainer === range.endContainer) {
-        const mark = document.createElement('mark');
-        mark.className = 'annotation-highlight';
-        mark.dataset.annotationId = ann.id;
-        mark.dataset.type = ann.type || 'comment';
         range.surroundContents(mark);
       } else {
         /* Multi-node: wrap just the start node's portion so we have
@@ -250,10 +269,6 @@ function applyAnnotationHighlights() {
         const partialRange = document.createRange();
         partialRange.setStart(range.startContainer, range.startOffset);
         partialRange.setEnd(range.startContainer, startLen);
-        const mark = document.createElement('mark');
-        mark.className = 'annotation-highlight';
-        mark.dataset.annotationId = ann.id;
-        mark.dataset.type = ann.type || 'comment';
         partialRange.surroundContents(mark);
       }
     } catch(e) { /* skip if DOM structure prevents wrapping */ }

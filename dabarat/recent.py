@@ -52,12 +52,21 @@ def _validate_entry(entry):
     return True
 
 
+def _read_text(filepath):
+    try:
+        return Path(filepath).read_text(encoding="utf-8", errors="ignore")
+    except Exception:
+        return None
+
+
 def _extract_summary(filepath, max_chars=200):
     """Extract first non-header paragraph, stripped of formatting."""
-    try:
-        text = Path(filepath).read_text(encoding="utf-8", errors="ignore")
-    except Exception:
-        return ""
+    text = _read_text(filepath)
+    return "" if text is None else _extract_summary_text(text, max_chars)
+
+
+def _extract_summary_text(text, max_chars=200):
+    """_extract_summary on text already in hand (browse-dir reads once)."""
     # Strip YAML frontmatter
     if text.startswith("---"):
         parts = text.split("---", 2)
@@ -84,10 +93,11 @@ def _extract_summary(filepath, max_chars=200):
 
 def _extract_preview(filepath, max_chars=500):
     """Extract first portion of markdown for rendered preview (preserving formatting)."""
-    try:
-        text = Path(filepath).read_text(encoding="utf-8", errors="ignore")
-    except Exception:
-        return ""
+    text = _read_text(filepath)
+    return "" if text is None else _extract_preview_text(text, max_chars)
+
+
+def _extract_preview_text(text, max_chars=500):
     # Strip YAML frontmatter
     if text.startswith("---"):
         parts = text.split("---", 2)
@@ -133,16 +143,17 @@ def save(entries):
 
 def _extract_word_count(filepath):
     """Count words in a markdown file."""
-    try:
-        text = Path(filepath).read_text(encoding="utf-8", errors="ignore")
-        # Strip frontmatter
-        if text.startswith("---"):
-            parts = text.split("---", 2)
-            if len(parts) >= 3:
-                text = parts[2]
-        return len(text.split())
-    except Exception:
-        return 0
+    text = _read_text(filepath)
+    return 0 if text is None else _extract_word_count_text(text)
+
+
+def _extract_word_count_text(text):
+    # Strip frontmatter
+    if text.startswith("---"):
+        parts = text.split("---", 2)
+        if len(parts) >= 3:
+            text = parts[2]
+    return len(text.split())
 
 
 # Image formats a browser cannot decode inside <img>, and the same-stem
@@ -170,10 +181,11 @@ def browser_image_path(path):
     return path
 
 
-def _extract_preview_image(filepath):
-    """Extract first image path from markdown, returning absolute path or URL."""
+def _extract_preview_image(filepath, text=None):
+    """Extract first image path from markdown, returning absolute path or URL.
+    Pass `text` to skip the read."""
     try:
-        raw = Path(filepath).read_text(encoding="utf-8", errors="ignore")
+        raw = text if text is not None else Path(filepath).read_text(encoding="utf-8", errors="ignore")
         img_match = re.search(r"!\[.*?\]\(([^)]+)\)", raw)
         if img_match:
             img_path = img_match.group(1)
@@ -232,12 +244,15 @@ def touch_entry(filepath, content=None):
             entry["mtime"] = os.stat(path).st_mtime
         except Exception:
             pass
-        if content is not None:
-            entry["wordCount"] = len(content.split())
+        # The caller just wrote `content`; derive everything from it instead
+        # of re-reading the file twice
+        text = content if content is not None else _read_text(path)
+        if text is not None:
+            entry["wordCount"] = _extract_word_count_text(text)
+            entry["summary"] = _extract_summary_text(text)
+            entry["preview"] = _extract_preview_text(text)
         entry["annotationCount"] = _count_annotations(path)
         entry["versionCount"], entry["headVersion"] = _version_info(path)
-        entry["summary"] = _extract_summary(path)
-        entry["preview"] = _extract_preview(path)
         save(entries)
 
 

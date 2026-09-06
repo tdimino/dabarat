@@ -29,7 +29,7 @@ MAX_AUTO_TABS = int(
     or 30)
 
 
-_browse_cache = {}  # keyed by (dirpath, max_mtime, file_count) → response dict
+_browse_cache = {}  # keyed by (dirpath, ((name, mtime_ns, size), ...)) → response dict
 _browse_cache_lock = threading.Lock()
 _BROWSE_CACHE_MAX = 20
 
@@ -304,7 +304,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         return any(tok.strip().split(";")[0] == "gzip" for tok in ae.split(","))
 
     def _send_bytes(self, status, ctype, data, cache_control="no-cache",
-                    etag=None):
+                    etag=None, extra_headers=None):
         """The one body-emitting path for JSON and the HTML shell.
 
         Always sets Content-Length (keep-alive needs it) and
@@ -319,6 +319,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             self.send_header("Cache-Control", cache_control)
         if etag:
             self.send_header("ETag", etag)
+        for k, v in (extra_headers or {}).items():
+            self.send_header(k, v)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Vary", "Accept-Encoding")
@@ -342,9 +344,16 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         if self.command != "HEAD":
             self.wfile.write(data)
 
-    def _json_response(self, data, status=200):
+    def _json_response(self, data, status=200, extra_headers=None):
         self._send_bytes(status, "application/json",
-                         json.dumps(data, default=str).encode())
+                         json.dumps(data, default=str).encode(),
+                         extra_headers=extra_headers)
+
+    @staticmethod
+    def _timing(t0, name="total"):
+        """Server-Timing header value — the project's first perf signal
+        (DevTools shows it; phase15 asserts browse-dir per-file cost)."""
+        return {"Server-Timing": f"{name};dur={(time.perf_counter() - t0) * 1000:.2f}"}
 
     def _check_origin(self):
         """Reject POST/PUT/DELETE from foreign origins (CSRF protection)."""
@@ -368,6 +377,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         params = parse_qs(parsed.query)
 
         if parsed.path == "/api/content":
+            t0 = time.perf_counter()
             tab_id = params.get("tab", [None])[0]
             since = params.get("since", [None])[0]
             tab = self._refresh_tab(tab_id) if tab_id else None
@@ -405,7 +415,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         live = self._tabs.get(tab_id)
                         if live is not None:
                             live.pop("snapshot_failed", None)
-                self._json_response(response)
+                self._json_response(response, extra_headers=self._timing(t0))
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
@@ -600,6 +610,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             self._json_response(entry)
 
         elif parsed.path == "/api/browse-dir":
+            t0 = time.perf_counter()
             dir_path = params.get("path", [None])[0]
             if not dir_path:
                 dir_path = os.path.expanduser("~")
@@ -610,36 +621,34 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             try:
                 md_exts = {".md", ".markdown", ".txt", ".mdown", ".mkd"}
 
-                # Compute max mtime + file count for cache key (count catches deletions)
-                max_mtime = 0.0
-                dir_entry_count = 0
-                try:
-                    for name in os.listdir(dir_path):
-                        if not name.startswith("."):
-                            dir_entry_count += 1
-                            try:
-                                mt = os.path.getmtime(os.path.join(dir_path, name))
-                                if mt > max_mtime:
-                                    max_mtime = mt
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-
-                cache_key = (dir_path, max_mtime, dir_entry_count)
+                # One listing + one stat per entry feeds both the cache key
+                # and the rows. The key is the sorted (name, mtime_ns, size)
+                # tuple: the old (path, max float mtime, count) missed
+                # same-second rewrites and size-only changes.
+                listing = []
+                for name in os.listdir(dir_path):
+                    if name.startswith("."):
+                        continue
+                    full = os.path.join(dir_path, name)
+                    try:
+                        st = os.stat(full)
+                    except OSError:
+                        continue
+                    listing.append((name, full, st))
+                listing.sort(key=lambda e: e[0].lower())
+                cache_key = (dir_path, tuple((n, st.st_mtime_ns, st.st_size) for n, _, st in listing))
                 with _browse_cache_lock:
                     cached = _browse_cache.get(cache_key)
                 if cached is not None:
-                    self._json_response(cached)
+                    self._json_response(cached, extra_headers=self._timing(t0))
                     return
 
                 entries = []
                 total_words = 0
                 file_count = 0
-                for name in sorted(os.listdir(dir_path), key=str.lower):
-                    if name.startswith("."):
-                        continue
-                    full = os.path.join(dir_path, name)
+                partial = 0          # per-file extraction failures, reported once
+                file_paths = []      # for the batched version lookup
+                for name, full, st in listing:
                     if os.path.isdir(full):
                         md_count = 0
                         try:
@@ -651,82 +660,83 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                                     if md_count >= 99:
                                         break
                         except Exception:
-                            pass
+                            partial += 1
                         entries.append({"name": name, "type": "dir", "path": full, "mdCount": md_count})
-                    else:
-                        _, ext = os.path.splitext(name)
-                        if ext.lower() in md_exts:
-                            entry = {"name": name, "type": "file", "path": full}
-                            file_count += 1
-                            try:
-                                st = os.stat(full)
-                                entry["size"] = st.st_size
-                                entry["mtime"] = st.st_mtime
-                            except Exception:
-                                pass
-                            # Tags + annotation count
-                            try:
-                                tags = annotations.read_tags(full)
-                                if tags:
-                                    entry["tags"] = tags
-                            except Exception:
-                                pass
-                            try:
-                                ann_data, _ = annotations.read(full)
-                                ac = len(ann_data.get("annotations", []))
-                                if ac:
-                                    entry["annotationCount"] = ac
-                            except Exception:
-                                pass
-                            # Frontmatter badges + description
-                            try:
-                                fm, _ = frontmatter.get_frontmatter(full)
-                                if fm:
-                                    badges = {}
-                                    for k in ("type", "model", "version", "status", "description", "summary"):
-                                        if k in fm:
-                                            badges[k] = str(fm[k])
-                                    if badges:
-                                        entry["badges"] = badges
-                            except Exception:
-                                pass
-                            # Rich metadata: word count, summary, preview, image, versions
-                            # Gate all file-reading extractions behind size check (< 1 MB)
-                            file_small = entry.get("size", 0) < 1024 * 1024
-                            if file_small:
-                                try:
-                                    wc = recent._extract_word_count(full)
-                                    if wc:
-                                        entry["wordCount"] = wc
-                                        total_words += wc
-                                except Exception:
-                                    pass
-                                try:
-                                    s = recent._extract_summary(full)
-                                    if s:
-                                        entry["summary"] = s
-                                except Exception:
-                                    pass
-                                try:
-                                    p = recent._extract_preview(full)
-                                    if p:
-                                        entry["preview"] = p
-                                except Exception:
-                                    pass
-                                try:
-                                    img = recent._extract_preview_image(full)
-                                    if img:
-                                        entry["previewImage"] = img
-                                except Exception:
-                                    pass
-                            try:
-                                vc, head = recent._version_info(full)
-                                if vc:
-                                    entry["versionCount"] = vc
-                                    entry["headVersion"] = head
-                            except Exception:
-                                pass
-                            entries.append(entry)
+                        continue
+                    _, ext = os.path.splitext(name)
+                    if ext.lower() not in md_exts:
+                        continue
+                    entry = {"name": name, "type": "file", "path": full,
+                             "size": st.st_size, "mtime": st.st_mtime}
+                    file_count += 1
+                    file_paths.append(full)
+                    # Tags + annotation count from one sidecar read
+                    try:
+                        ann_data, _ = annotations.read(full)
+                        tags = ann_data.get("tags", [])
+                        if tags:
+                            entry["tags"] = tags
+                        ac = len(ann_data.get("annotations", []))
+                        if ac:
+                            entry["annotationCount"] = ac
+                    except Exception:
+                        partial += 1
+                    # Rich metadata: one read per small file, every extractor
+                    # works on the text in hand (recent._extract_*_text)
+                    text = None
+                    if st.st_size < 1024 * 1024:
+                        try:
+                            with open(full, encoding="utf-8", errors="ignore") as f:
+                                text = f.read()
+                        except Exception:
+                            partial += 1
+                    if text is not None:
+                        try:
+                            fm, _ = frontmatter.parse_frontmatter_text(text)
+                            if fm:
+                                badges = {}
+                                for k in ("type", "model", "version", "status", "description", "summary"):
+                                    if k in fm:
+                                        badges[k] = str(fm[k])
+                                if badges:
+                                    entry["badges"] = badges
+                        except Exception:
+                            partial += 1
+                        try:
+                            wc = recent._extract_word_count_text(text)
+                            if wc:
+                                entry["wordCount"] = wc
+                                total_words += wc
+                            s_ = recent._extract_summary_text(text)
+                            if s_:
+                                entry["summary"] = s_
+                            p_ = recent._extract_preview_text(text)
+                            if p_:
+                                entry["preview"] = p_
+                            img = recent._extract_preview_image(full, text=text)
+                            if img:
+                                entry["previewImage"] = img
+                        except Exception:
+                            partial += 1
+                    entries.append(entry)
+
+                # Version counts: one SQLite connection for the directory,
+                # not one per row (recent._version_info opened its own)
+                if file_paths:
+                    try:
+                        summaries = history.version_summaries(file_paths)
+                    except Exception as e:
+                        summaries = {}
+                        partial += 1
+                        print(f"Warning: version lookup failed for {dir_path}: {e!r}",
+                              file=sys.stderr)
+                    for entry in entries:
+                        if entry.get("type") != "file":
+                            continue
+                        vc, head = summaries.get(entry["path"], (0, None))
+                        if vc:
+                            entry["versionCount"] = vc
+                            entry["headVersion"] = head
 
                 result = {
                     "path": dir_path,
@@ -735,6 +745,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     "stats": {"fileCount": file_count, "totalWords": total_words},
                     "entries": entries,
                 }
+                if partial:
+                    result["partial"] = partial
                 # Cache result (bounded, thread-safe)
                 with _browse_cache_lock:
                     if len(_browse_cache) >= _BROWSE_CACHE_MAX:
@@ -744,7 +756,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         except StopIteration:
                             pass
                     _browse_cache[cache_key] = result
-                self._json_response(result)
+                self._json_response(result, extra_headers=self._timing(t0))
             except PermissionError:
                 self._json_response({"error": "permission denied"}, 403)
             except Exception as e:

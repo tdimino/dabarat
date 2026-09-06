@@ -285,21 +285,6 @@ def _find_chrome():
     return next((p for p in _CHROME_PATHS if os.path.exists(p)), None)
 
 
-def _clear_pyc():
-    """Remove stale .pyc files so template/static changes take effect."""
-    cache_dir = os.path.join(os.path.dirname(__file__), "__pycache__")
-    if os.path.isdir(cache_dir):
-        for f in os.listdir(cache_dir):
-            if f.endswith(".pyc"):
-                try:
-                    os.remove(os.path.join(cache_dir, f))
-                except OSError:
-                    # Concurrent launches race each other clearing the same
-                    # cache (Finder can spawn several instances at once) —
-                    # a file already gone is a success, not a crash
-                    pass
-
-
 def _port_listeners(port):
     """Return PIDs holding a TCP LISTEN on the port, or None if unknowable."""
     import subprocess
@@ -602,7 +587,6 @@ def cmd_export_pdf(argv):
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
 
-    _clear_pyc()
 
     # Start ephemeral server in background thread
     PreviewHandler.add_tab(filepath)
@@ -764,7 +748,6 @@ def cmd_serve(argv):
         print(f"or --max-instances N to raise the limit.\033[0m")
         sys.exit(1)
 
-    _clear_pyc()
     _kill_zombie_on_port(port)
 
     PreviewHandler.default_author = default_author
@@ -802,7 +785,9 @@ def cmd_serve(argv):
         n_files = len(ws_data.get("files", []))
         print(f"\033[38;2;137;180;250m\U0001f4c1 {ws_name} ({n_folders} folders, {n_files} files)\033[0m")
     print(f"\033[38;2;166;227;161m\U0001f310 http://127.0.0.1:{port}\033[0m")
-    inst_count = len(_live_instances())
+    # `live` (scanned above, before this instance registered) + this one —
+    # a second scan would re-pay every sibling probe just to print a count
+    inst_count = len(live) + 1
     features = "Live reload \u00b7 Catppuccin \u00b7 Tabs \u00b7 Annotations"
     if ws_path:
         features += " \u00b7 Workspace"

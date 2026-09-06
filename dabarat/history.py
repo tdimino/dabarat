@@ -26,6 +26,7 @@ import os
 import sqlite3
 import subprocess
 import sys
+import threading
 import time
 import zlib
 from contextlib import contextmanager
@@ -77,6 +78,10 @@ CREATE INDEX IF NOT EXISTS idx_versions_hash ON versions(blob_hash);
 """
 
 
+_initialized_for = None       # DB_PATH whose schema/journal mode were set up
+_init_lock = threading.Lock()
+
+
 @contextmanager
 def _db():
     """Yield a configured connection; commit open work, always close.
@@ -90,14 +95,23 @@ def _db():
     try:
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA busy_timeout = 5000")
-        # WAL lets history reads overlap saves; verify it took (some
-        # filesystems refuse) and fall back to the rollback journal
-        mode = conn.execute("PRAGMA journal_mode = WAL").fetchone()[0]
-        if mode.lower() != "wal":
-            conn.execute("PRAGMA journal_mode = DELETE")
         # A backup store must survive power loss, not just process death
         conn.execute("PRAGMA synchronous = FULL")
-        _ensure_db(conn)
+        # journal_mode is persistent in the file and the schema script is
+        # idempotent — both ran on every connection (0.57 ms each, once per
+        # browse-dir row). Once per process per DB_PATH is enough; the
+        # path is part of the key because harnesses redirect DB_PATH.
+        global _initialized_for
+        if _initialized_for != DB_PATH:
+            with _init_lock:
+                if _initialized_for != DB_PATH:
+                    # WAL lets history reads overlap saves; verify it took
+                    # (some filesystems refuse) and fall back to rollback
+                    mode = conn.execute("PRAGMA journal_mode = WAL").fetchone()[0]
+                    if mode.lower() != "wal":
+                        conn.execute("PRAGMA journal_mode = DELETE")
+                    _ensure_db(conn)
+                    _initialized_for = DB_PATH
         yield conn
         if conn.in_transaction:
             conn.commit()
@@ -287,6 +301,30 @@ def version_summary(filepath):
             {"fid": file_id},
         ).fetchone()
     return count, (str(head) if head is not None else None)
+
+
+def version_summaries(filepaths):
+    """{path: (count, head_ref)} for many files on one connection — the
+    browse-dir handler asked version_summary() once per row, paying the
+    connection setup per file."""
+    out = {}
+    if not filepaths:
+        return out
+    with _db() as conn:
+        for fp in filepaths:
+            file_id = _file_id(conn, fp)
+            if file_id is None:
+                out[fp] = (0, None)
+                continue
+            count, head = conn.execute(
+                "SELECT COUNT(*),"
+                " (SELECT id FROM versions WHERE file_id = :fid"
+                "  ORDER BY created_at_us DESC, id DESC LIMIT 1)"
+                " FROM versions WHERE file_id = :fid",
+                {"fid": file_id},
+            ).fetchone()
+            out[fp] = (count, str(head) if head is not None else None)
+    return out
 
 
 def list_recent_versions(limit=50):

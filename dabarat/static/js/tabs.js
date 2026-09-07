@@ -313,7 +313,7 @@ function switchTab(id) {
   /* Restore per-tab frontmatter (prevents stale indicator bar from other tabs) */
   currentFrontmatter = tabs[id].frontmatter || null;
 
-  if (tabs[id].content) {
+  if (_tabLoaded(tabs[id])) {
     render(tabBody(tabs[id]));
   } else {
     /* Content not yet loaded — fetch immediately */
@@ -1010,12 +1010,19 @@ async function openFileAsTab(path) {
    never the 2s poll (sibling probes cost up to 1s each server-side). */
 let _instancesCache = [];
 
+/* Returns the live list, or null when the fetch failed — callers that
+   decide something from the list (the shutdown poll) must treat null as
+   "unknown", not "empty"; the cache and the indicator keep the last good
+   answer. */
 async function fetchInstances() {
   try {
     const res = await fetch('/api/instances');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     _instancesCache = data.instances || [];
-  } catch (e) { _instancesCache = []; }
+  } catch (e) {
+    return null;
+  }
   _renderInstanceIndicator();
   return _instancesCache;
 }
@@ -1172,7 +1179,8 @@ async function showInstanceMenu(anchor) {
           await new Promise(r => setTimeout(r, 300));
           const list = await fetchInstances();
           if (!menu.isConnected) return;
-          if (!list.some(i => i.port === port)) { gone = true; break; }
+          /* A failed fetch is not evidence the sibling is gone */
+          if (list && !list.some(i => i.port === port)) { gone = true; break; }
         }
       } else {
         await fetchInstances();

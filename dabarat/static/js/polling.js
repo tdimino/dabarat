@@ -4,6 +4,7 @@ const POLL_TABS_MS = 2000;
 const POLL_HIDDEN_MS = 5000;   /* background tab: a slow heartbeat, not silence */
 let lastTabsCheck = 0;
 let _editProbeFailures = 0;
+const _sidecarErrorShown = {};  /* tabId → true once the unreadable-sidecar banner is up */
 /* One poll chain only: every setTimeout(poll) goes through _schedulePoll so
    visibilitychange can cancel the pending tick and fire immediately, and
    _pollInFlight stops that immediate call from forking a second chain */
@@ -110,8 +111,8 @@ async function _pollOnce() {
     return;
   }
 
-  /* Background window: keep the heartbeat (a change should still be
-     rendered by the time the user comes back) but stop hammering */
+  /* Background window: no fetch, just a slow reschedule — the
+     visibilitychange listener polls immediately when the user returns */
   if (document.hidden) {
     _schedulePoll(POLL_HIDDEN_MS);
     return;
@@ -251,7 +252,25 @@ async function _pollOnce() {
     try {
       const res = await fetch('/api/annotations?tab=' + activeTabId);
       const data = await res.json();
-      if (data.corruptBackup) {
+      if (data.error && data.sidecar) {
+        /* Unreadable sidecar (EACCES, EIO): the server answers a JSON 500
+           on every tick — say it once per tab, keep the last good render */
+        if (!_sidecarErrorShown[activeTabId]) {
+          _sidecarErrorShown[activeTabId] = true;
+          const t = tabs[activeTabId];
+          _showStatusBanner('annotations-error-banner',
+            'Annotations for ' + (t ? t.filename : 'this file') +
+            ' cannot be read: ' + data.error, 'error');
+        }
+        _schedulePoll(POLL_ACTIVE_MS);
+        return;
+      }
+      delete _sidecarErrorShown[activeTabId];
+      if (data.corruptBackup === 'unquarantined') {
+        _showStatusBanner('annotations-corrupt-banner',
+          'The annotation sidecar for this file did not parse and could not be set aside — ' +
+          'it is being served as empty; fix or remove the file.', 'error');
+      } else if (data.corruptBackup) {
         _showStatusBanner('annotations-corrupt-banner',
           'The annotation sidecar for this file did not parse and was set aside as ' +
           data.corruptBackup.split('/').pop() + ' — starting a fresh one.', 'error');

@@ -31,6 +31,19 @@ MAX_AUTO_TABS = int(
 
 _browse_cache = {}  # keyed by (dirpath, ((name, mtime_ns, size), ...)) → response dict
 _browse_cache_lock = threading.Lock()
+_partial_noted = set()       # browse-dir paths already warned about (once each)
+_sidecar_warned = set()      # request paths already warned about (once each)
+_sidecar_warned_lock = threading.Lock()
+
+
+def _note_partial(path, exc):
+    """A browse-dir row that could not be fully read counts into the
+    response's `partial` and is named once on stderr — never silent."""
+    with _sidecar_warned_lock:
+        if path in _partial_noted:
+            return
+        _partial_noted.add(path)
+    print(f"Warning: browse-dir could not read {path}: {exc!r}", file=sys.stderr)
 _BROWSE_CACHE_MAX = 20
 
 _active_workspace_path = None  # Path to the active .dabarat-workspace file
@@ -385,7 +398,39 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 return False
         return True
 
+    # Routes whose handlers read or write a sidecar and answer only at their
+    # end. annotations._read_json lets EACCES/EIO propagate by design (a
+    # read-modify-write that treated them as "empty" would wipe the file),
+    # so these get a JSON 500 instead of a dropped connection and a
+    # traceback per 500 ms poll.
+    _SIDECAR_ROUTES = frozenset((
+        "/api/annotations", "/api/tags", "/api/annotate", "/api/resolve",
+        "/api/reply", "/api/delete-annotation",
+    ))
+
     def do_GET(self):
+        self._dispatch_guarded(self._do_GET)
+
+    def do_POST(self):
+        self._dispatch_guarded(self._do_POST)
+
+    def _dispatch_guarded(self, handler):
+        try:
+            handler()
+        except OSError as e:
+            path = urlparse(self.path).path
+            if path not in self._SIDECAR_ROUTES or isinstance(e, ConnectionError):
+                raise
+            detail = f"{e.__class__.__name__}: {e.strerror or e}"
+            with _sidecar_warned_lock:
+                first = self.path not in _sidecar_warned
+                _sidecar_warned.add(self.path)
+            if first:
+                print(f"Warning: annotation sidecar unavailable for {self.path}: "
+                      f"{detail} ({e.filename})", file=sys.stderr)
+            self._json_response({"error": detail, "sidecar": True}, 500)
+
+    def _do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
 
@@ -470,7 +515,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/instances":
             # Self tabs come from memory — never self-probe over HTTP.
-            # Sibling probes are serial 1s timeouts (≤5 instances), so
+            # Sibling probes run in parallel (instances.discover_instances)
+            # but still cost one 1 s timeout when a sibling is dead, so
             # this endpoint stays off the 2s polling hot path by design.
             from . import instances as _instances
             with self._tabs_lock:
@@ -566,14 +612,16 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 entry["mtime"] = st.st_mtime
             except Exception:
                 pass
+            # Listing-style endpoint (home cards, arbitrary path, no tab):
+            # never quarantine from here — nothing would pop the notice
             try:
-                tags = annotations.read_tags(file_path)
+                tags = annotations.read_tags(file_path, quarantine=False)
                 if tags:
                     entry["tags"] = tags
             except Exception:
                 pass
             try:
-                ann_data, _ = annotations.read(file_path)
+                ann_data, _ = annotations.read(file_path, quarantine=False)
                 ac = len(ann_data.get("annotations", []))
                 if ac:
                     entry["annotationCount"] = ac
@@ -675,8 +723,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                                         md_count += 1
                                     if md_count >= 99:
                                         break
-                        except Exception:
+                        except Exception as e:
                             partial += 1
+                            _note_partial(full, e)
                         entries.append({"name": name, "type": "dir", "path": full, "mdCount": md_count})
                         continue
                     _, ext = os.path.splitext(name)
@@ -695,8 +744,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         ac = len(ann_data.get("annotations", []))
                         if ac:
                             entry["annotationCount"] = ac
-                    except Exception:
+                    except Exception as e:
                         partial += 1
+                        _note_partial(full, e)
                     # Rich metadata: one read per small file, every extractor
                     # works on the text in hand (recent._extract_*_text)
                     text = None
@@ -704,8 +754,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         try:
                             with open(full, encoding="utf-8", errors="ignore") as f:
                                 text = f.read()
-                        except Exception:
+                        except Exception as e:
                             partial += 1
+                            _note_partial(full, e)
                     if text is not None:
                         try:
                             fm, _ = frontmatter.parse_frontmatter_text(text)
@@ -716,8 +767,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                                         badges[k] = str(fm[k])
                                 if badges:
                                     entry["badges"] = badges
-                        except Exception:
+                        except Exception as e:
                             partial += 1
+                            _note_partial(full, e)
                         try:
                             wc = recent._extract_word_count_text(text)
                             if wc:
@@ -732,8 +784,9 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                             img = recent._extract_preview_image(full, text=text)
                             if img:
                                 entry["previewImage"] = img
-                        except Exception:
+                        except Exception as e:
                             partial += 1
+                            _note_partial(full, e)
                     entries.append(entry)
 
                 # Version counts: one SQLite connection for the directory,
@@ -1025,7 +1078,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         self._send_bytes(200, "text/html; charset=utf-8", data,
                          cache_control="no-cache", etag=etag)
 
-    def do_POST(self):
+    def _do_POST(self):
         global _active_workspace, _active_workspace_path
         parsed = urlparse(self.path)
         # Origin first (it closes the socket on failure, so the unread

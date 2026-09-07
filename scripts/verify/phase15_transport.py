@@ -2,9 +2,10 @@
 """Phase 15 verification — transport layer (V1-V9).
 
 Guards the HTTP/1.1 keep-alive contract introduced with the 2026-09-06
-optimization pass: every body path carries Content-Length, POST bodies
-are drained before the origin check (an unread body would poison the
-next request on a reused socket), JSON and the shell gzip above 1400 B,
+optimization pass: every body path carries Content-Length, the origin
+check runs before the POST body is read and a rejection closes the
+socket (an unread body would otherwise poison the next request on a
+reused connection), JSON and the shell gzip above 1400 B,
 /api/content?since= short-circuits to {unchanged:true}, the shell
 carries a weak ETag and answers 304, a hidden window slows its poll,
 and /api/shutdown exits promptly with idle keep-alive sockets open.

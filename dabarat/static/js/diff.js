@@ -85,7 +85,7 @@ function exitDiffMode() {
 
   /* Force re-render, then refresh from disk (polling was paused in diff mode) */
   lastRenderedMd = '';
-  if (activeTabId && tabs[activeTabId] && tabs[activeTabId].content) {
+  if (activeTabId && _tabLoaded(tabs[activeTabId])) {
     render(tabBody(tabs[activeTabId]));
     fetchTabContent(activeTabId);
   }

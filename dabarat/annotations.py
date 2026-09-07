@@ -20,6 +20,7 @@ from contextlib import contextmanager
 _locks = {}                 # sidecar path → RLock
 _locks_guard = threading.Lock()
 _corrupt_notices = {}       # filepath → backup path (consumed by the server)
+UNQUARANTINED = "unquarantined"  # notice value when the corrupt file could not be moved
 
 
 def get_path(filepath):
@@ -58,7 +59,10 @@ def _quarantine(path):
     backup = f"{path}.corrupt-{int(time.time())}"
     try:
         os.replace(path, backup)
-    except OSError:
+    except OSError as e:
+        print(f"Warning: annotation sidecar {path} did not parse and could not "
+              f"be set aside ({e.strerror or e}) — serving it as empty; fix or "
+              f"remove the file", file=sys.stderr)
         return None
     print(f"Warning: annotation sidecar {path} did not parse — kept as "
           f"{os.path.basename(backup)}", file=sys.stderr)
@@ -89,9 +93,10 @@ def _read_json(path, default, *, notice_key=None, quarantine=True):
         return default, 0
     except ValueError:
         if quarantine:
+            # A failed rename still gets a notice — the client shows a
+            # different message when the sentinel comes back
             backup = _quarantine(path)
-            if backup:
-                _corrupt_notices[notice_key or path] = backup
+            _corrupt_notices[notice_key or path] = backup or UNQUARANTINED
         return default, 0
 
 
@@ -113,11 +118,19 @@ def _write_json(path, data):
 def read(filepath, quarantine=True):
     """Read annotations for a file. Returns (data_dict, mtime).
     quarantine=False for listings (browse-dir, home cards): report the
-    sidecar as empty but leave the file alone."""
+    sidecar as empty but leave the file alone. Listing reads also skip
+    the per-file lock — writes land by os.replace, so a plain parse sees
+    either the old file or the new one, and a directory browse must not
+    allocate one RLock per markdown file for the process lifetime."""
+    default = {"version": 1, "annotations": []}
+    if not quarantine:
+        data, mtime = _read_json(get_path(filepath), default,
+                                 notice_key=filepath, quarantine=False)
+        data.setdefault("annotations", [])
+        return data, mtime
     with locked(filepath):
-        data, mtime = _read_json(get_path(filepath),
-                                 {"version": 1, "annotations": []},
-                                 notice_key=filepath, quarantine=quarantine)
+        data, mtime = _read_json(get_path(filepath), default,
+                                 notice_key=filepath, quarantine=True)
         data.setdefault("annotations", [])
         return data, mtime
 

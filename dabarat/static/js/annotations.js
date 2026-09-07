@@ -545,48 +545,57 @@ function renderAnnotations() {
   applyAnnotationHighlights();
 }
 
-async function resolveAnnotation(annId) {
+/* Every annotation write goes through here: a non-OK answer (the server
+   500s on an unreadable sidecar, 404s on a closed tab) or a network error
+   is reported, not swallowed — the old code hid the form and let the next
+   poll repaint the pre-write state as if the write had landed. */
+async function _annotationPost(url, payload, what) {
+  let res = null;
   try {
-    await fetch('/api/resolve', {
+    res = await fetch(url, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({tab: activeTabId, id: annId})
+      body: JSON.stringify(payload)
     });
-    lastAnnotationMtimes[activeTabId] = -1;
-    lastRenderedAnnotationsKey = '';
-  } catch(e) {}
+  } catch (e) { /* network */ }
+  if (res && res.ok) return true;
+  let detail = res ? 'HTTP ' + res.status : 'server unreachable';
+  if (res) {
+    try { detail = (await res.json()).error || detail; } catch (e) { /* not JSON */ }
+  }
+  _showStatusBanner('annotations-error-banner',
+    'Could not ' + what + ': ' + detail, 'error', { timeout: 8000 });
+  return false;
+}
+
+function _annotationsChanged() {
+  lastAnnotationMtimes[activeTabId] = -1;
+  lastRenderedAnnotationsKey = '';
+}
+
+async function resolveAnnotation(annId) {
+  if (await _annotationPost('/api/resolve', {tab: activeTabId, id: annId}, 'resolve the note')) {
+    _annotationsChanged();
+  }
 }
 
 async function deleteAnnotation(annId) {
-  try {
-    await fetch('/api/delete-annotation', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({tab: activeTabId, id: annId})
-    });
-    lastAnnotationMtimes[activeTabId] = -1;
-    lastRenderedAnnotationsKey = '';
-  } catch(e) {}
+  if (await _annotationPost('/api/delete-annotation', {tab: activeTabId, id: annId}, 'delete the note')) {
+    _annotationsChanged();
+  }
 }
 
 async function submitReply(annId, body) {
   if (!body) return;
   const author = document.getElementById('ann-author-input').value.trim() || defaultAuthor;
   const authorType = ['claude', 'ai', 'assistant'].includes(author.toLowerCase()) ? 'ai' : 'human';
-  try {
-    await fetch('/api/reply', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        tab: activeTabId,
-        id: annId,
-        author: { name: author, type: authorType },
-        body: body
-      })
-    });
-    lastAnnotationMtimes[activeTabId] = -1;
-    lastRenderedAnnotationsKey = '';
-  } catch(e) {}
+  const ok = await _annotationPost('/api/reply', {
+    tab: activeTabId,
+    id: annId,
+    author: { name: author, type: authorType },
+    body: body
+  }, 'post the reply');
+  if (ok) _annotationsChanged();
 }
 
 /* ── Text Selection → Annotate Carousel ──────────────── */
@@ -698,27 +707,20 @@ document.getElementById('ann-submit-btn').onclick = async () => {
 
   const authorType = ['claude', 'ai', 'assistant'].includes(author.toLowerCase()) ? 'ai' : 'human';
 
-  try {
-    await fetch('/api/annotate', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        tab: activeTabId,
-        anchor: { text: annotateSelection.text, heading: annotateSelection.heading, offset: 0 },
-        author: { name: author, type: authorType },
-        body: body,
-        type: selectedAnnotationType
-      })
-    });
-  } catch(e) {
-    console.error('Failed to annotate:', e);
-  }
+  const ok = await _annotationPost('/api/annotate', {
+    tab: activeTabId,
+    anchor: { text: annotateSelection.text, heading: annotateSelection.heading, offset: 0 },
+    author: { name: author, type: authorType },
+    body: body,
+    type: selectedAnnotationType
+  }, 'save the note');
+  /* Keep the form (and the typed note) open on failure — the banner says why */
+  if (!ok) return;
 
   document.getElementById('annotation-form').style.display = 'none';
   annotateSelection = null;
   window.getSelection().removeAllRanges();
-  lastAnnotationMtimes[activeTabId] = -1;
-  lastRenderedAnnotationsKey = '';
+  _annotationsChanged();
 };
 
 document.getElementById('ann-cancel-btn').onclick = () => {

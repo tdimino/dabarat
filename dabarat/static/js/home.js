@@ -633,7 +633,7 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
     gridHtml = `<div class="home-grid">${entries.map((e, i) => _buildCard(e, i)).join('')}</div>`;
   }
   /* Card filenames are h3s — give them the h2 section the layout implies */
-  if (gridHtml) gridHtml = '<h2 class="sr-only">Recent files</h2>' + gridHtml;
+  if (gridHtml) gridHtml = '<h2 class="sr-only">' + escapeHtml(title) + '</h2>' + gridHtml;
 
   /* Recent workspaces bar (only when no workspace active) */
   let recentWsHtml = '';

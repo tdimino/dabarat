@@ -19,6 +19,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **Instance monitoring**—status-bar port indicator with a sibling-count badge; its dropdown lists every running window's open files with Focus and Shut Down actions
 - **5 annotation types**—Comment, Question, Suggestion, Important, Bookmark
 - **Selection-based carousel**—select any text, pick an annotation type from the floating UI
+- **Dismissible notes panel**—the × in the panel header hides it at any window width (remembered across reloads) and the floating Notes button brings it back; the Edit/History/Justify floats sit beside the panel, never on top of it
 - **Threaded replies**—reply to any annotation inline
 - **Resolve/archive workflow**—resolved annotations move to a separate archive file
 - **Global bookmark index**—bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
@@ -39,7 +40,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **PDF figures**—`![fig](tree.pdf){width=100%}` (the Pandoc/LaTeX idiom) previews via the same-stem `.svg`/`.png` sibling, in the document and on home cards; plain `[links](doc.pdf)` still open the PDF
 - **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes, links, and images—all rendered inline. Links and images survive edit-save round-trips (Link extension with autolink + linkOnPaste, Image extension). Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
 - **Footnotes**—`[^ref]` syntax renders as superscript numbered links with a compact footnote section at the bottom (via `marked-footnote`). Auto-numbered, with backref arrows. Preserved through WYSIWYG editing round-trips
-- **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll
+- **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll; leave with the header's **Exit compare** button or `Esc`
 - **Version history**—SQLite-backed timeline (`~/.dabarat/versions.db`) where every save and external edit is versioned automatically. Content-addressed zlib blobs with rename-surviving file identity. Pin, label, compare any version against current via `Cmd+Shift+H` or command palette, one-click restore. The panel names its file (or "Activity" for the all-files timeline), and each row expands to an excerpt of the first changed lines. Day separators, source badges, delegated event handling. Legacy git history imported once on first run
 - **Workspace system**—VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
 - **Image lightbox**—click any content image for overlay with blur backdrop, keyboard nav, zoom

@@ -1,6 +1,8 @@
 """HTTP server — serves the HTML shell and API endpoints."""
 
 import datetime
+import gzip
+import hashlib
 import http.server
 import json
 import mimetypes
@@ -27,8 +29,21 @@ MAX_AUTO_TABS = int(
     or 30)
 
 
-_browse_cache = {}  # keyed by (dirpath, max_mtime, file_count) → response dict
+_browse_cache = {}  # keyed by (dirpath, ((name, mtime_ns, size), ...)) → response dict
 _browse_cache_lock = threading.Lock()
+_partial_noted = set()       # browse-dir paths already warned about (once each)
+_sidecar_warned = set()      # request paths already warned about (once each)
+_sidecar_warned_lock = threading.Lock()
+
+
+def _note_partial(path, exc):
+    """A browse-dir row that could not be fully read counts into the
+    response's `partial` and is named once on stderr — never silent."""
+    with _sidecar_warned_lock:
+        if path in _partial_noted:
+            return
+        _partial_noted.add(path)
+    print(f"Warning: browse-dir could not read {path}: {exc!r}", file=sys.stderr)
 _BROWSE_CACHE_MAX = 20
 
 _active_workspace_path = None  # Path to the active .dabarat-workspace file
@@ -37,6 +52,19 @@ _workspace_lock = threading.Lock()
 
 _on_tabs_changed = None  # Optional callback wired by __main__ — fires after tab add/close/rename
 _tabs_changed_warned = False
+
+# Transport: bodies above this many bytes are gzipped when the client
+# accepts it (below it the gzip header costs more than it saves); the
+# compressed shell is memoized by ETag so a reload costs no CPU.
+_GZIP_MIN_BYTES = 1400
+_BODY_MAX_BYTES = 10 * 1024 * 1024   # POST body cap; larger → 413 + close, never read
+
+
+class _BodyTooLarge(ValueError):
+    """Content-Length above _BODY_MAX_BYTES (raised before any read)."""
+_gz_cache = {}          # etag → gzip bytes (shell only)
+_gz_cache_lock = threading.Lock()
+_GZ_CACHE_MAX = 8
 
 _CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".dabarat", "config.json")
 _VALID_THEMES = {
@@ -91,6 +119,14 @@ def _notify_tabs_changed():
 
 
 class PreviewHandler(http.server.BaseHTTPRequestHandler):
+    # Keep-alive: the client polls twice a second per window, so HTTP/1.0's
+    # connection-per-request meant a new socket and thread every 250 ms.
+    # Every body path emits Content-Length (via _send_bytes) so the
+    # connection can be reused; an idle socket times out after 30 s and
+    # the handler thread exits (daemon threads, non-blocking server_close).
+    protocol_version = "HTTP/1.1"
+    timeout = 30
+
     _tabs = {}
     _tabs_lock = threading.Lock()
     _file_write_lock = threading.Lock()  # serializes save/restore/rename check-then-write
@@ -188,6 +224,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 tab["mtime"] = mtime
                 tab["change_key"] = change_key
                 tab["auto"] = False  # the user saved it — it is theirs now
+                tab["annotations_dirty"] = True  # orphan check due on next fetch
         return mtime, change_key
 
     @classmethod
@@ -237,7 +274,15 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 # polling observes it — every change to an open file is
                 # revertible no matter who wrote it (dedups by hash)
                 if accepted:
-                    history.snapshot_external(filepath, content)
+                    ok = history.snapshot_external(filepath, content)
+                    with cls._tabs_lock:
+                        tab = cls._tabs.get(tab_id)
+                        if tab is not None:
+                            # New content → orphan check is due on the next
+                            # annotations fetch (not on every tick)
+                            tab["annotations_dirty"] = True
+                            if not ok:
+                                tab["snapshot_failed"] = True
         except FileNotFoundError:
             # Deleted/moved underneath us — keep serving the cached content
             # (a save can recreate the file) but tell the client
@@ -257,69 +302,178 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
         return snap
 
     def _read_body(self):
+        """Consume the request body. Raises ValueError on a malformed,
+        negative, or chunked body and _BodyTooLarge above the cap; the
+        caller answers 400/413 and closes the socket rather than reading
+        (under keep-alive an unread body would be parsed as the next
+        request line, and reading it would let a foreign page make this
+        thread allocate the whole thing). Only runs after _check_origin."""
+        if self.headers.get("Transfer-Encoding"):
+            raise ValueError("chunked bodies unsupported")
         length = int(self.headers.get("Content-Length", 0))
+        if length < 0:
+            raise ValueError("negative Content-Length")
         if not length:
             return {}
-        if length > 10 * 1024 * 1024:  # 10 MB cap
-            self.rfile.read(length)  # drain
-            return {}
+        if length > _BODY_MAX_BYTES:
+            raise _BodyTooLarge(length)
         try:
             return json.loads(self.rfile.read(length))
         except (json.JSONDecodeError, ValueError):
             return {}
 
-    def _json_response(self, data, status=200):
+    def _accepts_gzip(self):
+        ae = self.headers.get("Accept-Encoding", "")
+        return any(tok.strip().split(";")[0] == "gzip" for tok in ae.split(","))
+
+    def _send_bytes(self, status, ctype, data, cache_control="no-cache",
+                    etag=None, extra_headers=None):
+        """The one body-emitting path for JSON and the HTML shell.
+
+        Always sets Content-Length (keep-alive needs it) and
+        Vary: Accept-Encoding; gzips bodies above _GZIP_MIN_BYTES when the
+        client accepts it. Binary static files and preview images have
+        their own handlers — already-compressed bytes must not come
+        through here.
+        """
         self.send_response(status)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Content-Type", ctype)
+        if cache_control:
+            self.send_header("Cache-Control", cache_control)
+        if etag:
+            self.send_header("ETag", etag)
+        for k, v in (extra_headers or {}).items():
+            self.send_header(k, v)
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
+        self.send_header("Vary", "Accept-Encoding")
+        if len(data) > _GZIP_MIN_BYTES and self._accepts_gzip():
+            gz = None
+            if etag:
+                with _gz_cache_lock:
+                    gz = _gz_cache.get(etag)
+            if gz is None:
+                # mtime=0 keeps the output deterministic for a given input
+                gz = gzip.compress(data, compresslevel=5, mtime=0)
+                if etag:
+                    with _gz_cache_lock:
+                        if len(_gz_cache) >= _GZ_CACHE_MAX:
+                            _gz_cache.pop(next(iter(_gz_cache)))
+                        _gz_cache[etag] = gz
+            data = gz
+            self.send_header("Content-Encoding", "gzip")
+        self.send_header("Content-Length", str(len(data)))
         self.end_headers()
-        self.wfile.write(json.dumps(data, default=str).encode())
+        if self.command != "HEAD":
+            self.wfile.write(data)
+
+    def _json_response(self, data, status=200, extra_headers=None):
+        self._send_bytes(status, "application/json",
+                         json.dumps(data, default=str).encode(),
+                         extra_headers=extra_headers)
+
+    @staticmethod
+    def _timing(t0, name="total"):
+        """Server-Timing header value — the project's first perf signal
+        (DevTools → Network → Timing shows it; not asserted by any net)."""
+        return {"Server-Timing": f"{name};dur={(time.perf_counter() - t0) * 1000:.2f}"}
 
     def _check_origin(self):
         """Reject POST/PUT/DELETE from foreign origins (CSRF protection)."""
         if self.command in ("POST", "PUT", "DELETE"):
             origin = self.headers.get("Origin", "")
-            if not origin:
-                self._json_response({"error": "origin header required"}, 403)
-                return False
             port = self._server_port
             allowed = {
                 f"http://localhost:{port}",
                 f"http://127.0.0.1:{port}",
             }
-            if origin not in allowed:
-                self._json_response({"error": "forbidden"}, 403)
+            if not origin or origin not in allowed:
+                # Runs BEFORE the body is read: a foreign page must not be
+                # able to make this thread buffer its payload. The unread
+                # body would desync a reused socket, so close it — the
+                # Connection header also flips close_connection.
+                self._json_response(
+                    {"error": "origin header required" if not origin else "forbidden"},
+                    403, extra_headers={"Connection": "close"})
                 return False
         return True
 
+    # Routes whose handlers read or write a sidecar and answer only at their
+    # end. annotations._read_json lets EACCES/EIO propagate by design (a
+    # read-modify-write that treated them as "empty" would wipe the file),
+    # so these get a JSON 500 instead of a dropped connection and a
+    # traceback per 500 ms poll.
+    _SIDECAR_ROUTES = frozenset((
+        "/api/annotations", "/api/tags", "/api/annotate", "/api/resolve",
+        "/api/reply", "/api/delete-annotation",
+    ))
+
     def do_GET(self):
+        self._dispatch_guarded(self._do_GET)
+
+    def do_POST(self):
+        self._dispatch_guarded(self._do_POST)
+
+    def _dispatch_guarded(self, handler):
+        try:
+            handler()
+        except OSError as e:
+            path = urlparse(self.path).path
+            if path not in self._SIDECAR_ROUTES or isinstance(e, ConnectionError):
+                raise
+            detail = f"{e.__class__.__name__}: {e.strerror or e}"
+            with _sidecar_warned_lock:
+                first = self.path not in _sidecar_warned
+                _sidecar_warned.add(self.path)
+            if first:
+                print(f"Warning: annotation sidecar unavailable for {self.path}: "
+                      f"{detail} ({e.filename})", file=sys.stderr)
+            self._json_response({"error": detail, "sidecar": True}, 500)
+
+    def _do_GET(self):
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
 
         if parsed.path == "/api/content":
+            t0 = time.perf_counter()
             tab_id = params.get("tab", [None])[0]
+            since = params.get("since", [None])[0]
             tab = self._refresh_tab(tab_id) if tab_id else None
             if tab:
-                # content is always the raw file (the editor round-trips it);
-                # body is the frontmatter-stripped markdown for rendering.
-                # Parse from the snapshot itself — a separate file read could
-                # return a different version than the snapshot's content
-                fm, body = frontmatter.parse_frontmatter_text(tab["content"])
-                response = {
-                    "content": tab["content"],
-                    "frontmatter": fm,
-                    "mtime": tab["mtime"],
-                    "changeKey": tab.get("change_key", "0:0"),
-                }
-                if fm:
-                    response["body"] = body
+                change_key = tab.get("change_key", "0:0")
+                # Conditional poll: the client sends the changeKey it holds;
+                # an unchanged file answers with a few bytes instead of the
+                # whole document. Ghost/error flags still ride along so the
+                # client keeps applying them. 200 + JSON rather than 304 —
+                # a 304 has no body and res.json() would count as a failure.
+                if since is not None and since == change_key:
+                    response = {"unchanged": True, "changeKey": change_key}
+                else:
+                    # content is always the raw file (the editor round-trips
+                    # it); body is the frontmatter-stripped markdown for
+                    # rendering. Parse from the snapshot itself — a separate
+                    # file read could return a different version
+                    fm, body = frontmatter.parse_frontmatter_text(tab["content"])
+                    response = {
+                        "content": tab["content"],
+                        "frontmatter": fm,
+                        "mtime": tab["mtime"],
+                        "changeKey": change_key,
+                    }
+                    if fm:
+                        response["body"] = body
                 if tab.get("file_missing"):
                     response["fileMissing"] = True
                 if tab.get("file_error"):
                     response["fileError"] = tab["file_error"]
-                self._json_response(response)
+                if tab.get("snapshot_failed"):
+                    # Reported once per failure, then cleared
+                    response["snapshotFailed"] = True
+                    with self._tabs_lock:
+                        live = self._tabs.get(tab_id)
+                        if live is not None:
+                            live.pop("snapshot_failed", None)
+                self._json_response(response, extra_headers=self._timing(t0))
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
@@ -361,7 +515,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/instances":
             # Self tabs come from memory — never self-probe over HTTP.
-            # Sibling probes are serial 1s timeouts (≤5 instances), so
+            # Sibling probes run in parallel (instances.discover_instances)
+            # but still cost one 1 s timeout when a sibling is dead, so
             # this endpoint stays off the 2s polling hot path by design.
             from . import instances as _instances
             with self._tabs_lock:
@@ -374,17 +529,37 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
         elif parsed.path == "/api/annotations":
             tab_id = params.get("tab", [None])[0]
-            # Refresh ensures fresh content for orphan detection
-            tab = self._refresh_tab(tab_id) if tab_id else None
+            # The content poll refreshed this tab a moment ago — reuse the
+            # cached snapshot instead of a second stat+read per tick
+            tab = None
+            if tab_id:
+                with self._tabs_lock:
+                    t = self._tabs.get(tab_id)
+                    tab = dict(t) if t else None
             if tab:
                 filepath = tab["filepath"]
-                # Auto-cleanup orphaned annotations
-                annotations.cleanup_orphans(filepath, tab["content"])
+                # Orphan cleanup runs when the document changed since the
+                # last check (refresh/save set annotations_dirty), never
+                # against a cache that was never loaded (change_key None
+                # would orphan every annotation), and not on every tick
+                if tab.get("change_key") and tab.get("annotations_dirty", True):
+                    annotations.cleanup_orphans(filepath, tab["content"])
+                    # Clear only after a successful pass, and only if no
+                    # refresh landed meanwhile (a newer content snapshot
+                    # re-dirties the tab and must get its own pass)
+                    with self._tabs_lock:
+                        live = self._tabs.get(tab_id)
+                        if live is not None and live.get("change_key") == tab["change_key"]:
+                            live["annotations_dirty"] = False
                 data, mtime = annotations.read(filepath)
-                self._json_response({
+                response = {
                     "annotations": data.get("annotations", []),
                     "mtime": mtime,
-                })
+                }
+                backup = annotations.pop_corrupt_notice(filepath)
+                if backup:
+                    response["corruptBackup"] = backup
+                self._json_response(response)
             else:
                 self._json_response({"error": "tab not found"}, 404)
 
@@ -437,14 +612,16 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 entry["mtime"] = st.st_mtime
             except Exception:
                 pass
+            # Listing-style endpoint (home cards, arbitrary path, no tab):
+            # never quarantine from here — nothing would pop the notice
             try:
-                tags = annotations.read_tags(file_path)
+                tags = annotations.read_tags(file_path, quarantine=False)
                 if tags:
                     entry["tags"] = tags
             except Exception:
                 pass
             try:
-                ann_data, _ = annotations.read(file_path)
+                ann_data, _ = annotations.read(file_path, quarantine=False)
                 ac = len(ann_data.get("annotations", []))
                 if ac:
                     entry["annotationCount"] = ac
@@ -497,6 +674,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             self._json_response(entry)
 
         elif parsed.path == "/api/browse-dir":
+            t0 = time.perf_counter()
             dir_path = params.get("path", [None])[0]
             if not dir_path:
                 dir_path = os.path.expanduser("~")
@@ -507,36 +685,34 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             try:
                 md_exts = {".md", ".markdown", ".txt", ".mdown", ".mkd"}
 
-                # Compute max mtime + file count for cache key (count catches deletions)
-                max_mtime = 0.0
-                dir_entry_count = 0
-                try:
-                    for name in os.listdir(dir_path):
-                        if not name.startswith("."):
-                            dir_entry_count += 1
-                            try:
-                                mt = os.path.getmtime(os.path.join(dir_path, name))
-                                if mt > max_mtime:
-                                    max_mtime = mt
-                            except Exception:
-                                pass
-                except Exception:
-                    pass
-
-                cache_key = (dir_path, max_mtime, dir_entry_count)
+                # One listing + one stat per entry feeds both the cache key
+                # and the rows. The key is the sorted (name, mtime_ns, size)
+                # tuple: the old (path, max float mtime, count) missed
+                # same-second rewrites and size-only changes.
+                listing = []
+                for name in os.listdir(dir_path):
+                    if name.startswith("."):
+                        continue
+                    full = os.path.join(dir_path, name)
+                    try:
+                        st = os.stat(full)
+                    except OSError:
+                        continue
+                    listing.append((name, full, st))
+                listing.sort(key=lambda e: e[0].lower())
+                cache_key = (dir_path, tuple((n, st.st_mtime_ns, st.st_size) for n, _, st in listing))
                 with _browse_cache_lock:
                     cached = _browse_cache.get(cache_key)
                 if cached is not None:
-                    self._json_response(cached)
+                    self._json_response(cached, extra_headers=self._timing(t0))
                     return
 
                 entries = []
                 total_words = 0
                 file_count = 0
-                for name in sorted(os.listdir(dir_path), key=str.lower):
-                    if name.startswith("."):
-                        continue
-                    full = os.path.join(dir_path, name)
+                partial = 0          # per-file extraction failures, reported once
+                file_paths = []      # for the batched version lookup
+                for name, full, st in listing:
                     if os.path.isdir(full):
                         md_count = 0
                         try:
@@ -547,83 +723,89 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                                         md_count += 1
                                     if md_count >= 99:
                                         break
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            partial += 1
+                            _note_partial(full, e)
                         entries.append({"name": name, "type": "dir", "path": full, "mdCount": md_count})
-                    else:
-                        _, ext = os.path.splitext(name)
-                        if ext.lower() in md_exts:
-                            entry = {"name": name, "type": "file", "path": full}
-                            file_count += 1
-                            try:
-                                st = os.stat(full)
-                                entry["size"] = st.st_size
-                                entry["mtime"] = st.st_mtime
-                            except Exception:
-                                pass
-                            # Tags + annotation count
-                            try:
-                                tags = annotations.read_tags(full)
-                                if tags:
-                                    entry["tags"] = tags
-                            except Exception:
-                                pass
-                            try:
-                                ann_data, _ = annotations.read(full)
-                                ac = len(ann_data.get("annotations", []))
-                                if ac:
-                                    entry["annotationCount"] = ac
-                            except Exception:
-                                pass
-                            # Frontmatter badges + description
-                            try:
-                                fm, _ = frontmatter.get_frontmatter(full)
-                                if fm:
-                                    badges = {}
-                                    for k in ("type", "model", "version", "status", "description", "summary"):
-                                        if k in fm:
-                                            badges[k] = str(fm[k])
-                                    if badges:
-                                        entry["badges"] = badges
-                            except Exception:
-                                pass
-                            # Rich metadata: word count, summary, preview, image, versions
-                            # Gate all file-reading extractions behind size check (< 1 MB)
-                            file_small = entry.get("size", 0) < 1024 * 1024
-                            if file_small:
-                                try:
-                                    wc = recent._extract_word_count(full)
-                                    if wc:
-                                        entry["wordCount"] = wc
-                                        total_words += wc
-                                except Exception:
-                                    pass
-                                try:
-                                    s = recent._extract_summary(full)
-                                    if s:
-                                        entry["summary"] = s
-                                except Exception:
-                                    pass
-                                try:
-                                    p = recent._extract_preview(full)
-                                    if p:
-                                        entry["preview"] = p
-                                except Exception:
-                                    pass
-                                try:
-                                    img = recent._extract_preview_image(full)
-                                    if img:
-                                        entry["previewImage"] = img
-                                except Exception:
-                                    pass
-                            try:
-                                vc, head = recent._version_info(full)
-                                if vc:
-                                    entry["versionCount"] = vc
-                                    entry["headVersion"] = head
-                            except Exception:
-                                pass
-                            entries.append(entry)
+                        continue
+                    _, ext = os.path.splitext(name)
+                    if ext.lower() not in md_exts:
+                        continue
+                    entry = {"name": name, "type": "file", "path": full,
+                             "size": st.st_size, "mtime": st.st_mtime}
+                    file_count += 1
+                    file_paths.append(full)
+                    # Tags + annotation count from one sidecar read
+                    try:
+                        ann_data, _ = annotations.read(full, quarantine=False)
+                        tags = ann_data.get("tags", [])
+                        if tags:
+                            entry["tags"] = tags
+                        ac = len(ann_data.get("annotations", []))
+                        if ac:
+                            entry["annotationCount"] = ac
+                    except Exception as e:
+                        partial += 1
+                        _note_partial(full, e)
+                    # Rich metadata: one read per small file, every extractor
+                    # works on the text in hand (recent._extract_*_text)
+                    text = None
+                    if st.st_size < 1024 * 1024:
+                        try:
+                            with open(full, encoding="utf-8", errors="ignore") as f:
+                                text = f.read()
+                        except Exception as e:
+                            partial += 1
+                            _note_partial(full, e)
+                    if text is not None:
+                        try:
+                            fm, _ = frontmatter.parse_frontmatter_text(text)
+                            if fm:
+                                badges = {}
+                                for k in ("type", "model", "version", "status", "description", "summary"):
+                                    if k in fm:
+                                        badges[k] = str(fm[k])
+                                if badges:
+                                    entry["badges"] = badges
+                        except Exception as e:
+                            partial += 1
+                            _note_partial(full, e)
+                        try:
+                            wc = recent._extract_word_count_text(text)
+                            if wc:
+                                entry["wordCount"] = wc
+                                total_words += wc
+                            s_ = recent._extract_summary_text(text)
+                            if s_:
+                                entry["summary"] = s_
+                            p_ = recent._extract_preview_text(text)
+                            if p_:
+                                entry["preview"] = p_
+                            img = recent._extract_preview_image(full, text=text)
+                            if img:
+                                entry["previewImage"] = img
+                        except Exception as e:
+                            partial += 1
+                            _note_partial(full, e)
+                    entries.append(entry)
+
+                # Version counts: one SQLite connection for the directory,
+                # not one per row (recent._version_info opened its own)
+                if file_paths:
+                    try:
+                        summaries = history.version_summaries(file_paths)
+                    except Exception as e:
+                        summaries = {}
+                        partial += 1
+                        print(f"Warning: version lookup failed for {dir_path}: {e!r}",
+                              file=sys.stderr)
+                    for entry in entries:
+                        if entry.get("type") != "file":
+                            continue
+                        vc, head = summaries.get(entry["path"], (0, None))
+                        if vc:
+                            entry["versionCount"] = vc
+                            entry["headVersion"] = head
 
                 result = {
                     "path": dir_path,
@@ -632,6 +814,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                     "stats": {"fileCount": file_count, "totalWords": total_words},
                     "entries": entries,
                 }
+                if partial:
+                    result["partial"] = partial
                 # Cache result (bounded, thread-safe)
                 with _browse_cache_lock:
                     if len(_browse_cache) >= _BROWSE_CACHE_MAX:
@@ -641,7 +825,7 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         except StopIteration:
                             pass
                     _browse_cache[cache_key] = result
-                self._json_response(result)
+                self._json_response(result, extra_headers=self._timing(t0))
             except PermissionError:
                 self._json_response({"error": "permission denied"}, 403)
             except Exception as e:
@@ -873,19 +1057,44 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         server_theme=cfg.get("theme", ""),
                         server_justify=bool(cfg.get("justify")),
                         port=self._server_port)
-        self.send_response(200)
-        self.send_header("Content-Type", "text/html")
-        self.send_header("X-Content-Type-Options", "nosniff")
-        self.send_header("X-Frame-Options", "DENY")
-        self.end_headers()
-        self.wfile.write(html.encode())
+        data = html.encode()
+        # Weak ETag of the rendered shell (title/theme/port are baked in,
+        # so the bundle alone is not enough). ?theme= and ?export= are read
+        # client-side, so one validator across query strings is correct.
+        # no-cache = always revalidate; a reload costs one 304 round trip.
+        etag = 'W/"%s"' % hashlib.sha1(data).hexdigest()[:16]
+        inm = self.headers.get("If-None-Match", "")
+        candidates = set()
+        for c in inm.split(","):
+            c = c.strip()
+            candidates.add(c[2:] if c.startswith("W/") else c)
+        if inm and etag[2:] in candidates:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "no-cache")
+            self.send_header("Vary", "Accept-Encoding")
+            self.end_headers()
+            return
+        self._send_bytes(200, "text/html; charset=utf-8", data,
+                         cache_control="no-cache", etag=etag)
 
-    def do_POST(self):
+    def _do_POST(self):
         global _active_workspace, _active_workspace_path
+        parsed = urlparse(self.path)
+        # Origin first (it closes the socket on failure, so the unread
+        # body can never be parsed as the next request), then the body
         if not self._check_origin():
             return
-        parsed = urlparse(self.path)
-        body = self._read_body()
+        try:
+            body = self._read_body()
+        except _BodyTooLarge:
+            self._json_response({"error": "body too large"}, 413,
+                                extra_headers={"Connection": "close"})
+            return
+        except ValueError:
+            self._json_response({"error": "bad request body"}, 400,
+                                extra_headers={"Connection": "close"})
+            return
 
         if parsed.path == "/api/add":
             filepath = os.path.expanduser(body.get("filepath", ""))
@@ -1090,20 +1299,21 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
 
-            ann = {
-                "id": uuid.uuid4().hex[:6],
-                "anchor": body.get("anchor", {}),
-                "author": body.get("author", {}),
-                "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                "body": body.get("body", ""),
-                "type": body.get("type", "comment"),
-                "resolved": False,
-                "replies": [],
-            }
-            data["annotations"].append(ann)
-            annotations.write(filepath, data)
+                ann = {
+                    "id": uuid.uuid4().hex[:6],
+                    "anchor": body.get("anchor", {}),
+                    "author": body.get("author", {}),
+                    "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                    "body": body.get("body", ""),
+                    "type": body.get("type", "comment"),
+                    "resolved": False,
+                    "replies": [],
+                }
+                data["annotations"].append(ann)
+                annotations.write(filepath, data)
 
             # Save bookmarks to global ~/.claude/bookmarks/
             if ann["type"] == "bookmark":
@@ -1130,35 +1340,36 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
-            target = None
-            for ann in data["annotations"]:
-                if ann["id"] == ann_id:
-                    target = ann
-                    break
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
+                target = None
+                for ann in data["annotations"]:
+                    if ann["id"] == ann_id:
+                        target = ann
+                        break
 
-            if target:
-                was_resolved = target.get("resolved", False)
-                if not was_resolved:
-                    # Resolve: mark resolved, add timestamp, archive it
-                    target["resolved"] = True
-                    target["resolved_at"] = datetime.datetime.now(
-                        datetime.timezone.utc
-                    ).isoformat()
-                    # Move to resolved archive
-                    archive = annotations.read_resolved(filepath)
-                    archive["resolved"].append(target)
-                    annotations.write_resolved(filepath, archive)
-                    # Remove from active annotations
-                    data["annotations"] = [
-                        a for a in data["annotations"] if a["id"] != ann_id
-                    ]
-                else:
-                    # Unresolve: toggle back
-                    target["resolved"] = False
-                    target.pop("resolved_at", None)
+                if target:
+                    was_resolved = target.get("resolved", False)
+                    if not was_resolved:
+                        # Resolve: mark resolved, add timestamp, archive it
+                        target["resolved"] = True
+                        target["resolved_at"] = datetime.datetime.now(
+                            datetime.timezone.utc
+                        ).isoformat()
+                        # Move to resolved archive
+                        archive = annotations.read_resolved(filepath)
+                        archive["resolved"].append(target)
+                        annotations.write_resolved(filepath, archive)
+                        # Remove from active annotations
+                        data["annotations"] = [
+                            a for a in data["annotations"] if a["id"] != ann_id
+                        ]
+                    else:
+                        # Unresolve: toggle back
+                        target["resolved"] = False
+                        target.pop("resolved_at", None)
 
-            annotations.write(filepath, data)
+                annotations.write(filepath, data)
             self._json_response({"ok": True})
 
         elif parsed.path == "/api/reply":
@@ -1168,17 +1379,18 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
-            for ann in data["annotations"]:
-                if ann["id"] == ann_id:
-                    reply = {
-                        "author": body.get("author", {}),
-                        "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-                        "body": body.get("body", ""),
-                    }
-                    ann.setdefault("replies", []).append(reply)
-                    break
-            annotations.write(filepath, data)
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
+                for ann in data["annotations"]:
+                    if ann["id"] == ann_id:
+                        reply = {
+                            "author": body.get("author", {}),
+                            "created": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+                            "body": body.get("body", ""),
+                        }
+                        ann.setdefault("replies", []).append(reply)
+                        break
+                annotations.write(filepath, data)
             self._json_response({"ok": True})
 
         elif parsed.path == "/api/delete-annotation":
@@ -1188,9 +1400,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             if not filepath:
                 self._json_response({"error": "tab not found"}, 404)
                 return
-            data, _ = annotations.read(filepath)
-            data["annotations"] = [a for a in data["annotations"] if a["id"] != ann_id]
-            annotations.write(filepath, data)
+            with annotations.locked(filepath):
+                data, _ = annotations.read(filepath)
+                data["annotations"] = [a for a in data["annotations"] if a["id"] != ann_id]
+                annotations.write(filepath, data)
             self._json_response({"ok": True})
 
         elif parsed.path == "/api/save":
@@ -1644,7 +1857,10 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
 
             port = self._server_port
             theme_param = f"&theme={theme}" if theme else ""
-            url = f"http://127.0.0.1:{port}?export=1&tab={target_id}{theme_param}"
+            # The shell renders .pdf-date from ?date= (init.js) — the export
+            # path never passed it, so the stamp was dead code until now
+            export_date = datetime.date.today().isoformat()
+            url = f"http://127.0.0.1:{port}?export=1&tab={target_id}{theme_param}&date={export_date}"
 
             try:
                 print_to_pdf(
@@ -1668,7 +1884,17 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             self.send_error(404)
 
 
+class _Server(http.server.ThreadingHTTPServer):
+    # Keep-alive handler threads sit in rfile.readline() on an idle browser
+    # socket; ThreadingHTTPServer's default block_on_close=True would make
+    # server_close() join every one of them (up to the 30 s handler
+    # timeout) after /api/shutdown. They are daemon threads — let process
+    # exit reap them.
+    daemon_threads = True
+    block_on_close = False
+
+
 def start(port, handler_class=PreviewHandler):
     """Create and return a ThreadingHTTPServer bound to localhost:port."""
     handler_class._server_port = port
-    return http.server.ThreadingHTTPServer(("127.0.0.1", port), handler_class)
+    return _Server(("127.0.0.1", port), handler_class)

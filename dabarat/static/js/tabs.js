@@ -84,7 +84,13 @@ function _computeVisibleWindow() {
 
 function renderTabBar() {
   const bar = document.getElementById('tab-bar');
+  /* Re-render drops the DOM — remember whether keyboard focus lived in a
+     tab so it can land on the active one afterwards */
+  const hadFocus = bar.contains(document.activeElement) &&
+    document.activeElement.getAttribute('role') === 'tab';
   bar.innerHTML = '';
+  bar.setAttribute('role', 'tablist');
+  bar.setAttribute('aria-label', 'Open documents');
 
   /* Home button */
   const homeBtn = document.createElement('button');
@@ -126,17 +132,28 @@ function renderTabBar() {
   visibleIds.forEach(id => {
     const tab = tabs[id];
     const div = document.createElement('div');
+    const isActive = id === activeTabId && !homeScreenActive;
     div.className = 'tab' + (id === activeTabId ? ' active' : '') + (tab._missing ? ' ghost' : '');
     div.dataset.tab = id;
     div.title = tab.filepath;
+    /* Real tab semantics: roving tabindex (only the active tab is in the
+       Tab order), arrows move focus, Enter/Space activate — see the
+       tablist keydown handler below */
+    div.setAttribute('role', 'tab');
+    div.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    div.setAttribute('aria-controls', 'content');
+    div.tabIndex = isActive ? 0 : -1;
 
     const nameSpan = document.createElement('span');
     nameSpan.textContent = tab.filename;
     div.appendChild(nameSpan);
 
-    const close = document.createElement('span');
+    const close = document.createElement('button');
+    close.type = 'button';
     close.className = 'tab-close';
     close.innerHTML = '&times;';
+    close.setAttribute('aria-label', 'Close ' + tab.filename);
+    close.tabIndex = -1;   /* reachable via Delete/Backspace on the focused tab */
     close.onclick = (e) => { e.stopPropagation(); closeTab(id); };
     div.appendChild(close);
 
@@ -151,6 +168,11 @@ function renderTabBar() {
     };
     bar.insertBefore(div, addBtn);
   });
+
+  if (hadFocus) {
+    const active = bar.querySelector('.tab[aria-selected="true"]') || bar.querySelector('.tab');
+    if (active) active.focus();
+  }
 
   /* Update overflow button */
   if (hiddenIds.length > 0) {
@@ -198,6 +220,33 @@ function renderTabBar() {
     _lastTabIds = new Set(visibleIds);
   }
 }
+
+/* Tablist keyboard model (WAI-ARIA tabs, manual activation): ArrowLeft/
+   Right and Home/End move focus between tabs, Enter/Space activate,
+   Delete/Backspace close. Ctrl+Tab cycling (below) is untouched. */
+(() => {
+  const bar = document.getElementById('tab-bar');
+  if (!bar) return;
+  bar.addEventListener('keydown', (e) => {
+    const tab = e.target.closest && e.target.closest('.tab[role="tab"]');
+    if (!tab) return;
+    const all = Array.from(bar.querySelectorAll('.tab[role="tab"]'));
+    const i = all.indexOf(tab);
+    let next = null;
+    if (e.key === 'ArrowRight') next = all[(i + 1) % all.length];
+    else if (e.key === 'ArrowLeft') next = all[(i - 1 + all.length) % all.length];
+    else if (e.key === 'Home') next = all[0];
+    else if (e.key === 'End') next = all[all.length - 1];
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); switchTab(tab.dataset.tab); return; }
+    else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); closeTab(tab.dataset.tab); return; }
+    if (next) {
+      e.preventDefault();
+      all.forEach(t => { t.tabIndex = -1; });
+      next.tabIndex = 0;
+      next.focus();
+    }
+  });
+})();
 
 /* Recalc on container resize (catches window resize, TOC collapse, gutter toggle) */
 if (typeof ResizeObserver !== 'undefined') {
@@ -264,7 +313,7 @@ function switchTab(id) {
   /* Restore per-tab frontmatter (prevents stale indicator bar from other tabs) */
   currentFrontmatter = tabs[id].frontmatter || null;
 
-  if (tabs[id].content) {
+  if (_tabLoaded(tabs[id])) {
     render(tabBody(tabs[id]));
   } else {
     /* Content not yet loaded — fetch immediately */
@@ -298,9 +347,11 @@ async function fetchTabContent(id) {
     tabs[id].mtime = data.mtime;
     tabs[id].changeKey = data.changeKey;
     tabs[id].frontmatter = data.frontmatter || null;
+    tabs[id].loaded = true;
     if (id === activeTabId) {
       currentFrontmatter = tabs[id].frontmatter;
       render(tabBody(tabs[id]));
+      document.getElementById('status-filepath').textContent = tabs[id].filepath;
     }
   } catch (e) { /* ignore */ }
 }
@@ -351,11 +402,18 @@ async function closeTab(id) {
   if (id === activeTabId) {
     activeTabId = Object.keys(tabs)[0] || null;
     lastRenderedMd = '';
-    if (activeTabId && tabs[activeTabId].content) {
-      currentFrontmatter = tabs[activeTabId].frontmatter || null;
-      render(tabBody(tabs[activeTabId]));
-      document.getElementById('status-filepath').textContent = tabs[activeTabId].filepath;
-    } else if (!activeTabId) {
+    if (activeTabId) {
+      const t = tabs[activeTabId];
+      if (_tabLoaded(t)) {
+        currentFrontmatter = t.frontmatter || null;
+        render(tabBody(t));
+        document.getElementById('status-filepath').textContent = t.filepath;
+      } else {
+        /* Never-activated successor: fetch, or the closed document
+           stays painted and the since= poll locks it in */
+        fetchTabContent(activeTabId);
+      }
+    } else {
       showHomeScreen();
     }
   }
@@ -418,7 +476,7 @@ async function _closeBulk(mode, keepIds) {
     if (activeTabId) {
       const t = tabs[activeTabId];
       currentFrontmatter = t.frontmatter || null;
-      if (t.content) {
+      if (_tabLoaded(t)) {
         render(tabBody(t));
         document.getElementById('status-filepath').textContent = t.filepath;
       } else {
@@ -493,6 +551,7 @@ function dismissTabContextMenu() {
   if (existing) {
     if (existing._dismissCtrl) existing._dismissCtrl.abort();
     existing.remove();
+    if (typeof existing._onDismiss === 'function') existing._onDismiss();
   }
 }
 
@@ -839,20 +898,42 @@ function _setTabGhost(id, missing) {
    and a polite live region so the message is announced, not just drawn.
    Keyed by id — calling again with the same id replaces the text in
    place. Message is set via textContent (error names come from the OS). */
-function _showStatusBanner(id, message) {
+function _showStatusBanner(id, message, severity, opts) {
   _hideStatusBanner(id);
+  opts = opts || {};
   const banner = document.createElement('div');
   banner.id = id;
   banner.className = 'status-banner';
-  banner.setAttribute('role', 'status');
-  banner.setAttribute('aria-live', 'polite');
-  banner.innerHTML = '<i class="ph ph-warning" aria-hidden="true"></i><span></span>' +
-    '<button type="button" data-action="dismiss">Dismiss</button>';
+  /* Severity drives the border/icon hue (attention-hue convention:
+     yellow = pending work / warn, red = failure, blue = info) and the
+     live-region politeness */
+  const sev = severity || 'warn';
+  banner.dataset.severity = sev;
+  banner.setAttribute('role', sev === 'error' ? 'alert' : 'status');
+  banner.setAttribute('aria-live', sev === 'error' ? 'assertive' : 'polite');
+  const icon = opts.icon || (sev === 'error' ? 'ph-x-circle' : sev === 'info' ? 'ph-info' : 'ph-warning');
+  banner.innerHTML = '<i class="ph ' + icon + '" aria-hidden="true"></i><span></span>';
   banner.querySelector('span').textContent = message;
+  /* Extra actions ([{label, action}]) precede Dismiss; data-action + one
+     delegated listener, never inline handlers */
+  const actions = (opts.actions || []).concat(opts.dismiss === false ? [] : [{ label: 'Dismiss' }]);
+  actions.forEach((a, i) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.action = a.action ? 'act-' + i : 'dismiss';
+    btn.textContent = a.label;
+    banner.appendChild(btn);
+  });
   banner.addEventListener('click', (e) => {
-    if (e.target.closest('[data-action="dismiss"]')) banner.remove();
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'dismiss') { banner.remove(); return; }
+    const a = (opts.actions || [])[parseInt(btn.dataset.action.slice(4), 10)];
+    if (a && a.action) a.action(banner);
   });
   document.body.appendChild(banner);
+  if (opts.timeout) setTimeout(() => { if (banner.isConnected) banner.remove(); }, opts.timeout);
+  return banner;
 }
 
 function _hideStatusBanner(id) {
@@ -929,12 +1010,19 @@ async function openFileAsTab(path) {
    never the 2s poll (sibling probes cost up to 1s each server-side). */
 let _instancesCache = [];
 
+/* Returns the live list, or null when the fetch failed — callers that
+   decide something from the list (the shutdown poll) must treat null as
+   "unknown", not "empty"; the cache and the indicator keep the last good
+   answer. */
 async function fetchInstances() {
   try {
     const res = await fetch('/api/instances');
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const data = await res.json();
     _instancesCache = data.instances || [];
-  } catch (e) { _instancesCache = []; }
+  } catch (e) {
+    return null;
+  }
   _renderInstanceIndicator();
   return _instancesCache;
 }
@@ -946,16 +1034,19 @@ function _renderInstanceIndicator() {
   const siblings = _instancesCache.filter(i => !i.isSelf).length;
   el.querySelector('.instance-port').textContent = ':' + port;
   const badge = el.querySelector('.instance-count');
+  /* Say what the control IS — the port alone reads as a bare number */
   if (siblings > 0) {
     badge.textContent = '+' + siblings;
     badge.style.display = '';
-    el.title = siblings + ' other instance' + (siblings === 1 ? '' : 's') + ' running';
-    el.setAttribute('aria-label', 'Dabarat instances — ' + el.title);
+    el.title = 'Windows — this one plus ' + siblings + ' other' +
+      (siblings === 1 ? '' : 's') + ' — click to list';
+    el.setAttribute('aria-label', 'Dabarat windows: this window on port ' + port +
+      ' plus ' + siblings + ' other' + (siblings === 1 ? '' : 's'));
   } else {
     badge.textContent = '';
     badge.style.display = 'none';
-    el.title = 'Dabarat instances';
-    el.setAttribute('aria-label', 'Dabarat instances');
+    el.title = 'Windows — click to list';
+    el.setAttribute('aria-label', 'Dabarat windows: this window on port ' + port);
   }
 }
 
@@ -978,7 +1069,16 @@ async function showInstanceMenu(anchor) {
   /* Rows hold real buttons, so this is a dialog, not a menu — Tab
      traverses Focus/Shut Down natively, Escape dismisses below */
   menu.setAttribute('role', 'dialog');
-  menu.setAttribute('aria-label', 'Dabarat instances');
+  menu.setAttribute('aria-labelledby', 'instance-menu-title');
+  if (anchor) anchor.setAttribute('aria-expanded', 'true');
+  /* Anchored non-modal dialog: focus enters on open and returns to the
+     trigger on Escape/action dismissal — never on an outside click, which
+     already moved focus where the user pointed */
+  menu._onDismiss = () => {
+    if (!anchor) return;
+    anchor.setAttribute('aria-expanded', 'false');
+    if (!menu._skipFocusReturn && typeof anchor.focus === 'function') anchor.focus();
+  };
 
   /* Anchor above the status bar; palette invocations on home (status bar
      hidden, zero rect) pin to the bottom-left corner instead */
@@ -992,18 +1092,29 @@ async function showInstanceMenu(anchor) {
   }
   menu.style.top = 'auto';
 
+  /* Identity line: the trigger already says "Dabarat", so the header
+     names the concept ("Windows") and the count; the footer explains why
+     each row has its own port */
+  const header = (n) =>
+    '<div class="instance-menu-header" id="instance-menu-title">' +
+      '<span class="instance-menu-kicker">Windows</span>' +
+      '<span class="instance-menu-count">' + n + ' open</span>' +
+    '</div>';
+  const hint = '<div class="instance-menu-hint">Each window is its own server on 127.0.0.1</div>';
+
   const renderRows = () => {
     if (!_instancesCache.length) {
-      menu.innerHTML = '<div class="instance-empty">No instances found</div>';
+      menu.innerHTML = header(0) + '<div class="instance-empty">No windows found</div>';
       return;
     }
-    menu.innerHTML = _instancesCache.map(inst => {
+    menu.innerHTML = header(_instancesCache.length) + _instancesCache.map(inst => {
       const files = inst.tabs.map(t => escapeHtml(t.filename));
       const listing = files.length
         ? files.slice(0, 4).join(', ') + (files.length > 4 ? ' (+' + (files.length - 4) + ')' : '')
         : 'no tabs';
       const ago = _instanceStartedAgo(inst.started);
-      return '<div class="instance-row' + (inst.isSelf ? ' self' : '') + '" data-port="' + inst.port + '">' +
+      return '<div class="instance-row' + (inst.isSelf ? ' self' : '') +
+        '" data-port="' + inst.port + '" tabindex="-1">' +
         '<div class="instance-row-head">' +
           '<span class="instance-row-port">:' + inst.port + '</span>' +
           (inst.isSelf ? '<span class="instance-row-self">this window</span>' : '') +
@@ -1019,9 +1130,9 @@ async function showInstanceMenu(anchor) {
               inst.port + '">Shut Down</button>' +
           '</div>') +
         '</div>';
-    }).join('');
+    }).join('') + hint;
   };
-  menu.innerHTML = '<div class="instance-empty">Scanning…</div>';
+  menu.innerHTML = header('…') + '<div class="instance-empty">Scanning…</div>';
 
   menu.addEventListener('click', async (e) => {
     const row = e.target.closest('.instance-row[data-port]');
@@ -1039,6 +1150,17 @@ async function showInstanceMenu(anchor) {
         (names.length > 2 ? ' +' + (names.length - 2) + ' more' : '') + ')';
       if (!confirm('Shut down the instance on :' + port + holding +
                    '? Unsaved edits in its window will be lost.')) return;
+      /* Visible progress: the row dims and the button names what it is
+         doing. The sibling answers {ok} and only exits ~200 ms later, so an
+         immediate re-scan still listed it and the menu repainted unchanged
+         — "nothing happened" (2026-09-07). Poll until the port stops
+         answering, then collapse the row; failures land in a banner, not
+         a native alert. */
+      const btn = e.target.closest('[data-action="shutdown"]');
+      row.classList.add('shutting-down');
+      row.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      btn.innerHTML = '<i class="ph ph-spinner" aria-hidden="true"></i> Shutting down…';
+      let error = '';
       try {
         const res = await fetch('/api/instances/shutdown', {
           method: 'POST',
@@ -1046,26 +1168,68 @@ async function showInstanceMenu(anchor) {
           body: JSON.stringify({port: port})
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) {
-          alert('Shutdown of :' + port + ' failed' + (data.error ? ': ' + data.error : ''));
-        }
+        if (!res.ok || !data.ok) error = data.error || ('HTTP ' + res.status);
       } catch (err) {
-        alert('Shutdown of :' + port + ' failed: ' + err.message);
+        error = err.message;
       }
-      await fetchInstances();
+      let gone = false;
+      if (!error) {
+        const deadline = Date.now() + 4000;
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 300));
+          const list = await fetchInstances();
+          if (!menu.isConnected) return;
+          /* A failed fetch is not evidence the sibling is gone */
+          if (list && !list.some(i => i.port === port)) { gone = true; break; }
+        }
+      } else {
+        await fetchInstances();
+      }
+      if (!menu.isConnected) return;
+      if (error) {
+        row.classList.remove('shutting-down');
+        row.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        btn.textContent = 'Shut Down';
+        _showStatusBanner('instance-shutdown-banner',
+          'Shutdown of :' + port + ' failed: ' + error, 'error', { timeout: 8000 });
+        btn.focus();
+        return;
+      }
+      if (gone) {
+        row.classList.add('gone');
+        await new Promise(r => setTimeout(r, _prefersReducedMotion ? 0 : 220));
+        _showStatusBanner('instance-shutdown-banner', 'Shut down :' + port + '.',
+          'info', { timeout: 4000 });
+      } else {
+        _showStatusBanner('instance-shutdown-banner',
+          ':' + port + ' acknowledged the shutdown but is still answering — it may be mid-request; the list refreshes on its own.',
+          'warn', { timeout: 8000 });
+      }
+      if (!menu.isConnected) return;
       renderRows();
+      /* Re-render dropped the focused button — land on the next one */
+      const next = menu.querySelector('.instance-row-actions button') ||
+                   menu.querySelector('.instance-row');
+      if (next) next.focus();
     }
   });
 
   document.body.appendChild(menu);
   await fetchInstances();
+  if (!menu.isConnected) return;   /* dismissed during the scan */
   renderRows();
+  const first = menu.querySelector('.instance-row-actions button') ||
+                menu.querySelector('.instance-row');
+  if (first) first.focus();
 
   const ctrl = new AbortController();
   menu._dismissCtrl = ctrl;
   setTimeout(() => {
     document.addEventListener('click', (e) => {
-      if (!menu.contains(e.target)) { dismissTabContextMenu(); ctrl.abort(); }
+      if (!menu.contains(e.target)) {
+        menu._skipFocusReturn = true;
+        dismissTabContextMenu(); ctrl.abort();
+      }
     }, { signal: ctrl.signal });
   }, 0);
   document.addEventListener('keydown', (e) => {

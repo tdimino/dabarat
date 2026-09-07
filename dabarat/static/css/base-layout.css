@@ -3,11 +3,17 @@
    ══════════════════════════════════════════════════════════ */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; overflow-x: hidden; }
+:root { accent-color: var(--ctp-blue); }
+/* Firefox parity for the WebKit scrollbar rules below */
+#content, pre, .palette-list, #toc-scroll, #annotations-gutter, #version-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ctp-surface1) transparent;
+}
 
 body {
   background: var(--body-bg, var(--ctp-base));
   color: var(--ctp-text);
-  font-family: 'DM Sans', 'Noto Sans Hebrew', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans);
   font-size: var(--base-size);
   line-height: 1.65;
   display: flex;
@@ -19,7 +25,7 @@ body {
 body, #toc, #status, #toc-restore, #tab-bar, #annotations-gutter,
 h1, h2, h3, h4, h5, h6,
 blockquote, code, pre, th, td, tr {
-  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  transition: background-color var(--dur-slower) ease, color var(--dur-slower) ease, border-color var(--dur-slower) ease;
 }
 
 /* Text selection — theme wash instead of the OS-default blue,
@@ -33,6 +39,11 @@ blockquote, code, pre, th, td, tr {
 [data-theme="tokyo-light"] ::selection {
   background: rgba(var(--ctp-blue-rgb), 0.15);
 }
+/* Selection is functional, so it stays blue on every theme — Ink's tungsten
+   and Vellum's cinnabar live in the title and h3 rubric instead (2026-09-06) */
+[data-theme="ink"] ::selection { background: rgba(var(--ctp-blue-rgb), 0.22); }
+/* pair-scoped */
+[data-theme="vellum"] ::selection { background: rgba(var(--ctp-blue-rgb), 0.18); }
 
 /* ══════════════════════════════════════════════════════════
    TOC Sidebar
@@ -45,8 +56,8 @@ blockquote, code, pre, th, td, tr {
   background: var(--toc-bg, var(--ctp-mantle));
   border-right: 1px solid var(--ctp-surface0);
   padding: 0;
-  z-index: 10;
-  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: var(--z-toc);
+  transition: transform var(--dur-slow) var(--ease-standard);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -60,8 +71,8 @@ blockquote, code, pre, th, td, tr {
   width: 6px;
   height: 100vh;
   cursor: col-resize;
-  z-index: 11;
-  transition: background 0.15s, left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: calc(var(--z-toc) + 1);
+  transition: background var(--dur-base), left var(--dur-slow) var(--ease-standard);
 }
 #toc-resize-handle:hover,
 #toc-resize-handle.dragging {
@@ -104,7 +115,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s;
+  transition: color var(--dur-mid), background-color var(--dur-mid), border-color var(--dur-mid), box-shadow var(--dur-mid), transform var(--dur-mid), opacity var(--dur-mid);
   flex-shrink: 0;
 }
 #toc-toggle:hover {
@@ -123,7 +134,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.2s;
+  transition: color var(--dur-mid), background-color var(--dur-mid), border-color var(--dur-mid), box-shadow var(--dur-mid), transform var(--dur-mid), opacity var(--dur-mid);
   flex-shrink: 0;
 }
 .ctrl-btn:hover {
@@ -132,7 +143,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 }
 #font-size-display {
   color: var(--ctp-overlay0);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   min-width: 16px;
   text-align: center;
@@ -152,9 +163,9 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   position: absolute;
   inset: 0;
   background: var(--ctp-surface1);
-  border-radius: 7px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background var(--dur-slower) ease;
 }
 .theme-switch .slider::before {
   content: '';
@@ -163,31 +174,37 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   width: 10px; height: 10px;
   background: var(--ctp-overlay2);
   border-radius: 50%;
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform var(--dur-slower) var(--ease-standard);
 }
 .theme-switch input:checked + .slider {
   background: var(--ctp-blue);
 }
 .theme-switch input:checked + .slider::before {
   transform: translateX(14px);
-  background: white;
+  background: var(--card-bg);   /* parchment on Vellum, not pure white */
 }
 .theme-icon {
   font-size: 10px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  transition: opacity 0.2s;
+  transition: opacity var(--dur-mid);
 }
 .theme-icon.icon-moon { color: var(--ctp-mauve); opacity: 0.45; }
 .theme-icon.icon-sun { color: var(--ctp-yellow); opacity: 0.2; }
-[data-theme="latte"] .theme-icon.icon-moon { opacity: 0.2; }
-[data-theme="latte"] .theme-icon.icon-sun { opacity: 0.45; }
+[data-theme="latte"] .theme-icon.icon-moon,
+[data-theme="vellum"] .theme-icon.icon-moon,
+[data-theme="rose-pine-dawn"] .theme-icon.icon-moon,
+[data-theme="tokyo-light"] .theme-icon.icon-moon { opacity: 0.2; }
+[data-theme="latte"] .theme-icon.icon-sun,
+[data-theme="vellum"] .theme-icon.icon-sun,
+[data-theme="rose-pine-dawn"] .theme-icon.icon-sun,
+[data-theme="tokyo-light"] .theme-icon.icon-sun { opacity: 0.45; }
 
 /* "INDEX" label */
 #toc-label {
   color: var(--ctp-overlay0);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
@@ -218,15 +235,15 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 }
 
 #toc a {
-  color: var(--ctp-overlay2);
+  color: var(--toc-link);
   text-decoration: none;
   display: block;
   padding: 3px 8px 3px 12px;
   border-left: 2px solid transparent;
-  transition: color 0.15s, border-color 0.2s, box-shadow 0.2s;
+  transition: color var(--dur-base), border-color var(--dur-mid), box-shadow var(--dur-mid);
   line-height: 1.45;
   word-break: break-word;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
 }
 #toc a:hover {
   color: var(--ctp-text);
@@ -235,15 +252,19 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
 #toc a.active {
   color: var(--ctp-blue);
   border-left-color: var(--ctp-blue);
+  background: var(--toc-active-bg);   /* per-theme mark (Ink: tungsten) */
   box-shadow: -4px 0 8px -3px rgba(var(--ctp-blue-rgb), 0.15);
 }
-[data-theme="latte"] #toc a.active {
+[data-theme="latte"] #toc a.active,
+[data-theme="vellum"] #toc a.active,
+[data-theme="rose-pine-dawn"] #toc a.active,
+[data-theme="tokyo-light"] #toc a.active {
   box-shadow: -4px 0 8px -3px rgba(var(--ctp-blue-rgb), 0.12);
 }
 
 /* h1 — document title */
 #toc .toc-h1 {
-  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', Georgia, serif;
+  font-family: var(--font-serif);
   font-weight: 600;
   font-style: italic;
   color: var(--ctp-lavender);
@@ -287,7 +308,7 @@ body.toc-resizing { cursor: col-resize !important; user-select: none !important;
   padding-top: 1px;
   padding-bottom: 1px;
   opacity: 0.65;
-  transition: opacity 0.15s, color 0.15s, border-color 0.2s;
+  transition: opacity var(--dur-base), color var(--dur-base), border-color var(--dur-mid);
 }
 #toc .toc-h4:hover { opacity: 1; }
 #toc .toc-h4.active { opacity: 1; }
@@ -317,10 +338,10 @@ body.toc-collapsed #toc-restore {
   cursor: pointer;
   font-size: 16px;
   border-radius: 50%;
-  z-index: 20;
-  box-shadow: 0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
-  transition: transform 0.2s ease, box-shadow 0.25s ease,
-              border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  z-index: var(--z-float);
+  box-shadow: var(--elevation-1);
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease,
+              border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #toc-restore {
@@ -348,7 +369,7 @@ body.toc-collapsed #toc-restore {
   to { opacity: 1; transform: scale(1) translateX(0); }
 }
 body.toc-collapsed #toc-restore {
-  animation: tocRestoreBounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: tocRestoreBounce 0.3s var(--ease-out-back) both;
 }
 [data-theme="latte"] #toc-restore,
 [data-theme="vellum"] #toc-restore,
@@ -395,8 +416,8 @@ body.home-active.toc-collapsed #main-area {
   margin-left: var(--toc-width, 260px);
   margin-right: 260px;
   min-height: 100vh;
-  transition: margin-left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-              margin-right 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: margin-left var(--dur-slow) var(--ease-standard),
+              margin-right var(--dur-slow) var(--ease-standard);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -417,20 +438,24 @@ body.home-active.toc-collapsed #main-area {
   overflow: hidden;
 }
 
+/* Tab ladder (dark themes): bar on crust, inactive tabs one step up on
+   mantle (--toc-bg keeps the opacity control's alpha), hover on surface0,
+   active on base — three distinct steps of the depth ramp, no accent rule
+   (a blue top rule was tried and rejected, 2026-09-06). */
 .tab {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 0 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10.5px;
-  color: var(--ctp-overlay1);
-  background: var(--crust-bg, var(--ctp-crust));
+  color: var(--home-control);
+  background: var(--toc-bg, var(--ctp-mantle));
   border-right: 1px solid var(--ctp-surface0);
   border-bottom: 2px solid var(--ctp-surface0);
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, background 0.15s, border-color 0.15s, opacity 0.15s, padding 0.15s;
+  transition: color var(--dur-base), background var(--dur-base), border-color var(--dur-base), opacity var(--dur-base), padding var(--dur-base);
   user-select: none;
   overflow: hidden; /* enables width-collapse animation on close */
   flex: 0 0 auto;  /* JS sets explicit width via _computeVisibleWindow() */
@@ -441,11 +466,40 @@ body.home-active.toc-collapsed #main-area {
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.tab:hover { color: var(--ctp-text); background: var(--ctp-mantle); }
+.tab:hover { color: var(--ctp-text); background: var(--ctp-surface0); }
 .tab.active {
   color: var(--ctp-text);
   background: var(--body-bg, var(--ctp-base));
   border-bottom-color: transparent;
+}
+/* Light themes: crust is the heaviest neutral in each light palette and
+   read as a grey slab over the page. The bar paints the home-ground blue
+   wash over the body background instead (layered in CSS so applyOpacity's
+   inline --crust-bg can't clobber it), tabs go transparent with the card
+   hairline as divider, and the active tab lifts out on base. */
+[data-theme="latte"] #tab-bar, [data-theme="vellum"] #tab-bar,
+[data-theme="rose-pine-dawn"] #tab-bar, [data-theme="tokyo-light"] #tab-bar {
+  background: linear-gradient(rgba(var(--ctp-blue-rgb), 0.06), rgba(var(--ctp-blue-rgb), 0.06)),
+              var(--body-bg, var(--ctp-base));
+  border-bottom-color: rgba(var(--ctp-blue-rgb), 0.16);
+}
+[data-theme="latte"] .tab, [data-theme="vellum"] .tab,
+[data-theme="rose-pine-dawn"] .tab, [data-theme="tokyo-light"] .tab {
+  background: transparent;
+  border-right-color: rgba(var(--ctp-blue-rgb), 0.16);
+  border-bottom-color: transparent;
+}
+[data-theme="latte"] #tab-home, [data-theme="vellum"] #tab-home,
+[data-theme="rose-pine-dawn"] #tab-home, [data-theme="tokyo-light"] #tab-home {
+  border-right-color: rgba(var(--ctp-blue-rgb), 0.16);
+}
+[data-theme="latte"] .tab:hover, [data-theme="vellum"] .tab:hover,
+[data-theme="rose-pine-dawn"] .tab:hover, [data-theme="tokyo-light"] .tab:hover {
+  background: rgba(var(--ctp-blue-rgb), 0.10);
+}
+[data-theme="latte"] .tab.active, [data-theme="vellum"] .tab.active,
+[data-theme="rose-pine-dawn"] .tab.active, [data-theme="tokyo-light"] .tab.active {
+  background: var(--body-bg, var(--ctp-base));
 }
 /* Ghost tab: file was deleted/moved on disk; content is served from cache.
    Opacity + italic + strikethrough only — no colors, so no light-theme
@@ -461,43 +515,41 @@ body.home-active.toc-collapsed #main-area {
   top: 52px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 300;
+  z-index: var(--z-banner);
   display: flex;
   align-items: center;
   gap: 8px;
   max-width: min(560px, calc(100vw - 32px));
   padding: 8px 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   color: var(--ctp-text);
   background: var(--card-bg, var(--ctp-mantle));
   border: 1px solid rgba(var(--ctp-yellow-rgb), 0.5);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   box-shadow: var(--elevation-2);
 }
 .status-banner i { color: var(--ctp-yellow); font-size: 15px; flex-shrink: 0; }
-.status-banner button {
-  flex-shrink: 0;
-  padding: 3px 10px;
-  font-family: inherit;
-  font-size: 11px;
-  color: var(--ctp-subtext0);
-  background: transparent;
-  border: 1px solid var(--ctp-surface1);
-  border-radius: 5px;
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-.status-banner button:hover { color: var(--ctp-text); border-color: var(--ctp-overlay0); }
+/* Severity hues — yellow (warn, default) / red (error) / blue (info) */
+.status-banner[data-severity="error"] { border-color: rgba(var(--ctp-red-rgb), 0.55); }
+.status-banner[data-severity="error"] i { color: var(--ctp-red); }
+.status-banner[data-severity="info"] { border-color: rgba(var(--ctp-blue-rgb), 0.5); }
+.status-banner[data-severity="info"] i { color: var(--ctp-blue); }
+.status-banner button { flex-shrink: 0; padding: 3px 10px; }
+.status-banner button:hover { border-color: var(--ctp-overlay0); }
 
 .tab-close {
   display: none;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
   flex-shrink: 0;   /* never collapse the close button */
   font-size: 14px;
   color: var(--ctp-overlay0);
   line-height: 1;
   padding: 1px 3px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 .tab:hover .tab-close { display: inline; }
 .tab-close:hover { color: var(--ctp-red); background: rgba(var(--ctp-red-rgb), 0.1); }
@@ -516,7 +568,7 @@ body.home-active.toc-collapsed #main-area {
   cursor: pointer;
   padding: 0 10px;
   font-size: 14px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -532,7 +584,7 @@ body.home-active.toc-collapsed #main-area {
   cursor: pointer;
   padding: 0 12px;
   font-size: 14px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -546,23 +598,25 @@ body.home-active.toc-collapsed #main-area {
   color: var(--ctp-overlay0);
   cursor: pointer;
   padding: 0 10px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
   flex-shrink: 0;
   display: none;          /* JS controls display directly */
   align-items: center;
 }
 #tab-overflow:hover { color: var(--ctp-text); }
 
+/* Add-file field sits on the card surface (white on light themes, surface0
+   on dark) — a surface0 fill read as a grey slab inside the light tab bar. */
 .tab-add-input {
-  background: var(--ctp-surface0);
+  background: var(--card-bg);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-text);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   padding: 4px 8px;
-  border-radius: 4px 0 0 4px;
+  border-radius: var(--radius-sm) 0 0 var(--radius-sm);
   outline: none;
   width: 220px;
   margin: 4px 0 4px 8px;
@@ -578,15 +632,110 @@ body.home-active.toc-collapsed #main-area {
   cursor: pointer;
   font-size: 12px;
   padding: 4px 8px;
-  border-radius: 0 4px 4px 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   margin: 4px 8px 4px 0;
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  transition: all 0.15s;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
 }
 .tab-browse-btn:hover {
   color: var(--ctp-blue);
+}
+[data-theme="latte"] .tab-add-input, [data-theme="vellum"] .tab-add-input,
+[data-theme="rose-pine-dawn"] .tab-add-input, [data-theme="tokyo-light"] .tab-add-input,
+[data-theme="latte"] .tab-browse-btn, [data-theme="vellum"] .tab-browse-btn,
+[data-theme="rose-pine-dawn"] .tab-browse-btn, [data-theme="tokyo-light"] .tab-browse-btn {
+  border-color: rgba(var(--ctp-blue-rgb), 0.16);
+}
+[data-theme="latte"] .tab-add-input:focus, [data-theme="vellum"] .tab-add-input:focus,
+[data-theme="rose-pine-dawn"] .tab-add-input:focus, [data-theme="tokyo-light"] .tab-add-input:focus {
+  border-color: var(--ctp-blue);
+}
+
+/* ── Secondary button recipe ──────────────────────────
+   One base for the small pill buttons (home actions, workspace buttons,
+   Open, version rows, instance rows, banner Dismiss, editor Save/Close):
+   type, padding, radius, border, hover tint, focus ring, active press,
+   disabled state. Per-class rules below and in other modules keep only
+   their deltas (accent hover hues, sizes, the version row's border-only
+   hover rationale). */
+.btn,
+.home-action-btn, .ws-btn, .home-open-btn, .version-btn,
+.instance-row-actions button, .status-banner button,
+#edit-save-btn, #edit-discard-btn {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.3;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--ctp-surface1);
+  background: transparent;
+  color: var(--home-control);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: color var(--dur-base), background-color var(--dur-base),
+              border-color var(--dur-base), transform var(--dur-fast);
+}
+.btn:hover,
+.home-action-btn:hover, .ws-btn:hover, .home-open-btn:hover,
+.instance-row-actions button:hover, .status-banner button:hover,
+#edit-save-btn:hover, #edit-discard-btn:hover {
+  background: var(--interactive-muted-bg);
+  color: var(--ctp-text);
+}
+.btn:focus-visible,
+.home-action-btn:focus-visible, .ws-btn:focus-visible, .home-open-btn:focus-visible,
+.version-btn:focus-visible, .instance-row-actions button:focus-visible,
+.status-banner button:focus-visible,
+#edit-save-btn:focus-visible, #edit-discard-btn:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
+}
+.btn:active,
+.home-action-btn:active, .ws-btn:active, .home-open-btn:active, .version-btn:active,
+.instance-row-actions button:active, .status-banner button:active,
+#edit-save-btn:active, #edit-discard-btn:active {
+  transform: scale(0.96);
+}
+.btn:disabled,
+.home-action-btn:disabled, .ws-btn:disabled, .home-open-btn:disabled, .version-btn:disabled,
+.instance-row-actions button:disabled, .status-banner button:disabled,
+#edit-save-btn:disabled, #edit-discard-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Visually hidden, still announced — headings that give screen readers
+   the structure the layout supplies visually */
+.sr-only {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Keyboard focus for the icon controls that had none — same ring as the
+   buttons above; hover-revealed ghosts also reveal on focus */
+.ctrl-btn:focus-visible, #toc-toggle:focus-visible, .tab-close:focus-visible,
+.tab-browse-btn:focus-visible, .gutter-tab:focus-visible, .ann-type-btn:focus-visible,
+.ann-resolve-btn:focus-visible, .ann-delete-btn:focus-visible, .ann-reply-send:focus-visible,
+.ann-reply-toggle:focus-visible, .ann-gutter-close:focus-visible, .var-fill-toggle:focus-visible,
+.var-preview-btn:focus-visible, .tp-preset-card:focus-visible, .home-card-remove:focus-visible,
+.tab-overflow-close-all:focus-visible, .preview-close:focus-visible,
+#status-copy-path:focus-visible, #status-export-pdf:focus-visible, #instance-indicator:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 2px;
+}
+.home-card-remove:focus-visible, .ann-resolve-btn:focus-visible, .ann-delete-btn:focus-visible,
+.ann-reply-toggle:focus-visible, .tab-close:focus-visible {
+  opacity: 1;
+  display: inline;
 }
 
 /* ── Tab Context Menu ────────────────────────────────── */
@@ -594,16 +743,16 @@ body.home-active.toc-collapsed #main-area {
   position: fixed;
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 4px 0;
-  z-index: 100;
-  box-shadow: 0 4px 16px rgba(var(--ctp-mantle-rgb), 0.35);
+  z-index: var(--z-menu);
+  box-shadow: var(--elevation-1);
   min-width: 140px;
   animation: fmFadeIn 0.08s ease;
 }
 .tab-context-item {
   padding: 6px 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   cursor: pointer;
   color: var(--ctp-text);
@@ -621,10 +770,10 @@ body.home-active.toc-collapsed #main-area {
   outline: none;
 }
 .tab-context-item:first-child {
-  border-radius: 6px 6px 0 0;
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
 }
 .tab-context-item:last-child {
-  border-radius: 0 0 6px 6px;
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 .tab-context-sep {
   border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.6);
@@ -635,7 +784,7 @@ body.home-active.toc-collapsed #main-area {
   display: flex;
   flex-direction: column;
   background: var(--card-bg, var(--ctp-surface0));
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   min-width: 240px;
 }
 /* Overflow rows sit on --card-bg (white in light themes) where raw
@@ -661,7 +810,7 @@ body.home-active.toc-collapsed #main-area {
   flex-shrink: 0;
 }
 .tab-overflow-count {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   color: var(--home-meta);
 }
@@ -669,12 +818,12 @@ body.home-active.toc-collapsed #main-area {
   background: none;
   border: none;
   color: var(--home-control);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   cursor: pointer;
   padding: 2px 6px;
-  border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-base), background var(--dur-base);
 }
 .tab-overflow-close-all:hover {
   color: var(--ctp-red);
@@ -684,10 +833,10 @@ body.home-active.toc-collapsed #main-area {
   background: var(--interactive-muted-bg);
   border: 1px solid rgba(var(--ctp-surface1-rgb), 0.6);
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   padding: 4px 8px;
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   outline: none;
   margin: 2px 10px 6px;
   flex-shrink: 0;
@@ -713,9 +862,9 @@ body.home-active.toc-collapsed #main-area {
   line-height: 1;
   cursor: pointer;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   opacity: 0;
-  transition: opacity 0.12s, color 0.12s, background 0.12s;
+  transition: opacity var(--dur-fast), color var(--dur-fast), background var(--dur-fast);
   flex-shrink: 0;
 }
 .tab-context-item:hover .tab-overflow-close,
@@ -727,24 +876,76 @@ body.home-active.toc-collapsed #main-area {
 }
 .tab-overflow-empty {
   padding: 12px 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--home-meta);
   text-align: center;
 }
 
 /* ── Instance monitor dropdown ───────────────────────── */
+/* Sits on --card-bg like the overflow menu: every token below (home-meta,
+   home-control, badge-blue-fg) is solved and audited on CARD. surface0
+   would be the cold slab on light themes and an invisible box-in-box on
+   dark ones; --elevation-2 gives the card a real shadow where mantle-rgb
+   shadows vanish on light themes. */
 .instance-menu {
   min-width: 260px;
   max-width: 340px;
   padding: 4px;
+  background: var(--card-bg, var(--ctp-surface0));
+  border-color: var(--ctp-surface1);
+  box-shadow: var(--elevation-2);
+}
+.instance-menu-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px 5px;
+  border-bottom: 1px solid rgba(var(--ctp-surface1-rgb), 0.6);
+  margin-bottom: 3px;
+}
+.instance-menu-kicker {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--home-control);
+}
+.instance-menu-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--home-meta);
+}
+.instance-menu-hint {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  color: var(--home-meta);
+  padding: 5px 10px 4px;
+  margin-top: 3px;
+  border-top: 1px solid rgba(var(--ctp-surface1-rgb), 0.6);
 }
 .instance-row {
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
+  transition: background var(--dur-fast);
 }
+.instance-row:hover {
+  background: var(--interactive-muted-bg);
+}
+.instance-row:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: -2px;
+}
+.instance-row-actions button:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: 1px;
+}
+/* Self row: inset rubric rule instead of a fill — an 8% wash on surface0
+   was invisible on dark themes and muddy on light ones */
 .instance-row.self {
-  background: rgba(var(--ctp-blue-rgb), 0.08);
+  box-shadow: inset 2px 0 0 var(--ctp-blue);
+  padding-left: 12px;
 }
 .instance-row + .instance-row {
   margin-top: 2px;
@@ -755,29 +956,30 @@ body.home-active.toc-collapsed #main-area {
   gap: 8px;
 }
 .instance-row-port {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
   color: var(--ctp-text);
 }
 .instance-row-self {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 9px;
+  font-family: var(--font-sans);
+  font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: var(--ctp-blue);
+  color: var(--badge-blue-fg);
   background: rgba(var(--ctp-blue-rgb), 0.15);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 1px 6px;
 }
 .instance-row-ago {
-  font-family: 'Victor Mono', monospace;
-  font-size: 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
   color: var(--home-meta);
   margin-left: auto;
 }
 .instance-row-files {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--home-meta);
   margin-top: 3px;
@@ -790,30 +992,42 @@ body.home-active.toc-collapsed #main-area {
   gap: 6px;
   margin-top: 6px;
 }
-.instance-row-actions button {
-  background: none;
-  border: 1px solid rgba(var(--ctp-surface1-rgb), 0.8);
-  color: var(--home-control);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 10px;
-  padding: 3px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: color 0.12s, border-color 0.12s, background 0.12s;
-}
-.instance-row-actions button:hover {
-  color: var(--ctp-text);
-  border-color: var(--ctp-surface2);
-  background: var(--interactive-muted-bg);
-}
+.instance-row-actions button { font-size: 10px; padding: 3px 10px; }
+.instance-row-actions button:hover { border-color: var(--ctp-surface2); }
 .instance-row-actions button[data-action="shutdown"]:hover {
   color: var(--ctp-red);
   border-color: rgba(var(--ctp-red-rgb), 0.5);
   background: rgba(var(--ctp-red-rgb), 0.10);
 }
+/* Shutdown in flight: the row dims, the button keeps its red and spins;
+   once the port stops answering the row slides out before the re-render */
+.instance-row.shutting-down {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.instance-row.shutting-down .instance-row-actions button[data-action="shutdown"] {
+  color: var(--ctp-red);
+  border-color: rgba(var(--ctp-red-rgb), 0.5);
+  background: rgba(var(--ctp-red-rgb), 0.10);
+  opacity: 1;
+}
+.instance-row.shutting-down .ph-spinner {
+  display: inline-block;
+  animation: instanceSpin 0.9s linear infinite;
+}
+@keyframes instanceSpin { to { transform: rotate(360deg); } }
+.instance-row.gone {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity var(--dur-base), transform var(--dur-base);
+}
+@media (prefers-reduced-motion: reduce) {
+  .instance-row.shutting-down .ph-spinner { animation: none; }
+  .instance-row.gone { transition: none; }
+}
 .instance-empty {
   padding: 12px 14px;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--home-meta);
   text-align: center;
@@ -822,10 +1036,10 @@ body.home-active.toc-collapsed #main-area {
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-blue);
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10.5px;
   padding: 2px 6px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   outline: none;
   width: 140px;
 }
@@ -842,7 +1056,7 @@ body.home-active.toc-collapsed #main-area {
   z-index: 1;
 }
 ::view-transition-new(root) {
-  z-index: 9999;
+  z-index: var(--z-overlay);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -867,7 +1081,7 @@ body.has-bg-image #main-area::after {
   opacity: var(--bg-image-opacity, 0);
   pointer-events: none;
   filter: blur(var(--bg-image-blur, 0px));
-  transition: opacity 0.3s ease;
+  transition: opacity var(--dur-slower) ease;
 }
 
 /* Ensure content sits above the background image */
@@ -896,14 +1110,14 @@ body.has-bg-image #diff-view {
 .settings-bg-preview {
   width: 48px;
   height: 32px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background-size: cover;
   background-position: center;
   border: 1px solid var(--ctp-surface1);
   box-shadow: 0 0 0 2px var(--ctp-sapphire);  /* ring = image is active; sapphire passes WCAG 3:1 on all themes */
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color var(--dur-base), box-shadow var(--dur-base);
 }
 .settings-bg-preview:hover {
   border-color: var(--ctp-red);
@@ -912,15 +1126,15 @@ body.has-bg-image #diff-view {
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   padding: 4px 10px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
 }
 .settings-bg-btn:hover {
   background: var(--ctp-surface1);

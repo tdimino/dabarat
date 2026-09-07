@@ -11,52 +11,62 @@
 }
 
 /* ── Toolbar ─────────────────────────────────────────────── */
+/* Toolbar sits on mantle like the sidebar — one step above the page, not
+   the crust slab (2026-09-06, same diagnosis as the tab bar). 32px controls
+   in groups 12px apart; hover is one neutral wash, active is one blue wash;
+   "Editing" stays neutral until changes are pending (body.edit-dirty). */
 .edit-toolbar {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   padding: 6px 16px;
-  background: var(--crust-bg, var(--ctp-crust));
+  background: var(--toc-bg, var(--ctp-mantle));
   border-bottom: 1px solid var(--ctp-surface0);
   flex-shrink: 0;
-  min-height: 36px;
+  min-height: 40px;
 }
 
 .edit-mode-badge {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-family: 'Victor Mono', monospace;
-  font-size: 9px;
+  font-family: var(--font-mono);
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 2px;
-  color: var(--ctp-yellow);
-  background: rgba(var(--ctp-yellow-rgb), 0.1);
-  border: 1px solid rgba(var(--ctp-yellow-rgb), 0.25);
-  border-radius: 10px;
+  letter-spacing: 1.5px;
+  color: var(--home-control);
+  background: rgba(var(--ctp-overlay1-rgb), 0.12);
+  border: 1px solid rgba(var(--ctp-overlay1-rgb), 0.25);
+  border-radius: var(--radius-xl);
   padding: 2px 10px 2px 7px;
-  margin-right: 8px;
+  margin-right: 12px;
   user-select: none;
+  transition: color var(--dur-base), background var(--dur-base), border-color var(--dur-base);
 }
 .edit-mode-badge i {
   font-size: 12px;
+}
+/* Pending work is yellow (attention-hue convention) */
+body.edit-dirty .edit-mode-badge {
+  color: var(--ctp-yellow);
+  background: rgba(var(--ctp-yellow-rgb), 0.1);
+  border-color: rgba(var(--ctp-yellow-rgb), 0.25);
 }
 
 .edit-fmt-btn {
   background: none;
   border: 1px solid transparent;
   color: var(--ctp-subtext0);
-  font-size: 14px;
-  width: 28px;
-  height: 28px;
+  font-size: 15px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.2s ease-out,
-              box-shadow 0.2s ease-out, transform 0.1s;
+  transition: background var(--dur-base), color var(--dur-base), transform var(--dur-fast);
 }
 .edit-fmt-btn:focus-visible {
   outline: 2px solid var(--ctp-blue);
@@ -64,62 +74,51 @@
 }
 .edit-fmt-btn:hover {
   color: var(--ctp-text);
-  border-color: rgba(var(--ctp-blue-rgb), 0.4);
-  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.1),
-              0 0 6px rgba(var(--ctp-blue-rgb), 0.15),
-              inset 0 -2px 0 0 var(--ctp-blue);
+  background: var(--interactive-muted-bg);
 }
 .edit-fmt-btn.active {
   background: rgba(var(--ctp-blue-rgb), 0.12);
   color: var(--ctp-blue);
-  border-color: rgba(var(--ctp-blue-rgb), 0.3);
-  box-shadow: inset 0 -2px 0 0 var(--ctp-blue);
 }
 .edit-fmt-btn.active:hover {
-  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
-              0 0 6px rgba(var(--ctp-blue-rgb), 0.2),
-              inset 0 -2px 0 0 var(--ctp-blue);
+  background: rgba(var(--ctp-blue-rgb), 0.18);
 }
 
+/* Group gap: a hairline with 6px either side ≈ 12px between groups */
 .edit-toolbar-sep {
   width: 1px;
   height: 18px;
   background: var(--ctp-surface1);
-  margin: 0 4px;
+  margin: 0 6px;
   flex-shrink: 0;
 }
 
 .edit-toolbar .spacer { flex: 1; }
 
 #edit-status {
-  font-family: 'Victor Mono', monospace;
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-size: 12px;
   color: var(--ctp-subtext0);
   margin-right: 8px;
   user-select: none;
 }
 
+/* Save/Close ride the .btn recipe (base-layout.css); outline hover keeps
+   the accent on border + text, no fill */
 #edit-save-btn,
 #edit-discard-btn {
-  background: none;
-  border: 1px solid var(--ctp-surface1);
   color: var(--ctp-subtext0);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
   padding: 3px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.1s;
-}
-
-#edit-save-btn:focus-visible,
-#edit-discard-btn:focus-visible {
-  outline: 2px solid var(--ctp-blue);
-  outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 #edit-save-btn:hover {
+  background: transparent;
   border-color: var(--ctp-blue);
   color: var(--ctp-blue);
+}
+#edit-save-btn:disabled {
+  border-color: var(--ctp-surface1);
+  color: var(--ctp-subtext0);
 }
 
 #edit-save-btn.dirty {
@@ -133,6 +132,7 @@
 }
 
 #edit-discard-btn:hover {
+  background: transparent;
   border-color: var(--ctp-red);
   color: var(--ctp-red);
 }
@@ -157,139 +157,29 @@ body.edit-mode .edit-body {
 
 /* ── ProseMirror Surface ─────────────────────────────────── */
 #tiptap-editor .ProseMirror {
-  font-family: 'DM Sans', 'Noto Sans Hebrew', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-sans);
   font-size: var(--base-size, 15px);
   color: var(--ctp-text);
   line-height: 1.65;
-  max-width: 900px;
+  max-width: var(--measure);
   margin: 0 auto;
   padding: 48px 56px 80px;
   outline: none;
   min-height: calc(100vh - 120px);
-  caret-color: var(--ctp-yellow);
+  caret-color: var(--stat-chg);   /* pending-work yellow, solved per theme on base */
 }
 
 #tiptap-editor .ProseMirror > *:first-child { margin-top: 0; }
 
-/* Headings */
-#tiptap-editor .ProseMirror h1,
-#tiptap-editor .ProseMirror h2,
-#tiptap-editor .ProseMirror h3,
-#tiptap-editor .ProseMirror h4,
-#tiptap-editor .ProseMirror h5 {
-  color: var(--ctp-text);
-  margin: 1.6em 0 0.6em;
-  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', 'Georgia', serif;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
-}
-#tiptap-editor .ProseMirror h1 {
-  font-size: calc(2em * var(--heading-scale));
-  color: var(--ctp-blue);
-  border-bottom: 1px solid var(--ctp-surface0);
-  padding-bottom: 0.35em;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-#tiptap-editor .ProseMirror h2 {
-  font-size: calc(1.5em * var(--heading-scale));
-  color: var(--ctp-blue);
-  border-bottom: 1px solid var(--ctp-surface0);
-  padding-bottom: 0.25em;
-  font-weight: 600;
-}
-#tiptap-editor .ProseMirror h3 {
-  font-size: calc(1.2em * var(--heading-scale));
-  color: var(--ctp-green);
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-}
-#tiptap-editor .ProseMirror h4 {
-  font-size: calc(1.05em * var(--heading-scale));
-  color: var(--ctp-yellow);
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-}
-#tiptap-editor .ProseMirror h5 {
-  font-size: calc(0.95em * var(--heading-scale));
-  color: var(--ctp-peach);
-  font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
-}
-
-/* Paragraphs */
-#tiptap-editor .ProseMirror p { margin: 0.75em 0; }
-
-/* Links */
-#tiptap-editor .ProseMirror a {
-  color: var(--ctp-blue);
-  text-decoration: none;
-}
-#tiptap-editor .ProseMirror a:hover {
-  color: var(--ctp-lavender);
-  text-decoration: underline;
-}
-
-/* Bold / Italic */
-#tiptap-editor .ProseMirror strong { color: var(--bold-color); font-weight: 600; }
-#tiptap-editor .ProseMirror em { color: var(--italic-color); font-style: italic; }
+/* Prose parity: typography.css styles bare elements (h1–h6, p, a, strong,
+   em, code, pre, blockquote, lists, tables, hr) so the same rules reach
+   #content and .ProseMirror — the editor used to carry a drifted copy
+   (raw green/yellow/peach headings, no h6, no heading-code shrink).
+   Only editor-specific deltas live here. */
 #tiptap-editor .ProseMirror s { text-decoration: line-through; color: var(--ctp-overlay1); }
-
-/* Inline code */
-#tiptap-editor .ProseMirror code {
-  font-family: 'Victor Mono', 'Fira Code', monospace;
-  background: var(--ctp-surface0);
-  color: var(--code-fg);
-  padding: 0.15em 0.45em;
-  border-radius: 4px;
-  font-size: 0.88em;
-}
-
-/* Code blocks */
-#tiptap-editor .ProseMirror pre {
-  background: var(--ctp-mantle);
-  border: 1px solid var(--ctp-surface0);
-  border-radius: 8px;
-  padding: 1.1em 1.3em;
-  margin: 1.2em 0;
-  overflow-x: auto;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-#tiptap-editor .ProseMirror pre code {
-  background: none;
-  color: var(--ctp-text);
-  padding: 0;
-  border-radius: 0;
-  font-size: 12px;
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-/* Blockquotes */
-#tiptap-editor .ProseMirror blockquote {
-  color: var(--blockquote-color);
-  border-left: 3px solid var(--ctp-mauve);
-  padding: 0.6em 1.2em;
-  margin: 1.2em 0;
-  background: var(--blockquote-bg);
-  border-radius: 0 6px 6px 0;
-  font-style: italic;
-}
-#tiptap-editor .ProseMirror blockquote em,
-#tiptap-editor .ProseMirror blockquote code {
-  font-style: normal;
-}
-
-/* Lists */
-#tiptap-editor .ProseMirror ul,
-#tiptap-editor .ProseMirror ol {
-  padding-left: 2em;
-  margin: 0.6em 0;
-}
-#tiptap-editor .ProseMirror li { margin: 0.3em 0; }
-#tiptap-editor .ProseMirror li::marker { color: var(--ctp-overlay1); }
 #tiptap-editor .ProseMirror li > p { margin: 0.2em 0; }
+/* No .table-scroll wrapper in the editor, so the table carries its own spacing */
+#tiptap-editor .ProseMirror table { margin: 1.2em 0; }
 
 /* Task lists */
 #tiptap-editor .ProseMirror ul[data-type="taskList"] {
@@ -313,43 +203,11 @@ body.edit-mode .edit-body {
   color: var(--ctp-overlay1);
 }
 
-/* Tables */
-#tiptap-editor .ProseMirror table {
-  border-collapse: collapse;
-  width: 100%;
-  margin: 1.2em 0;
-  font-size: 13px;
-}
-#tiptap-editor .ProseMirror th {
-  background: var(--ctp-mantle);
-  color: var(--ctp-blue);
-  font-weight: 600;
-  text-align: left;
-  padding: 10px 14px;
-  border: 1px solid var(--ctp-surface0);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-#tiptap-editor .ProseMirror td {
-  padding: 8px 14px;
-  border: 1px solid var(--ctp-surface0);
-}
-#tiptap-editor .ProseMirror tr:nth-child(even) { background: var(--row-even-bg); }
-#tiptap-editor .ProseMirror tr:hover { background: var(--row-hover-bg); }
-
-/* Horizontal rule */
-#tiptap-editor .ProseMirror hr {
-  border: none;
-  border-top: 1px solid var(--ctp-surface0);
-  margin: 2.5em 0;
-}
-
 /* Images */
 #tiptap-editor .ProseMirror img {
   max-width: 100%;
   height: auto;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   margin: 1em 0;
 }
 
@@ -369,10 +227,10 @@ body.edit-mode .edit-body {
 }
 
 /* ── Light theme adjustments ─────────────────────────────── */
-[data-theme="latte"] .edit-mode-badge,
-[data-theme="vellum"] .edit-mode-badge,
-[data-theme="rose-pine-dawn"] .edit-mode-badge,
-[data-theme="tokyo-light"] .edit-mode-badge {
+[data-theme="latte"] body.edit-dirty .edit-mode-badge,
+[data-theme="vellum"] body.edit-dirty .edit-mode-badge,
+[data-theme="rose-pine-dawn"] body.edit-dirty .edit-mode-badge,
+[data-theme="tokyo-light"] body.edit-dirty .edit-mode-badge {
   background: rgba(var(--ctp-yellow-rgb), 0.15);
   border-color: rgba(var(--ctp-yellow-rgb), 0.35);
   color: var(--ctp-text);
@@ -406,15 +264,6 @@ body.edit-mode .edit-body {
   background: var(--ctp-surface2);
 }
 
-[data-theme="latte"] .edit-fmt-btn:hover,
-[data-theme="vellum"] .edit-fmt-btn:hover,
-[data-theme="rose-pine-dawn"] .edit-fmt-btn:hover,
-[data-theme="tokyo-light"] .edit-fmt-btn:hover {
-  box-shadow: 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
-              0 0 8px rgba(var(--ctp-blue-rgb), 0.12),
-              inset 0 -2px 0 0 var(--ctp-blue);
-}
-
 [data-theme="latte"] #edit-save-btn.dirty,
 [data-theme="vellum"] #edit-save-btn.dirty,
 [data-theme="rose-pine-dawn"] #edit-save-btn.dirty,
@@ -424,9 +273,7 @@ body.edit-mode .edit-body {
 
 /* ── Edit Toggle Button (floating, mirrors annotations-toggle) ── */
 #edit-toggle {
-  position: fixed;
-  right: 14px;
-  top: 86px;
+  position: relative;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-yellow);
@@ -438,9 +285,8 @@ body.edit-mode .edit-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
-  box-shadow: 0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  box-shadow: var(--elevation-1);
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #edit-toggle {
@@ -479,11 +325,8 @@ body.edit-mode #edit-toggle { display: none; }
 body.edit-mode #history-toggle { display: none; }
 body.home-active #edit-toggle { display: none; }
 
-@media (min-width: 1401px) {
-  #edit-toggle { top: 14px; }
-}
-
 /* ── Transition ──────────────────────────────────────────── */
-body.edit-mode #tab-bar {
+/* The yellow rule under the tab bar marks pending work, not edit mode */
+body.edit-dirty #tab-bar {
   border-bottom-color: var(--ctp-yellow);
 }

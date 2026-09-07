@@ -1,11 +1,9 @@
 /* ══════════════════════════════════════════════════════════
    Responsive — hide annotation gutter below 1400px
    ══════════════════════════════════════════════════════════ */
-/* Annotations toggle — floating pill on right edge */
+/* Annotations toggle — first button of #float-column (history-ui.css) */
 #annotations-toggle {
-  position: fixed;
-  right: 14px;
-  top: 46px;
+  position: relative;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-blue);
@@ -14,12 +12,11 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
-  box-shadow: 0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  box-shadow: var(--elevation-1);
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #annotations-toggle {
@@ -59,12 +56,12 @@
   top: -5px; right: -5px;
   background: var(--ctp-mauve);
   color: var(--ctp-base);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
   min-width: 16px;
   height: 16px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   display: none;
   align-items: center;
   justify-content: center;
@@ -72,14 +69,14 @@
 }
 #annotations-toggle.has-annotations .ann-count { display: flex; }
 
-/* When gutter is natively visible (wide screen), hide toggle */
+/* While the native column is showing the toggle has nothing to do —
+   syncGutterLayout (annotations.js) sets this; the header × hides the
+   column and the toggle comes back */
 #annotations-toggle.gutter-native { display: none !important; }
 
-/* ── Justify Toggle Button (floating, mirrors annotations-toggle) ── */
+/* ── Justify Toggle Button (last button of #float-column) ── */
 #justify-toggle {
-  position: fixed;
-  right: 14px;
-  top: 126px;
+  position: relative;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-mauve);
@@ -91,9 +88,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
-  box-shadow: 0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  box-shadow: var(--elevation-1);
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #justify-toggle {
@@ -132,37 +128,35 @@
 #justify-toggle.active {
   border-color: var(--ctp-mauve);
   box-shadow: 0 0 0 3px rgba(var(--ctp-mauve-rgb), 0.15),
-              0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
+              var(--elevation-1);
 }
 body.edit-mode #justify-toggle { display: none; }
 body.home-active #justify-toggle { display: none; }
 
-/* Wide screens: annotations gutter is native (toggle hidden) and
-   #edit-toggle moves to top: 14px, so justify slots in below it */
-@media (min-width: 1401px) {
-  #justify-toggle { top: 54px; }
-}
-
 @media (max-width: 1400px) {
   #annotations-gutter { display: none; }
   #main-area { margin-right: 0; }
-  /* Always show the toggle on narrow screens */
-  #annotations-toggle { display: flex; }
   /* Gutter overlay when opened via toggle */
   #annotations-gutter.overlay-open {
     display: block;
     background: var(--ctp-base);
     border-left: 1px solid var(--ctp-surface0);
-    box-shadow: -4px 0 20px rgba(var(--ctp-mantle-rgb), 0.2);
+    box-shadow: var(--elevation-2);
   }
-  #annotations-gutter.overlay-open .ann-gutter-close { display: block; }
 }
 
 /* ══════════════════════════════════════════════════════════
    900px — Auto-collapse TOC, reclaim full width
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 900px) {
-  #toc { transform: translateX(calc(-1 * var(--toc-width, 260px))); }
+  /* Off-canvas only while collapsed — the 900px matchMedia listener in
+     theme.js adds the class on entry, and Cmd+\ / #toc-restore must be
+     able to slide the sidebar back in as an overlay */
+  body.toc-collapsed #toc { transform: translateX(calc(-1 * var(--toc-width, 260px))); }
+  body:not(.toc-collapsed) #toc {
+    transform: none;
+    box-shadow: var(--elevation-2);
+  }
   #toc-resize-handle { display: none; }
   #toc-restore {
     display: flex;
@@ -171,10 +165,11 @@ body.home-active #justify-toggle { display: none; }
   }
   #main-area { margin-left: 0; }
   #tab-bar-wrapper { margin-right: 0; }
-  /* Home-active: hide TOC on narrow screens */
-  body.home-active #toc {
-    transform: translateX(calc(-1 * var(--toc-width, 260px)));
-  }
+  /* Home-active: the content reclaims the width, but the rail is NOT forced
+     off-canvas here — theme.js adds .toc-collapsed on entering the
+     breakpoint, and the rules above let Cmd+\ / #toc-restore slide it back
+     in as an overlay. An unconditional transform made the Files/Recent rail
+     unreachable on any half-width home window (critique, 2026-09-06). */
   body.home-active #main-area {
     margin-left: 0;
   }
@@ -185,6 +180,10 @@ body.home-active #justify-toggle { display: none; }
    ══════════════════════════════════════════════════════════ */
 @media (max-width: 600px) {
   #content { padding: 24px 20px 80px; }
+  /* Editor toolbar: wrap instead of overflowing off-screen, and give the
+     formatting buttons touch-sized targets */
+  .edit-toolbar { flex-wrap: wrap; gap: 6px; padding: 6px 10px; }
+  .edit-fmt-btn { width: 40px; height: 40px; font-size: 16px; }
   #status { padding: 4px 10px; gap: 8px; }
   #status-tags { display: none; }
   #word-count { display: none; }

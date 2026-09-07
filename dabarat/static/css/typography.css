@@ -3,7 +3,7 @@
    ══════════════════════════════════════════════════════════ */
 #content {
   --toc-heading-offset: 80px;
-  max-width: 900px;
+  max-width: var(--measure);
   margin-left: auto;
   margin-right: auto;
   padding: 48px 56px 80px;
@@ -28,12 +28,12 @@ body.justify-mode #content li {
 h1, h2, h3, h4, h5, h6 {
   color: var(--ctp-text);
   margin: 1.6em 0 0.6em;
-  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', 'Georgia', serif;
+  font-family: var(--font-serif);
   line-height: 1.25;
   letter-spacing: -0.01em;
 }
 h1 {
-  font-size: calc(2em * var(--heading-scale));
+  font-size: 2em;
   color: var(--ctp-blue);
   border-bottom: 1px solid var(--ctp-surface0);
   padding-bottom: 0.35em;
@@ -41,37 +41,47 @@ h1 {
   letter-spacing: -0.02em;
 }
 h2 {
-  font-size: calc(1.5em * var(--heading-scale));
+  font-size: 1.5em;
   color: var(--ctp-blue);
   border-bottom: 1px solid var(--ctp-surface0);
   padding-bottom: 0.25em;
   font-weight: 600;
 }
 h3 {
-  font-size: calc(1.2em * var(--heading-scale));
+  font-size: 1.2em;
   color: var(--h3-color);
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
 }
 h4 {
-  font-size: calc(1.05em * var(--heading-scale));
+  font-size: 1.05em;
   color: var(--h4-color);
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
 }
 h5 {
-  font-size: calc(0.95em * var(--heading-scale));
+  font-size: 0.95em;
   color: var(--h5-color);
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
+}
+/* Scholar's Codex (Ink/Vellum): h4/h5 are tonal — same ink as the body
+   (--h4/h5-color alias --ctp-text there), told apart by weight and
+   small-caps rather than a third and fourth accent hue */
+[data-theme="ink"] h4, [data-theme="vellum"] h4 { font-weight: 700; }
+/* pair-scoped */
+[data-theme="ink"] h5, [data-theme="vellum"] h5 {
+  font-weight: 500;
+  font-variant-caps: small-caps;
+  letter-spacing: 0.06em;
 }
 /* h6 — structure through type, not color: uppercase + tracking keeps it
    distinct from the paragraph it heads without another accent slot */
 h6 {
-  font-size: calc(0.8em * var(--heading-scale));
+  font-size: 0.8em;
   color: var(--ctp-subtext1);
   font-weight: 600;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -85,17 +95,15 @@ strong { color: var(--bold-color); font-weight: 600; }
 em { color: var(--italic-color); font-style: italic; }
 cite { font-style: italic; }
 
+/* Quotation, not callout: upright text, one neutral rule, no fill
+   (2026-09-06). Body ink on the ported themes; Ink keeps its faded-vellum
+   and Vellum its sepia via --blockquote-color. Authored emphasis inside a
+   quote stays italic — there is no blanket italic to undo any more. */
 blockquote {
   color: var(--blockquote-color);
-  border-left: 3px solid var(--ctp-mauve);
-  padding: 0.6em 1.2em;
-  margin: 1.2em 0;
-  background: var(--blockquote-bg);
-  border-radius: 0 6px 6px 0;
-  font-style: italic;
-}
-blockquote em, blockquote code {
-  font-style: normal;
+  border-left: 2px solid var(--ctp-surface1);
+  padding: 0.1em 0 0.1em 1.1em;
+  margin: 1.4em 0;
 }
 
 a { color: var(--ctp-blue); text-decoration: none; }
@@ -105,10 +113,13 @@ a:hover { color: var(--ctp-lavender); text-decoration: underline; }
 #content a:visited:not([href^="#"]) { color: var(--link-visited); }
 #content a:visited:not([href^="#"]):hover { color: var(--ctp-lavender); }
 
+/* Section break — a short centred rule, distinct from the h1/h2
+   underline it used to share */
 hr {
   border: none;
-  border-top: 1px solid var(--ctp-surface0);
-  margin: 2.5em 0;
+  border-top: 1px solid var(--ctp-surface1);
+  width: 40%;
+  margin: 2.4em auto;
 }
 
 ul, ol { margin: 0.6em 0; padding-left: 2em; }
@@ -116,11 +127,11 @@ li { margin: 0.3em 0; }
 li::marker { color: var(--ctp-overlay1); }
 
 code {
-  background: var(--ctp-surface0);
+  background: var(--code-bg);
   color: var(--code-fg);
   padding: 0.15em 0.45em;
-  border-radius: 4px;
-  font-family: 'Victor Mono', 'Fira Code', monospace;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
   font-size: 0.88em;
 }
 /* Inline code inside headings — scale down to body-relative size */
@@ -131,7 +142,7 @@ h1 code, h2 code, h3 code, h4 code, h5 code, h6 code {
 pre {
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 1.1em 1.3em;
   overflow-x: auto;
   margin: 1.2em 0;
@@ -142,7 +153,7 @@ pre code {
   background: none;
   color: var(--ctp-text);
   padding: 0;
-  font-size: 12px;
+  font-size: 0.82em;   /* tracks --base-size */
   white-space: pre-wrap;
   word-wrap: break-word;
 }
@@ -150,65 +161,52 @@ pre code {
 .table-scroll {
   overflow-x: auto;
   margin: 1.2em 0;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 table {
   border-collapse: collapse;
   width: 100%;
   margin: 0;    /* wrapper handles spacing */
-  font-size: 13px;
+  font-size: 0.88em;   /* tracks --base-size */
 }
+/* Editorial tables (2026-09-06): authored header casing, neutral 600
+   headers, horizontal rules only. Zebra, cell grid, and row hover are the
+   dense treatment — render.js adds `table.dense` past 8 rows or 5 columns,
+   where a reader has to track a line across a matrix. */
 thead { position: sticky; top: 0; }
 th {
-  background: var(--ctp-mantle);
-  color: var(--ctp-blue);
+  background: var(--ctp-mantle);     /* opaque so the sticky header covers rows */
+  color: var(--ctp-text);
   font-weight: 600;
   text-align: left;
   padding: 10px 14px;
-  border: 1px solid var(--ctp-surface0);
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--ctp-surface1);
+  font-size: 0.92em;
 }
 th[align="center"] { text-align: center; }
 th[align="right"] { text-align: right; }
 td {
   padding: 8px 14px;
-  border: 1px solid var(--ctp-surface0);
+  border-bottom: 1px solid var(--ctp-surface0);
 }
-tr:nth-child(even) { background: var(--row-even-bg); }
-tr:hover { background: var(--row-hover-bg); }
+table.dense th,
+table.dense td { border: 1px solid var(--ctp-surface0); }
+table.dense th { border-bottom-color: var(--ctp-surface1); }
+table.dense tr:nth-child(even) { background: var(--row-even-bg); }
+table.dense tr:hover { background: var(--row-hover-bg); }
 
-img { max-width: 100%; border-radius: 8px; margin: 1em 0; }
+img { max-width: 100%; border-radius: var(--radius-lg); margin: 1em 0; }
 img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -0.1em; border-radius: 0; }
 
-/* Content images — enhanced treatment with border/glow effects */
+/* Content images — still at rest and on hover; the zoom cursor is the
+   affordance, the lightbox is the response (lift + glow removed 2026-09-06) */
 #content img:not(.emoji):not(.tpl-var-img) {
   max-width: 100%;
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
   margin: 1.5em 0;
   border: none;
   box-shadow: none;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
   cursor: zoom-in;
-}
-#content img:not(.emoji):not(.tpl-var-img):hover {
-  transform: translateY(-2px) scale(1.005);
-  border-color: rgba(var(--ctp-blue-rgb), 0.25);
-  box-shadow:
-    0 8px 24px rgba(var(--ctp-mantle-rgb), 0.35),
-    0 0 0 1px rgba(var(--ctp-blue-rgb), 0.12),
-    0 0 20px rgba(var(--ctp-blue-rgb), 0.06);
-}
-/* Latte (light) theme — softer shadows */
-[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img) {
-  box-shadow: none;
-}
-[data-theme="latte"] #content img:not(.emoji):not(.tpl-var-img):hover {
-  box-shadow:
-    0 8px 24px rgba(var(--ctp-mantle-rgb), 0.2),
-    0 0 0 1px rgba(var(--ctp-blue-rgb), 0.15),
-    0 0 20px rgba(var(--ctp-blue-rgb), 0.04);
 }
 /* PNGs with transparent backgrounds — no border/shadow framing */
 #content img[src$=".png"]:not(.emoji):not(.tpl-var-img) {
@@ -223,7 +221,7 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
   text-align: center;
 }
 .content-figure figcaption {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   color: var(--ctp-overlay1);
   margin-top: 8px;
@@ -247,7 +245,7 @@ img.emoji { height: 1em; width: 1em; margin: 0 0.05em 0 0.1em; vertical-align: -
 .hljs-name { color: var(--hljs-function); }
 .hljs-meta { color: var(--hljs-meta); }
 .hljs-regexp { color: var(--hljs-number); }
-.hljs-variable { color: var(--ctp-text); }
+.hljs-variable { color: var(--hljs-params); }   /* body-text colour made it invisible as a token */
 .hljs-params { color: var(--hljs-params); }
 .hljs-property { color: var(--hljs-operator); }
 .hljs-punctuation { color: var(--hljs-punctuation); }
@@ -259,7 +257,7 @@ section.footnotes[data-footnotes] {
   margin-top: 2em;
   padding-top: 1em;
   border-top: 1px solid var(--ctp-surface1);
-  font-size: 0.82em;
+  font-size: 0.875em;   /* scholarly apparatus must survive the 11px minimum */
   line-height: 1.5;
   color: var(--ctp-subtext0);
 }
@@ -297,4 +295,24 @@ a[data-footnote-backref] {
 }
 a[data-footnote-backref]:hover {
   color: var(--ctp-blue);
+}
+
+/* ══════════════════════════════════════════════════════════
+   Micro-typography — progressive, ignored by engines without support
+   ══════════════════════════════════════════════════════════ */
+h1, h2, .home-title, .home-quote-text, .home-card-filename, .status-banner span {
+  text-wrap: balance;
+}
+#content p, #content li, .ProseMirror p, .ProseMirror li {
+  text-wrap: pretty;
+}
+.home-card-preview {
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+/* Numbers that get compared column-wise sit in tabular figures */
+.version-date, .version-stats, .home-workspace-stats, .ws-stats,
+#font-size-display, .instance-row-ago, .instance-menu-count,
+.tab-overflow-count, .diff-stat, .diff-line-num, #word-count {
+  font-variant-numeric: tabular-nums;
 }

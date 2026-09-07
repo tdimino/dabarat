@@ -31,7 +31,7 @@
   padding-left: 16px;
 }
 .diff-filename {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   color: var(--ctp-text);
@@ -40,10 +40,10 @@
   text-overflow: ellipsis;
 }
 .diff-badge {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   padding: 1px 8px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   letter-spacing: 0.3px;
   text-transform: uppercase;
   flex-shrink: 0;
@@ -56,21 +56,24 @@
   background: rgba(var(--ctp-green-rgb), 0.15);
   color: var(--ctp-green);
 }
+/* The exit is a labelled .btn (base-layout.css), not a ghost × — the ×
+   alone at the far right of the header read as decoration, and the float
+   column used to sit on top of it. body.diff-mode drops the floats. */
 .diff-close-btn {
-  background: none;
-  border: none;
-  color: var(--ctp-overlay1);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px 6px;
-  border-radius: 4px;
-  transition: all 0.15s;
   flex-shrink: 0;
   margin-left: 12px;
+  white-space: nowrap;
 }
-.diff-close-btn:hover {
-  color: var(--ctp-text);
-  background: var(--ctp-surface0);
+.diff-close-btn i { font-size: 13px; }
+.diff-close-btn kbd {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1;
+  padding: 2px 4px;
+  margin-left: 2px;
+  border: 1px solid var(--ctp-surface1);
+  border-radius: var(--radius-xs);
+  color: var(--home-control); /* audited on mantle by the tab rows */
 }
 
 /* ── Frontmatter Diff Bar ────────────────────────────── */
@@ -81,7 +84,7 @@
   flex-shrink: 0;
 }
 .diff-fm-bar summary {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   color: var(--ctp-overlay1);
   padding: 6px 16px;
@@ -95,7 +98,7 @@
 }
 .diff-fm-body {
   padding: 8px 16px 12px;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10.5px;
   line-height: 1.5;
   white-space: pre-wrap;
@@ -112,7 +115,7 @@
   padding: 5px 16px;
   background: var(--ctp-crust);
   border-bottom: 1px solid var(--ctp-surface0);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   flex-shrink: 0;
 }
@@ -136,7 +139,7 @@
 .diff-panel::-webkit-scrollbar { width: 6px; }
 .diff-panel::-webkit-scrollbar-thumb {
   background: var(--ctp-surface1);
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
 }
 #diff-panel-left {
   width: var(--diff-split);
@@ -149,7 +152,7 @@
 /* Panel content — inherit #content typography */
 .diff-panel-content {
   padding: 24px 32px 80px;
-  font-family: 'Cormorant Garamond', 'Noto Serif Hebrew', 'Georgia', serif;
+  font-family: var(--font-serif);
   font-size: var(--base-size, 15px);
   line-height: 1.65;
   color: var(--ctp-text);
@@ -158,7 +161,7 @@
 .diff-panel-content h2,
 .diff-panel-content h3,
 .diff-panel-content h4 {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
   color: var(--ctp-text);
   margin: 1.4em 0 0.5em;
@@ -171,14 +174,14 @@
 .diff-panel-content pre {
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 14px 18px;
   overflow-x: auto;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.88em;
 }
 .diff-panel-content code {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 0.88em;
 }
 .diff-panel-content ul, .diff-panel-content ol {
@@ -203,7 +206,7 @@
 }
 .diff-panel-content th {
   background: var(--ctp-mantle);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-weight: 600;
 }
 
@@ -214,7 +217,7 @@
   cursor: col-resize;
   background: transparent;
   flex-shrink: 0;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
   z-index: 2;
 }
 .diff-resize-handle:hover,
@@ -233,10 +236,10 @@ body.diff-resizing * {
 /* ── Diff Block Highlights ───────────────────────────── */
 
 .diff-block {
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   margin: 0;
   padding: 2px 8px;
-  transition: background 0.15s;
+  transition: background var(--dur-base);
 }
 .diff-block.diff-insert {
   background: rgba(var(--ctp-green-rgb), 0.12);
@@ -259,23 +262,38 @@ body.diff-resizing * {
 
 /* ── Latte Overrides ─────────────────────────────────── */
 
-[data-theme="latte"] .diff-badge-current {
+[data-theme="latte"] .diff-badge-current,
+[data-theme="vellum"] .diff-badge-current,
+[data-theme="rose-pine-dawn"] .diff-badge-current,
+[data-theme="tokyo-light"] .diff-badge-current {
   background: rgba(var(--ctp-blue-rgb), 0.12);
   color: var(--ctp-blue);
 }
-[data-theme="latte"] .diff-badge-compare {
+[data-theme="latte"] .diff-badge-compare,
+[data-theme="vellum"] .diff-badge-compare,
+[data-theme="rose-pine-dawn"] .diff-badge-compare,
+[data-theme="tokyo-light"] .diff-badge-compare {
   background: rgba(var(--ctp-green-rgb), 0.10);
   color: var(--ctp-green);
 }
-[data-theme="latte"] .diff-block.diff-insert {
+[data-theme="latte"] .diff-block.diff-insert,
+[data-theme="vellum"] .diff-block.diff-insert,
+[data-theme="rose-pine-dawn"] .diff-block.diff-insert,
+[data-theme="tokyo-light"] .diff-block.diff-insert {
   background: rgba(var(--ctp-green-rgb), 0.08);
   border-left-color: var(--ctp-green);
 }
-[data-theme="latte"] .diff-block.diff-delete {
+[data-theme="latte"] .diff-block.diff-delete,
+[data-theme="vellum"] .diff-block.diff-delete,
+[data-theme="rose-pine-dawn"] .diff-block.diff-delete,
+[data-theme="tokyo-light"] .diff-block.diff-delete {
   background: rgba(var(--ctp-red-rgb), 0.08);
   border-left-color: var(--ctp-red);
 }
-[data-theme="latte"] .diff-block.diff-change {
+[data-theme="latte"] .diff-block.diff-change,
+[data-theme="vellum"] .diff-block.diff-change,
+[data-theme="rose-pine-dawn"] .diff-block.diff-change,
+[data-theme="tokyo-light"] .diff-block.diff-change {
   background: rgba(var(--ctp-yellow-rgb), 0.08);
   border-left-color: var(--ctp-yellow);
 }
@@ -286,7 +304,7 @@ body.diff-resizing * {
   text-align: center;
   padding: 3rem 2rem;
   color: var(--ctp-overlay1);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 14px;
 }
 .diff-identical i {

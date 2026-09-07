@@ -10,6 +10,7 @@ unresponsive one is declared stale.
 import datetime
 import json
 import os
+import time
 import urllib.request
 
 INSTANCE_DIR = os.path.join(os.path.expanduser("~"), ".dabarat", "instances")
@@ -57,7 +58,25 @@ def scan_live(assume_running=None):
     """
     ensure_instance_dir()
     live = []
-    for fname in os.listdir(INSTANCE_DIR):
+    names = os.listdir(INSTANCE_DIR)
+    _sweep_orphan_tab_state(names)
+    # Probe every candidate port at once — the 1 s timeout was paid
+    # serially per sibling (five instances = five seconds at launch)
+    candidate_ports = []
+    for fname in names:
+        if fname.endswith(".pid"):
+            try:
+                candidate_ports.append(int(fname[: -len(".pid")]))
+            except ValueError:
+                pass
+    probe = {}
+    to_probe = [pt for pt in candidate_ports if pt != assume_running]
+    if to_probe:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=min(8, len(to_probe))) as pool:
+            for pt, ok in zip(to_probe, pool.map(server_running, to_probe)):
+                probe[pt] = ok
+    for fname in names:
         if not fname.endswith(".pid"):
             continue
         fpath = os.path.join(INSTANCE_DIR, fname)
@@ -82,7 +101,7 @@ def scan_live(assume_running=None):
                 raise ValueError("implausible pid")
 
             if pid_alive(pid):
-                if port == assume_running or server_running(port):
+                if port == assume_running or probe.get(port, False):
                     live.append((port, pid, started))
                     continue
                 # Alive but not serving: PID reuse, or still starting up.
@@ -107,6 +126,30 @@ def scan_live(assume_running=None):
     return live
 
 
+_ORPHAN_TABS_MAX_AGE = 7 * 86400   # seconds
+
+
+def _sweep_orphan_tab_state(names):
+    """Remove <port>.tabs.json files whose <port>.pid is gone and that are
+    older than a week. Crash-recovery state is consumed by the next
+    `dabarat --port <port>` launch; when that never comes (the port was
+    ephemeral) the file sat forever — seven were found dating to July."""
+    pids = {n[: -len(".pid")] for n in names if n.endswith(".pid")}
+    now = time.time()
+    for n in names:
+        if not n.endswith(".tabs.json"):
+            continue
+        port = n[: -len(".tabs.json")]
+        if port in pids:
+            continue
+        path = os.path.join(INSTANCE_DIR, n)
+        try:
+            if now - os.path.getmtime(path) > _ORPHAN_TABS_MAX_AGE:
+                os.remove(path)
+        except OSError:
+            pass
+
+
 def live_instances():
     """Return [(port, pid)] for all live instances (CLI-compat shape)."""
     return [(port, pid) for port, pid, _ in scan_live()]
@@ -116,13 +159,22 @@ def discover_instances(self_port=None, self_paths=None):
     """Instance rows for GET /api/instances.
 
     The caller passes its own open filepaths so the self row never
-    round-trips over HTTP; siblings get a 1s serial probe each.
+    round-trips over HTTP; siblings are probed in parallel (1 s each,
+    ThreadPoolExecutor in scan_live / here).
     """
     rows = []
-    for port, pid, started in scan_live(assume_running=self_port):
+    found = scan_live(assume_running=self_port)
+    sibling_ports = [pt for pt, _, _ in found if pt != self_port]
+    tab_paths = {}
+    if sibling_ports:
+        from concurrent.futures import ThreadPoolExecutor
+        with ThreadPoolExecutor(max_workers=min(8, len(sibling_ports))) as pool:
+            for pt, paths in zip(sibling_ports,
+                                 pool.map(lambda pt: get_open_filepaths(pt, timeout=1), sibling_ports)):
+                tab_paths[pt] = paths
+    for port, pid, started in found:
         is_self = port == self_port
-        paths = (self_paths or []) if is_self \
-            else get_open_filepaths(port, timeout=1)
+        paths = (self_paths or []) if is_self else tab_paths.get(port, [])
         rows.append({
             "port": port,
             "pid": pid,

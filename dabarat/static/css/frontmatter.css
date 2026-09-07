@@ -13,12 +13,14 @@
   border-radius: 0;
   padding: 7px 16px 7px 14px;
   margin: 10px 56px 16px;
-  max-width: 900px;
+  max-width: var(--measure);
   cursor: pointer;
-  transition: border-left-color 0.15s, box-shadow 0.15s;
-  font-family: 'DM Sans', sans-serif;
+  transition: border-left-color var(--dur-base), box-shadow var(--dur-base);
+  font-family: var(--font-sans);
   font-size: 12px;
   color: var(--ctp-subtext0);
+  /* The accent glow behind the rail stays: without it the bar blends into
+     the document (Tom, 2026-09-06 — a removal was tried and reverted) */
   box-shadow: -6px 0 18px -6px rgba(var(--ctp-mauve-rgb), 0.25);
 }
 .fm-indicator:hover {
@@ -67,72 +69,57 @@
   flex-wrap: nowrap;
   overflow: hidden;
 }
+/* Descriptive chips (version, type, model, temperature, semantic-styles)
+   are one neutral recipe — the same chip home cards use — so a field
+   never changes hue between the bar and the card (2026-09-06). Lineage
+   links below keep pink: they are navigable, not descriptive. */
 .fm-ind-detail {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: 4px;
-  background: rgba(var(--ctp-mauve-rgb), 0.10);
-  color: var(--ctp-mauve);
-  border: 1px solid rgba(var(--ctp-mauve-rgb), 0.18);
+  border-radius: var(--radius-sm);
+  background: rgba(var(--ctp-overlay1-rgb), 0.15);
+  color: var(--badge-neutral-fg);
+  border: 1px solid rgba(var(--ctp-overlay1-rgb), 0.25);
   letter-spacing: 0.2px;
   white-space: nowrap;
 }
-.fm-ind-detail.version {
-  background: rgba(var(--ctp-blue-rgb), 0.12);
-  color: var(--ctp-blue);
-  border-color: rgba(var(--ctp-blue-rgb), 0.22);
-}
-.fm-ind-detail.type {
-  background: rgba(var(--ctp-green-rgb), 0.10);
-  color: var(--ctp-green);
-  border-color: rgba(var(--ctp-green-rgb), 0.18);
-}
-.fm-ind-detail.model {
-  background: rgba(var(--ctp-teal-rgb), 0.10);
-  color: var(--ctp-teal);
-  border-color: rgba(var(--ctp-teal-rgb), 0.18);
-}
-.fm-ind-detail.temperature {
-  background: rgba(var(--ctp-peach-rgb), 0.10);
-  color: var(--ctp-peach);
-  border-color: rgba(var(--ctp-peach-rgb), 0.18);
-}
-.fm-ind-detail.semantic {
-  background: rgba(var(--ctp-flamingo-rgb), 0.10);
-  color: var(--ctp-flamingo);
-  border-color: rgba(var(--ctp-flamingo-rgb), 0.18);
-  padding: 2px 5px;
-}
+.fm-ind-detail.semantic { padding: 2px 5px; }
 .fm-ind-detail.semantic i { font-size: 11px; }
 
 /* Lineage link chips — navigable parent/child */
 .fm-ind-link {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   background: rgba(var(--ctp-pink-rgb), 0.10);
   color: var(--ctp-pink);
   border: 1px solid rgba(var(--ctp-pink-rgb), 0.18);
   letter-spacing: 0.2px;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background var(--dur-base), border-color var(--dur-base);
 }
 .fm-ind-link:hover {
   background: rgba(var(--ctp-pink-rgb), 0.22);
   border-color: rgba(var(--ctp-pink-rgb), 0.35);
 }
 .fm-ind-link i { font-size: 9px; margin-right: 2px; }
-[data-theme="latte"] .fm-ind-link {
+[data-theme="latte"] .fm-ind-link,
+[data-theme="vellum"] .fm-ind-link,
+[data-theme="rose-pine-dawn"] .fm-ind-link,
+[data-theme="tokyo-light"] .fm-ind-link {
   background: rgba(var(--ctp-pink-rgb), 0.08);
   color: var(--ctp-pink);
   border-color: rgba(var(--ctp-pink-rgb), 0.15);
 }
-[data-theme="latte"] .fm-ind-link:hover {
+[data-theme="latte"] .fm-ind-link:hover,
+[data-theme="vellum"] .fm-ind-link:hover,
+[data-theme="rose-pine-dawn"] .fm-ind-link:hover,
+[data-theme="tokyo-light"] .fm-ind-link:hover {
   background: rgba(var(--ctp-pink-rgb), 0.18);
   border-color: rgba(var(--ctp-pink-rgb), 0.30);
 }
@@ -141,17 +128,23 @@
 .fm-lineage-link {
   background: rgba(var(--ctp-pink-rgb), 0.10);
   color: var(--ctp-pink);
-  transition: background 0.15s;
+  transition: background var(--dur-base);
 }
 .fm-lineage-link i { font-size: 10px; margin-right: 3px; }
 .fm-lineage-link.fm-nav:hover {
   background: rgba(var(--ctp-pink-rgb), 0.25);
 }
-[data-theme="latte"] .fm-lineage-link {
+[data-theme="latte"] .fm-lineage-link,
+[data-theme="vellum"] .fm-lineage-link,
+[data-theme="rose-pine-dawn"] .fm-lineage-link,
+[data-theme="tokyo-light"] .fm-lineage-link {
   background: rgba(var(--ctp-pink-rgb), 0.08);
   color: var(--ctp-pink);
 }
-[data-theme="latte"] .fm-lineage-link.fm-nav:hover {
+[data-theme="latte"] .fm-lineage-link.fm-nav:hover,
+[data-theme="vellum"] .fm-lineage-link.fm-nav:hover,
+[data-theme="rose-pine-dawn"] .fm-lineage-link.fm-nav:hover,
+[data-theme="tokyo-light"] .fm-lineage-link.fm-nav:hover {
   background: rgba(var(--ctp-pink-rgb), 0.18);
 }
 
@@ -161,59 +154,34 @@
   font-size: 10px;
   color: var(--ctp-overlay0);
   opacity: 0;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-base);
   padding-left: 16px;
   white-space: nowrap;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
 }
 .fm-indicator:hover .fm-ind-expand { opacity: 1; }
 
 /* Latte overrides */
-[data-theme="latte"] .fm-indicator {
+[data-theme="latte"] .fm-indicator,
+[data-theme="vellum"] .fm-indicator,
+[data-theme="rose-pine-dawn"] .fm-indicator,
+[data-theme="tokyo-light"] .fm-indicator {
   --fm-accent: var(--ctp-blue);
   box-shadow: -6px 0 18px -6px rgba(var(--ctp-blue-rgb), 0.18);
 }
-[data-theme="latte"] .fm-indicator:hover {
+[data-theme="latte"] .fm-indicator:hover,
+[data-theme="vellum"] .fm-indicator:hover,
+[data-theme="rose-pine-dawn"] .fm-indicator:hover,
+[data-theme="tokyo-light"] .fm-indicator:hover {
   border-left-color: var(--ctp-lavender);
   box-shadow: -6px 0 24px -4px rgba(var(--ctp-blue-rgb), 0.30);
 }
-[data-theme="latte"] .fm-ind-detail {
-  background: rgba(var(--ctp-mauve-rgb), 0.08);
-  color: var(--ctp-mauve);
-  border-color: rgba(var(--ctp-mauve-rgb), 0.15);
-}
-[data-theme="latte"] .fm-ind-detail.version {
-  background: rgba(var(--ctp-blue-rgb), 0.08);
-  color: var(--ctp-blue);
-  border-color: rgba(var(--ctp-blue-rgb), 0.15);
-}
-[data-theme="latte"] .fm-ind-detail.type {
-  background: rgba(var(--ctp-green-rgb), 0.08);
-  color: var(--ctp-green);
-  border-color: rgba(var(--ctp-green-rgb), 0.15);
-}
-[data-theme="latte"] .fm-ind-detail.model {
-  background: rgba(var(--ctp-teal-rgb), 0.08);
-  color: var(--ctp-teal);
-  border-color: rgba(var(--ctp-teal-rgb), 0.15);
-}
-[data-theme="latte"] .fm-ind-detail.temperature {
-  background: rgba(var(--ctp-peach-rgb), 0.08);
-  color: var(--ctp-peach);
-  border-color: rgba(var(--ctp-peach-rgb), 0.15);
-}
-[data-theme="latte"] .fm-ind-detail.semantic {
-  background: rgba(var(--ctp-flamingo-rgb), 0.08);
-  color: var(--ctp-flamingo);
-  border-color: rgba(var(--ctp-flamingo-rgb), 0.15);
-}
-
 /* ── Frontmatter Popup ─────────────────────────────── */
 .fm-popup-backdrop {
   position: fixed;
   inset: 0;
   background: rgba(var(--ctp-mantle-rgb), 0.55);
-  z-index: 9000;
+  z-index: var(--z-modal);
   display: flex;
   align-items: center;      /* true centre, both axes — never top-anchored */
   justify-content: center;
@@ -230,12 +198,12 @@
   max-height: 86vh;
   background: var(--ctp-base);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 14px;
-  box-shadow: 0 16px 56px rgba(var(--ctp-mantle-rgb), 0.55), 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.08);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--elevation-2), 0 0 0 1px rgba(var(--ctp-blue-rgb), 0.08);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  animation: fmSlideIn 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: fmSlideIn 0.18s var(--ease-out-back);
 }
 @keyframes fmSlideIn {
   from { opacity: 0; transform: translateY(-12px); }
@@ -250,7 +218,7 @@
   background: var(--ctp-mantle);
 }
 .fm-popup-title {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 17px;
   font-weight: 700;
   color: var(--ctp-text);
@@ -271,10 +239,10 @@
   color: var(--ctp-text);
   outline: 2px solid var(--ctp-blue);
   outline-offset: 2px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
 }
 .fm-popup-close:active { transform: scale(0.96); }
-.fm-popup-close { transition: color 150ms, transform 150ms ease-out; }
+.fm-popup-close { transition: color var(--dur-base), transform var(--dur-base) ease-out; }
 .fm-popup-body {
   padding: 20px 22px;
   overflow-y: auto;
@@ -295,7 +263,7 @@
   gap: 3px;
 }
 .fm-popup-key {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
   color: var(--ctp-overlay1);
@@ -304,7 +272,7 @@
   margin-bottom: 4px;
 }
 .fm-popup-val {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 13px;
   color: var(--ctp-text);
   word-break: break-all;
@@ -329,12 +297,12 @@
   width: 100%;
   border-collapse: separate;
   border-spacing: 0;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   margin-top: 8px;
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   overflow: hidden;
 }
 .fm-popup-var-table th {
@@ -383,11 +351,11 @@
 .fm-ss-dot {
   width: 12px;
   height: 12px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   flex-shrink: 0;
 }
 .fm-ss-label {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ctp-subtext0);
   letter-spacing: 0.2px;
@@ -402,7 +370,7 @@
   border-top: 1px solid var(--ctp-surface0);
 }
 .fm-ss-rule {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   color: var(--ctp-overlay1);
   display: flex;
@@ -412,8 +380,8 @@
 .fm-ss-rule code {
   font-size: 10px;
   padding: 1px 5px;
-  background: rgba(var(--ctp-surface0-rgb), 0.5);
-  border-radius: 3px;
+  background: var(--code-bg);
+  border-radius: var(--radius-xs);
   color: var(--ctp-text);
 }
 .fm-ss-arrow {
@@ -444,7 +412,7 @@
 }
 .fm-popup-fields .fm-popup-val {
   margin: 0;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13.5px;
   line-height: 1.5;
   color: var(--ctp-text);
@@ -452,7 +420,7 @@
   overflow-wrap: anywhere;
 }
 .fm-popup-fields .fm-popup-val-literal {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 12.5px;
   color: var(--hljs-number);
 }
@@ -493,7 +461,7 @@
 .fm-popup-raw {
   background: var(--ctp-mantle);
   border: 1px solid var(--ctp-surface0);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font-size: 11px;
   color: var(--ctp-text);
@@ -511,30 +479,30 @@
 }
 .pmc-row + .pmc-row { margin-top: 5px; }
 .pmc-name {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 700;
   color: var(--ctp-text);
   letter-spacing: -0.01em;
 }
 .pmc-badge {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
   padding: 1px 8px;
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
   letter-spacing: 0.3px;
 }
-.pmc-version {
-  background: rgba(var(--ctp-blue-rgb), 0.15);
-  color: var(--ctp-blue);
-}
+/* Same neutral chip as the indicator bar and the home card — a field
+   never changes hue between surfaces (the popup was missed on the first
+   pass and showed "refactor" green here, grey in the bar; 2026-09-06) */
+.pmc-version,
 .pmc-type {
-  background: rgba(var(--ctp-green-rgb), 0.15);
-  color: var(--ctp-green);
+  background: rgba(var(--ctp-overlay1-rgb), 0.15);
+  color: var(--badge-neutral-fg);
 }
 .pmc-detail {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   color: var(--ctp-subtext0);
 }
@@ -546,17 +514,17 @@
 .pmc-label {
   /* Carries real values (frontmatter arrays), not just badges — 11px
      floor, and the per-theme badge role token rather than raw green */
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   padding: 2px 9px;
-  border-radius: 10px;
+  border-radius: var(--radius-xl);
   background: rgba(var(--ctp-green-rgb), 0.15);
   color: var(--badge-green-fg);
   letter-spacing: 0.3px;
 }
 .pmc-tag {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   color: var(--ctp-overlay1);
   letter-spacing: 0.2px;
@@ -565,14 +533,6 @@
 .pmc-row-tags { margin-top: 6px; }
 
 /* Latte overrides */
-[data-theme="latte"] .pmc-version {
-  background: rgba(var(--ctp-blue-rgb), 0.10);
-  color: var(--ctp-blue);
-}
-[data-theme="latte"] .pmc-type {
-  background: rgba(var(--ctp-green-rgb), 0.10);
-  color: var(--ctp-green);
-}
 [data-theme="latte"] .pmc-label,
 [data-theme="vellum"] .pmc-label,
 [data-theme="rose-pine-dawn"] .pmc-label,
@@ -587,8 +547,8 @@
 .tpl-var-pill {
   display: inline;
   padding: 1px 6px;
-  border-radius: 4px;
-  font-family: 'Victor Mono', 'Fira Code', monospace;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
   font-size: 0.88em;
   background: rgba(var(--ctp-mauve-rgb), 0.18);
   color: var(--tpl-pill-mustache);
@@ -610,13 +570,13 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   font-size: 0.82em;
   white-space: nowrap;
   background: var(--ctp-surface0);
   color: var(--ctp-text);
   border: 1px solid var(--ctp-surface1);
-  z-index: 1000;
+  z-index: var(--z-menu);
   pointer-events: none;
-  box-shadow: 0 4px 12px rgba(var(--ctp-mantle-rgb), 0.3);
+  box-shadow: var(--elevation-1);
 }

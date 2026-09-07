@@ -9,8 +9,8 @@
   background: var(--toc-bg, var(--ctp-mantle));
   border-left: 1px solid var(--ctp-surface0);
   transform: translateX(100%);
-  transition: transform 280ms cubic-bezier(0.4, 0, 0.2, 1);
-  z-index: 15;
+  transition: transform var(--dur-slow) var(--ease-standard);
+  z-index: var(--z-panel);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -37,7 +37,7 @@
 }
 
 .version-panel-label {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 600;
   text-transform: uppercase;
@@ -55,7 +55,7 @@
 
 /* Which file this timeline is about — the panel's identity line */
 #version-panel-filename {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 600;
   color: var(--ctp-text);
@@ -76,7 +76,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: all 0.15s;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   flex-shrink: 0;
 }
 .version-panel-close:hover {
@@ -112,7 +112,7 @@
   padding: 10px 12px 10px 44px;
   position: relative;
   cursor: pointer;
-  transition: background 150ms;
+  transition: background var(--dur-base);
   outline: none;
 }
 /* Tint, not a surface swap: --ctp-surface0 is a cold grey slab on the
@@ -138,7 +138,7 @@
   border-radius: 50%;
   background: var(--ctp-surface1);
   border: 2px solid var(--toc-bg, var(--ctp-mantle));
-  transition: all 150ms;
+  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   z-index: 1;
 }
 .version-entry:hover::before {
@@ -150,7 +150,7 @@
 
 /* ── Entry content ───────────────────────────────────── */
 .version-date {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 500;
   color: var(--ctp-subtext0);
@@ -173,26 +173,26 @@
   font-size: 10px;
   padding: 1px 4px;
   margin-left: auto;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   display: inline-flex;
   align-items: center;
-  transition: color 0.12s, background 0.12s;
+  transition: color var(--dur-fast), background var(--dur-fast);
 }
 .version-excerpt-toggle:hover {
   color: var(--ctp-blue);
   background: rgba(var(--ctp-blue-rgb), 0.10);
 }
 .version-excerpt {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1.5;
   margin: 6px 0 2px;
   padding: 6px 8px;
   background: rgba(var(--ctp-surface0-rgb), 0.6);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   overflow-x: auto;
 }
-.version-excerpt-line { white-space: pre; }
+.version-excerpt-line { white-space: pre; overflow: hidden; text-overflow: ellipsis; }
 .version-excerpt-line.add { color: var(--stat-add); }
 .version-excerpt-line.del { color: var(--stat-del); }
 /* subtext1, not subtext0 — the surface0 wash lifts the panel's mantle
@@ -200,7 +200,7 @@
 .version-excerpt-line.ctx { color: var(--ctp-subtext1); }
 .version-excerpt-line.more { color: var(--home-meta); }
 .version-excerpt-none {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   color: var(--home-meta);
 }
@@ -214,19 +214,19 @@
 }
 .version-stat-add {
   color: var(--stat-add);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 .version-stat-del {
   color: var(--stat-del);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
 }
 
 /* Action buttons — hover reveal */
 .version-actions {
   opacity: 0;
-  transition: opacity 150ms;
+  transition: opacity var(--dur-base);
   display: flex;
   gap: 6px;
   margin-top: 6px;
@@ -237,36 +237,28 @@
 }
 
 .version-btn {
-  /* Revealed only on row hover, over the hover tint — overlay2 at 10px
-     fell under AA there, so these read at subtext tier with a card-colored
-     fill that separates them from the tinted row */
+  /* Deltas over the .btn recipe. Revealed only on row hover, over the
+     hover tint — overlay2 at 10px fell under AA there, so these read at
+     subtext tier with a card-colored fill that separates them from the
+     tinted row */
   background: var(--card-bg, var(--ctp-mantle));
-  border: 1px solid var(--ctp-overlay0);
+  border-color: var(--ctp-overlay0);
   color: var(--ctp-subtext0);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 11px;
   padding: 0 9px;
   min-height: 26px;          /* sidebar control: comfortable, not touch-sized */
-  border-radius: 4px;
-  cursor: pointer;
+  border-radius: var(--radius-sm);
   display: flex;
-  align-items: center;
   gap: 4px;
-  transition: color 150ms, border-color 150ms, transform 150ms ease-out;
 }
-/* Hover/focus: accent on the border only — text stays at subtext tier,
-   because raw blue/yellow on --card-bg (white in light themes) is well
-   under AA. The border is a non-text indicator and clears 3:1. */
+/* Hover/focus: accent on the border only, NO fill — text stays at subtext
+   tier, because raw blue/yellow on --card-bg (white in light themes) is
+   well under AA. The border is a non-text indicator and clears 3:1. */
 .version-btn:hover,
 .version-btn:focus-visible {
+  background: var(--card-bg, var(--ctp-mantle));
   color: var(--ctp-text);
   border-color: var(--ctp-blue);
 }
-.version-btn:focus-visible {
-  outline: 2px solid var(--ctp-blue);
-  outline-offset: 1px;
-}
-.version-btn:active { transform: scale(0.96); }
 .version-btn-restore:hover,
 .version-btn-restore:focus-visible {
   border-color: var(--ctp-yellow);
@@ -286,7 +278,7 @@
   opacity: 0.5;
 }
 .version-empty p {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   margin: 4px 0;
 }
@@ -303,7 +295,7 @@
 .skeleton-line {
   height: 10px;
   background: var(--ctp-surface0);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   margin: 6px 0;
   animation: skeletonShimmer 1.5s ease-in-out infinite;
   background-size: 200% 100%;
@@ -324,9 +316,7 @@
 
 /* ── History Toggle Button (floating, mirrors edit-toggle) ── */
 #history-toggle {
-  position: fixed;
-  right: 14px;
-  top: 126px;
+  position: relative;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-blue);
@@ -338,9 +328,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 25;
-  box-shadow: 0 2px 10px rgba(var(--ctp-mantle-rgb), 0.25);
-  transition: transform 0.2s ease, box-shadow 0.25s ease, border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  box-shadow: var(--elevation-1);
+  transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
 @supports (backdrop-filter: blur(8px)) {
   #history-toggle {
@@ -395,14 +384,14 @@ body.home-active #history-toggle {
   right: -8px;
   background: var(--ctp-blue);
   color: var(--ctp-crust);
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 8px;
   font-weight: 700;
   line-height: 1;
   padding: 3px 5px;
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   pointer-events: none;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition: opacity var(--dur-slower) ease, transform var(--dur-slower) ease;
 }
 .history-chip.out {
   opacity: 0;
@@ -447,7 +436,7 @@ body.home-active #history-toggle {
 
 /* ── Global activity entries ─────────────────────────── */
 .version-entry.global .version-file {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 12px;
   color: var(--ctp-text);
   margin: 1px 0 2px;
@@ -466,7 +455,7 @@ body.home-active #history-toggle {
 
 /* ── Day separators ──────────────────────────────────── */
 .version-day-sep {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.08em;
@@ -479,13 +468,13 @@ body.home-active #history-toggle {
 
 /* ── Source badges + pins + labels ───────────────────── */
 .version-source-badge {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   margin-left: 6px;
   vertical-align: 1px;
 }
@@ -513,7 +502,7 @@ body.home-active #history-toggle {
 }
 
 .version-label {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-style: italic;
   color: var(--ctp-text);
@@ -544,9 +533,9 @@ body.home-active #history-toggle {
   min-width: 0;
   background: var(--ctp-surface0);
   border: 1px solid var(--ctp-surface1);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--ctp-text);
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   padding: 2px 6px;
   outline: none;
@@ -570,28 +559,45 @@ body.home-active #history-toggle {
   font-weight: 400;
 }
 
-/* ── Floating-button labels — circle expands into a pill on hover ──
-   Shared by all four right-edge toggles (Notes/Edit/History/Justify).
-   Lives here (late in the concat order) so it wins over each button's
-   own base rules in annotations/editor/responsive css. */
+/* ── Floating column — Notes / Edit / History / Justify ──
+   One fixed flex column under the tab bar; a hidden button simply drops
+   out of the ladder (no per-button top offsets to keep in step, which is
+   how History and Justify once shared top: 126px below 1400px). The
+   column steps left of the annotations gutter whenever the gutter is
+   painted (`body.gutter-visible`, kept live by syncGutterLayout in
+   annotations.js) — the buttons used to sit on the gutter header, covering
+   its close button. Lives here (late in the concat order) so it wins over
+   each button's own base rules in annotations/editor/responsive css. */
+#float-column {
+  position: fixed;
+  top: 46px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: var(--z-float);
+  transition: right var(--dur-mid) ease, opacity var(--dur-mid) ease, visibility var(--dur-mid);
+}
+body.gutter-visible #float-column {
+  right: 294px; /* 280px gutter (annotations.css) + the 14px edge inset */
+}
+/* Compare view owns the right edge (its exit lives in the diff header) and
+   edit mode has its own toolbar — no floats in either */
+body.diff-mode #float-column,
+body.edit-mode #float-column {
+  display: none;
+}
 #annotations-toggle, #edit-toggle, #history-toggle, #justify-toggle {
   width: auto;
   min-width: 34px;
   padding: 0 9px;
-  border-radius: 17px;
-  /* Restates each button's base transition list (they're identical) so
-     opacity/visibility can join it for the version-panel yield below */
-  transition: transform 0.2s ease, box-shadow 0.25s ease,
-              border-color 0.2s ease, color 0.2s ease, background 0.2s ease,
-              opacity 0.2s ease, visibility 0.2s;
+  border-radius: var(--radius-pill);
 }
 /* The panel (z-index 15, right edge) occupies these buttons' footprint —
    timeline rows and excerpts would render beneath them. Yield while open;
    visibility drops them from the tab order so focus never goes invisible. */
-body.version-panel-open #annotations-toggle,
-body.version-panel-open #edit-toggle,
-body.version-panel-open #history-toggle,
-body.version-panel-open #justify-toggle {
+body.version-panel-open #float-column {
   opacity: 0;
   visibility: hidden;
 }
@@ -600,10 +606,10 @@ body.version-panel-open #justify-toggle {
   opacity: 0;
   overflow: hidden;
   white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
-  transition: max-width 0.25s ease, opacity 0.2s ease, margin-right 0.25s ease;
+  transition: max-width var(--dur-slow) ease, opacity var(--dur-mid) ease, margin-right var(--dur-slow) ease;
 }
 #annotations-toggle:hover .float-btn-label,
 #edit-toggle:hover .float-btn-label,

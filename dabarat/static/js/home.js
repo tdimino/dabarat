@@ -9,36 +9,41 @@ let _workspaceStats = null;
 
 const _homeTimeAgo = formatTimeAgoShared;
 
-/* Accent color map for file extensions */
-const _accentColors = {
-  md: 'var(--ctp-blue)',
-  markdown: 'var(--ctp-blue)',
-  txt: 'var(--ctp-green)',
-  mdown: 'var(--ctp-teal)',
-  mkd: 'var(--ctp-teal)',
-};
+/* The view the home screen will actually show. With no folder chosen the
+   Files view has nothing to browse, so every dispatch falls through to
+   Recent — the segmented control and the rail label must say so too, or
+   "Files" sits lit over a list of recent files (critique, 2026-09-06). */
+function _effectiveHomeView() {
+  if (_activeWorkspace) return 'workspace';
+  return (_homeViewMode === 'recent' || !_fileBrowserPath) ? 'recent' : 'workspace';
+}
 
-/* Smart badge detection based on filename/path patterns */
+/* Smart badge detection based on filename/path patterns. `hue` is the raw
+   accent the badge's wash is mixed from — the rail's hue dot and the card's
+   top strip take it, so one file kind is one colour on every surface. */
 const _fileBadges = [
-  { test: (n, p) => /\.prompt\.md$/i.test(n), icon: 'ph-lightning', label: 'prompt', css: 'home-badge-prompt' },
-  { test: (n, p) => n.toLowerCase() === 'claude.md' || n.toLowerCase() === 'agents.md', icon: 'ph-robot', label: 'agent config', css: 'home-badge-agent' },
-  { test: (n, p) => /^plan[-_]|plans?\//i.test(p) || /^plan/i.test(n), icon: 'ph-map-trifold', label: 'plan', css: 'home-badge-plan' },
-  { test: (n, p) => n.toLowerCase() === 'spec.md', icon: 'ph-blueprint', label: 'spec', css: 'home-badge-spec' },
-  { test: (n, p) => n.toLowerCase() === 'readme.md', icon: 'ph-book-open', label: 'readme', css: 'home-badge-readme' },
-  { test: (n, p) => n.toLowerCase() === 'architecture.md', icon: 'ph-tree-structure', label: 'architecture', css: 'home-badge-arch' },
-  { test: (n, p) => n.toLowerCase() === 'changelog.md' || n.toLowerCase() === 'changes.md', icon: 'ph-list-bullets', label: 'changelog', css: 'home-badge-changelog' },
-  { test: (n, p) => n.toLowerCase() === 'todo.md' || n.toLowerCase() === 'todos.md', icon: 'ph-check-square', label: 'todo', css: 'home-badge-todo' },
-  { test: (n, p) => n.toLowerCase() === 'license.md' || n.toLowerCase() === 'license.txt', icon: 'ph-scales', label: 'license', css: 'home-badge-license' },
-  { test: (n, p) => /research|dossier/i.test(n), icon: 'ph-magnifying-glass', label: 'research', css: 'home-badge-research' },
+  { test: (n, p) => /\.prompt\.md$/i.test(n), icon: 'ph-lightning', label: 'prompt', css: 'home-badge-prompt', hue: 'var(--ctp-yellow)' },
+  { test: (n, p) => n.toLowerCase() === 'claude.md' || n.toLowerCase() === 'agents.md', icon: 'ph-robot', label: 'agent config', css: 'home-badge-agent', hue: 'var(--ctp-mauve)' },
+  { test: (n, p) => /^plan[-_]|plans?\//i.test(p) || /^plan/i.test(n), icon: 'ph-map-trifold', label: 'plan', css: 'home-badge-plan', hue: 'var(--ctp-sky)' },
+  { test: (n, p) => n.toLowerCase() === 'spec.md', icon: 'ph-blueprint', label: 'spec', css: 'home-badge-spec', hue: 'var(--ctp-teal)' },
+  { test: (n, p) => n.toLowerCase() === 'readme.md', icon: 'ph-book-open', label: 'readme', css: 'home-badge-readme', hue: 'var(--ctp-blue)' },
+  { test: (n, p) => n.toLowerCase() === 'architecture.md', icon: 'ph-tree-structure', label: 'architecture', css: 'home-badge-arch', hue: 'var(--ctp-flamingo)' },
+  { test: (n, p) => n.toLowerCase() === 'changelog.md' || n.toLowerCase() === 'changes.md', icon: 'ph-list-bullets', label: 'changelog', css: 'home-badge-changelog', hue: 'var(--ctp-green)' },
+  { test: (n, p) => n.toLowerCase() === 'todo.md' || n.toLowerCase() === 'todos.md', icon: 'ph-check-square', label: 'todo', css: 'home-badge-todo', hue: 'var(--ctp-peach)' },
+  { test: (n, p) => n.toLowerCase() === 'license.md' || n.toLowerCase() === 'license.txt', icon: 'ph-scales', label: 'license', css: 'home-badge-license', hue: 'var(--ctp-overlay1)' },
+  { test: (n, p) => /research|dossier/i.test(n), icon: 'ph-magnifying-glass', label: 'research', css: 'home-badge-research', hue: 'var(--ctp-lavender)' },
 ];
 
-function _detectFileBadge(filename, filepath) {
+function _fileBadgeFor(filename, filepath) {
   for (const badge of _fileBadges) {
-    if (badge.test(filename, filepath)) {
-      return `<span class="home-badge ${badge.css}"><i class="ph ${badge.icon}"></i> ${badge.label}</span>`;
-    }
+    if (badge.test(filename, filepath)) return badge;
   }
-  return '';
+  return null;
+}
+
+function _detectFileBadge(filename, filepath) {
+  const badge = _fileBadgeFor(filename, filepath);
+  return badge ? `<span class="home-badge ${badge.css}"><i class="ph ${badge.icon}"></i> ${badge.label}</span>` : '';
 }
 
 /* ── Show / Hide ─────────────────────────────────────── */
@@ -69,7 +74,7 @@ async function showHomeScreen() {
   if (fmIndicator) fmIndicator.remove();
 
   /* Update TOC label and window title */
-  if (tocLabel) tocLabel.textContent = _activeWorkspace ? _activeWorkspace.name || 'Workspace' : 'Workspace';
+  if (tocLabel) tocLabel.textContent = _homeRailLabel();
   document.title = 'dabarat';
 
   const content = document.getElementById('content');
@@ -87,12 +92,18 @@ async function showHomeScreen() {
   /* Load view + sidebar entries */
   if (_activeWorkspace) {
     await _loadWorkspaceMultiRoot();
-  } else if (_homeViewMode === 'recent' || !_fileBrowserPath) {
+  } else if (_effectiveHomeView() === 'recent') {
     await _loadRecentView();
     _loadRecentSidebarEntries();
   } else {
     await _loadWorkspaceView(_fileBrowserPath);
   }
+}
+
+/* Rail label: the workspace's name, else the view the rail is showing */
+function _homeRailLabel() {
+  if (_activeWorkspace) return _activeWorkspace.name || 'Workspace';
+  return _effectiveHomeView() === 'recent' ? 'Recent' : 'Workspace';
 }
 
 function hideHomeScreen() {
@@ -144,20 +155,23 @@ function _renderWorkspaceSidebar() {
 
   /* Legacy single-folder mode */
   const home = os_home || '/Users';
-  const shortPath = _fileBrowserPath ? _fileBrowserPath.replace(home, '~') : '~/';
-  const statsHtml = _workspaceStats
+  /* No folder yet: say so, and keep the pencil visible — "~/" read as a
+     workspace and hid the only way to choose one behind a hover reveal */
+  const shortPath = _fileBrowserPath ? _fileBrowserPath.replace(home, '~') : 'Choose a folder…';
+  const view = _effectiveHomeView();
+  const statsHtml = _workspaceStats && view === 'workspace'
     ? `<div class="ws-stats">${_workspaceStats.fileCount} files &middot; ${_workspaceStats.totalWords.toLocaleString()} words</div>`
     : '';
 
   tocScroll.innerHTML = `
     <div class="ws-header">
-      <div class="ws-path" data-action="browse-pick-dir" title="Click to change workspace folder" style="cursor:pointer">${escapeHtml(shortPath)} <i class="ph ph-pencil-simple ws-path-edit"></i></div>
+      <button type="button" class="ws-path${_fileBrowserPath ? '' : ' ws-path-unset'}" data-action="browse-pick-dir" title="${_fileBrowserPath ? 'Change workspace folder' : 'Choose a workspace folder'}">${escapeHtml(shortPath)} <i class="ph ph-pencil-simple ws-path-edit"></i></button>
       <div class="ws-actions">
-        <div class="ws-toggle">
-          <button class="ws-btn ${_homeViewMode === 'workspace' ? 'active' : ''}" data-action="set-view-workspace" title="Browse workspace files">
+        <div class="ws-toggle" role="group" aria-label="Sidebar view">
+          <button class="ws-btn ${view === 'workspace' ? 'active' : ''}" aria-pressed="${view === 'workspace'}" data-action="set-view-workspace" title="Browse workspace files">
             <i class="ph ph-folder"></i> Files
           </button>
-          <button class="ws-btn ${_homeViewMode === 'recent' ? 'active' : ''}" data-action="set-view-recent" title="Recently opened files">
+          <button class="ws-btn ${view === 'recent' ? 'active' : ''}" aria-pressed="${view === 'recent'}" data-action="set-view-recent" title="Recently opened files">
             <i class="ph ph-clock-counter-clockwise"></i> Recent
           </button>
         </div>
@@ -312,6 +326,7 @@ async function _loadPinnedFileSidebarEntries(files) {
     </div>`;
   });
   list.innerHTML = html;
+  rovingList(list, '.ws-entry');
 
   /* Attach listeners */
   list.querySelectorAll('.ws-file').forEach(el => {
@@ -387,6 +402,7 @@ async function _loadWorkspaceSidebarEntries(dirPath, targetId) {
     });
 
     list.innerHTML = html;
+    rovingList(list, '.ws-entry');
 
     /* Attach event listeners via delegation (avoids XSS from inline onclick) */
     list.querySelectorAll('.ws-dir').forEach(el => {
@@ -434,20 +450,29 @@ async function _loadRecentSidebarEntries() {
       return;
     }
 
+    /* Row anatomy (critique, 2026-09-06): every recent entry is markdown,
+       so the file glyph said nothing; the badge chip repeated the same word
+       down the rail and, with the time-ago, left the name ~95px to
+       truncate in. Now: a 6px hue dot for the file kind (label in the
+       tooltip / accessible name), the name free to wrap to two lines, the
+       time in its own right column. */
     let html = '';
     entries.forEach(entry => {
       const filename = entry.filename || entry.name || '';
-      const badge = _detectFileBadge(filename, entry.path || '');
+      const badge = _fileBadgeFor(filename, entry.path || '');
       const timeAgo = entry.lastOpened ? _homeTimeAgo(entry.lastOpened) : '';
+      const dot = badge
+        ? `<span class="ws-entry-dot" style="--dot: ${badge.hue}" role="img" aria-label="${escapeHtml(badge.label)}" title="${escapeHtml(badge.label)}"></span>`
+        : '<span class="ws-entry-dot ws-entry-dot-plain" aria-hidden="true"></span>';
       html += `<div class="ws-entry ws-file ws-recent-entry" data-path="${escapeHtml(entry.path)}">
-        <i class="ph ph-file-md"></i>
+        ${dot}
         <span class="ws-entry-name">${escapeHtml(filename)}</span>
-        ${badge ? `<span class="ws-entry-badge">${badge}</span>` : ''}
         ${timeAgo ? `<span class="ws-entry-size">${timeAgo}</span>` : ''}
       </div>`;
     });
 
     list.innerHTML = html;
+    rovingList(list, '.ws-entry');
 
     list.querySelectorAll('.ws-file').forEach(el => {
       el.addEventListener('click', () => openRecentFile(el.dataset.path));
@@ -491,12 +516,21 @@ async function setHomeView(mode) {
     await browsePickDir();
   }
 
-  /* Update sidebar button states */
-  document.querySelectorAll('.ws-btn').forEach(btn => btn.classList.remove('active'));
-  const activeBtn = mode === 'workspace'
-    ? document.querySelector('.ws-btn[data-action="set-view-workspace"]')
-    : document.querySelector('.ws-btn[data-action="set-view-recent"]');
-  if (activeBtn) activeBtn.classList.add('active');
+  /* Sync the control and the rail label with the view actually shown — a
+     cancelled folder picker leaves the mode on 'workspace' but the list on
+     Recent, so derive the state, never trust `mode` */
+  _syncHomeViewControl();
+}
+
+function _syncHomeViewControl() {
+  const view = _effectiveHomeView();
+  document.querySelectorAll('.ws-toggle .ws-btn').forEach(btn => {
+    const on = btn.dataset.action === (view === 'workspace' ? 'set-view-workspace' : 'set-view-recent');
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', String(on));
+  });
+  const tocLabel = document.getElementById('toc-label');
+  if (tocLabel && homeScreenActive) tocLabel.textContent = _homeRailLabel();
 }
 
 function setWorkspace(dirPath) {
@@ -598,6 +632,8 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
   } else {
     gridHtml = `<div class="home-grid">${entries.map((e, i) => _buildCard(e, i)).join('')}</div>`;
   }
+  /* Card filenames are h3s — give them the h2 section the layout implies */
+  if (gridHtml) gridHtml = '<h2 class="sr-only">' + escapeHtml(title) + '</h2>' + gridHtml;
 
   /* Recent workspaces bar (only when no workspace active) */
   let recentWsHtml = '';
@@ -649,6 +685,10 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
       openRecentFile(card.dataset.filepath);
     });
   });
+  /* Cards are keyboard-reachable: one tab stop, arrows walk the grid,
+     Enter/Space open. Native <article> semantics kept (role: null). */
+  rovingList(content.querySelector('.home-screen'), '.home-card', { role: null, containerRole: null, grid: true });
+  _markPreviewOverflow(content);
   content.querySelectorAll('.home-card-remove').forEach(btn => {
     const card = btn.closest('.home-card');
     btn.addEventListener('click', (e) => {
@@ -712,9 +752,20 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
   }
 }
 
-/* Day-group label for a card — mirrors the version timeline's separators */
+/* Show a preview's bottom fade only where the excerpt really overflows —
+   the fade is a "more below" signal, not a decoration over short text */
+function _markPreviewOverflow(root) {
+  root.querySelectorAll('.home-card-preview-md').forEach(el => {
+    el.classList.toggle('overflowing', el.scrollHeight > el.clientHeight + 1);
+  });
+}
+
+/* Day-group label for a card — mirrors the version timeline's separators.
+   The recent list is ordered by lastOpened, so the label must come from the
+   same key or the groups run out of order ("Sep 1" above "Today"); mtime is
+   only the fallback for entries that were never opened here. */
 function _cardDayLabel(e) {
-  const ts = e.mtime ? new Date(e.mtime * 1000) : (e.lastOpened ? new Date(e.lastOpened) : null);
+  const ts = e.lastOpened ? new Date(e.lastOpened) : (e.mtime ? new Date(e.mtime * 1000) : null);
   if (!ts || isNaN(ts)) return '';
   const now = new Date();
   const startOfDay = d => new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -740,8 +791,12 @@ async function _fillLastSaveStat() {
 /* ── Card Builder ────────────────────────────────────── */
 function _buildCard(e, i, opts) {
   const hero = !!(opts && opts.hero);
-  const ext = (e.filename || e.name || '').split('.').pop().toLowerCase();
-  const accentColor = _accentColors[ext] || 'var(--ctp-blue)';
+  /* Top strip: the file kind's own accent (same map as the rail dot and
+     the badge wash), else the theme's title pigment. It used to be keyed
+     by extension, which made every .md strip blue — decoration claiming
+     to be information, and on Ink twelve blue rails under a gold title. */
+  const kindBadge = _fileBadgeFor(e.filename || e.name || '', e.path || '');
+  const accentColor = kindBadge ? kindBadge.hue : 'var(--home-title)';
 
   const tagPills = (e.tags || []).slice(0, 4).map(t =>
     `<span class="home-tag">${escapeHtml(t)}</span>`
@@ -915,13 +970,9 @@ async function browsePickDir() {
   } catch (e) {
     console.error('browse-folder failed:', e);
     if (!document.getElementById('browse-failed-banner')) {
-      const banner = document.createElement('div');
-      banner.id = 'browse-failed-banner';
-      banner.className = 'status-banner';
-      banner.innerHTML = '<i class="ph ph-warning"></i>' +
-        '<span>Could not open the folder picker — is the server still running?</span>';
-      document.body.appendChild(banner);
-      setTimeout(() => banner.remove(), 4000);
+      _showStatusBanner('browse-failed-banner',
+        'Could not open the folder picker — is the server still running?',
+        'error', { timeout: 4000 });
     }
   }
 }
@@ -1281,6 +1332,8 @@ async function _loadWorkspaceMultiRoot() {
       openRecentFile(card.dataset.filepath);
     });
   });
+  rovingList(content.querySelector('.home-screen'), '.home-card', { role: null, containerRole: null, grid: true });
+  _markPreviewOverflow(content);
   content.querySelectorAll('.home-card-versions').forEach(btn => {
     const card = btn.closest('.home-card');
     btn.addEventListener('click', (e) => {
@@ -1338,10 +1391,13 @@ async function _restoreWorkspace() {
   return false;
 }
 
-/* Refresh relative timestamps every minute */
+/* Refresh relative timestamps every minute. Cards emit .home-card-updated
+   (icon + text); the old selector targeted .home-card-time, which no card
+   renders, so a window left open kept saying "3 min. ago" (critique). */
 setInterval(() => {
   if (!homeScreenActive) return;
-  document.querySelectorAll('.home-card-time[data-timestamp]').forEach(el => {
-    el.textContent = _homeTimeAgo(el.dataset.timestamp);
+  document.querySelectorAll('.home-card-updated[data-timestamp]').forEach(el => {
+    const text = el.lastChild;
+    if (text && text.nodeType === Node.TEXT_NODE) text.textContent = ' ' + _homeTimeAgo(el.dataset.timestamp);
   });
 }, 60000);

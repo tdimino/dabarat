@@ -17,8 +17,14 @@ FM_RE = re.compile(
     re.DOTALL,
 )
 
-# Cache: (filepath, mtime) → (frontmatter_dict, body_str)
+# Cache: (filepath, mtime) → (frontmatter_dict, body_str). Bounded FIFO
+# under a lock — it holds full document bodies and is hit from every
+# handler thread (the only unbounded, unlocked dict in the server before
+# 2026-09-06).
+import threading as _threading
 _fm_cache: dict = {}
+_FM_CACHE_MAX = 256
+_fm_cache_lock = _threading.Lock()
 
 
 def _coerce(val: str):
@@ -157,8 +163,10 @@ def get_frontmatter(filepath: str) -> tuple:
         return {}, ""
 
     key = (filepath, mtime)
-    if key in _fm_cache:
-        return _fm_cache[key]
+    with _fm_cache_lock:
+        hit = _fm_cache.get(key)
+    if hit is not None:
+        return hit
 
     try:
         with open(filepath, encoding='utf-8') as f:
@@ -167,5 +175,8 @@ def get_frontmatter(filepath: str) -> tuple:
         return {}, ""
 
     result = parse_frontmatter_text(raw)
-    _fm_cache[key] = result
+    with _fm_cache_lock:
+        if len(_fm_cache) >= _FM_CACHE_MAX:
+            _fm_cache.pop(next(iter(_fm_cache)))
+        _fm_cache[key] = result
     return result

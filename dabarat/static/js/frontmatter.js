@@ -58,15 +58,19 @@ function renderFrontmatterIndicator(fm) {
   const name = fm.name || fm.slug || 'frontmatter';
 
   /* Build chips */
+  /* Frontmatter values are document-controlled text — every one is
+     escaped before it touches innerHTML (CLAUDE.md: textContent-only for
+     frontmatter values) */
   const chips = [];
-  if (fm.version != null) chips.push('<span class="fm-ind-detail version">v' + fm.version + '</span>');
-  if (fm.type) chips.push('<span class="fm-ind-detail type">' + fm.type + '</span>');
-  if (fm.model) chips.push('<span class="fm-ind-detail model">' + fm.model + '</span>');
-  if (fm.temperature != null) chips.push('<span class="fm-ind-detail temperature">t=' + fm.temperature + '</span>');
+  const chip = (cls, text) => '<span class="fm-ind-detail ' + cls + '">' + escapeHtml(String(text)) + '</span>';
+  if (fm.version != null) chips.push(chip('version', 'v' + fm.version));
+  if (fm.type) chips.push(chip('type', fm.type));
+  if (fm.model) chips.push(chip('model', fm.model));
+  if (fm.temperature != null) chips.push(chip('temperature', 't=' + fm.temperature));
   const vars = fm.variables;
-  if (Array.isArray(vars) && vars.length > 0) chips.push('<span class="fm-ind-detail">{{' + vars.length + '}}</span>');
-  const deps = fm.depends_on || [];
-  if (deps.length > 0) chips.push('<span class="fm-ind-detail">' + deps.length + 'd</span>');
+  if (Array.isArray(vars) && vars.length > 0) chips.push(chip('', '{{' + vars.length + '}}'));
+  const deps = Array.isArray(fm.depends_on) ? fm.depends_on : [];
+  if (deps.length > 0) chips.push(chip('', deps.length + 'd'));
   if (fm.semantic_styles && fm.semantic_styles.rules) chips.push('<span class="fm-ind-detail semantic"><i class="ph ph-palette"></i></span>');
 
   /* Lineage chips */
@@ -246,7 +250,13 @@ function showFrontmatterPopup(fm) {
     metaFields.forEach(([k, v]) => {
       const item = document.createElement('div');
       item.className = 'fm-popup-meta-item';
-      item.innerHTML = '<span class="fm-popup-key">' + k + '</span><span class="fm-popup-val">' + v + '</span>';
+      const key = document.createElement('span');
+      key.className = 'fm-popup-key';
+      key.textContent = k;
+      const val = document.createElement('span');
+      val.className = 'fm-popup-val';
+      val.textContent = String(v);
+      item.append(key, val);
       metaRow.appendChild(item);
     });
     body.appendChild(metaRow);
@@ -300,12 +310,19 @@ function showFrontmatterPopup(fm) {
     const tbody = document.createElement('tbody');
     vars.forEach(v => {
       const tr = document.createElement('tr');
-      tr.innerHTML =
-        '<td class="fm-var-name">' + (v.name || '') + '</td>' +
-        '<td>' + (v.type || '') + '</td>' +
-        '<td>' + (v.default !== undefined ? v.default : '') + '</td>' +
-        '<td>' + (v.required ? 'yes' : '') + '</td>' +
-        '<td class="fm-var-desc">' + (v.description || '') + '</td>';
+      const cells = [
+        ['fm-var-name', v.name || ''],
+        ['', v.type || ''],
+        ['', v.default !== undefined ? v.default : ''],
+        ['', v.required ? 'yes' : ''],
+        ['fm-var-desc', v.description || ''],
+      ];
+      cells.forEach(([cls, text]) => {
+        const td = document.createElement('td');
+        if (cls) td.className = cls;
+        td.textContent = typeof text === 'object' ? JSON.stringify(text) : String(text);
+        tr.appendChild(td);
+      });
       tbody.appendChild(tr);
     });
     table.appendChild(tbody);

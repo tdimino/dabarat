@@ -4,7 +4,7 @@
 .lightbox {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: var(--z-lightbox);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -14,13 +14,16 @@
   -webkit-backdrop-filter: blur(16px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity var(--dur-slow) ease;
 }
 .lightbox.active {
   opacity: 1;
   pointer-events: auto;
 }
-[data-theme="latte"] .lightbox {
+[data-theme="latte"] .lightbox,
+[data-theme="vellum"] .lightbox,
+[data-theme="rose-pine-dawn"] .lightbox,
+[data-theme="tokyo-light"] .lightbox {
   background: rgba(var(--ctp-mantle-rgb), 0.75);
 }
 
@@ -42,8 +45,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.15s;
-  z-index: 1001;
+  transition: background var(--dur-base), transform var(--dur-base);
+  z-index: calc(var(--z-lightbox) + 1);
 }
 .lightbox-close:hover {
   background: rgba(var(--ctp-surface1-rgb), 0.8);
@@ -62,14 +65,14 @@
   max-width: 90vw;
   max-height: 80vh;
   object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 24px 80px rgba(var(--ctp-mantle-rgb), 0.6);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--elevation-2);
+  transition: transform var(--dur-slower) var(--ease-out-expo);
 }
 
 /* Caption */
 .lightbox-caption {
-  font-family: 'DM Sans', sans-serif;
+  font-family: var(--font-sans);
   font-size: 13px;
   color: var(--ctp-subtext1);
   margin-top: 16px;
@@ -100,7 +103,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s, transform 0.15s;
+  transition: background var(--dur-base), transform var(--dur-base);
 }
 .lightbox-prev:hover,
 .lightbox-next:hover {
@@ -109,7 +112,7 @@
 }
 
 .lightbox-counter {
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--ctp-overlay1);
 }
@@ -118,6 +121,6 @@
 .lightbox-close:focus-visible,
 .lightbox-prev:focus-visible,
 .lightbox-next:focus-visible {
-  outline: 2px solid var(--ctp-lavender);
+  outline: 2px solid var(--ctp-blue);   /* one focus hue app-wide */
   outline-offset: 2px;
 }

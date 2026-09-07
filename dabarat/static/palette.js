@@ -21,32 +21,44 @@ const CommandPalette = {
   /* ── Tanit SVG (simplified Sign of Tanit) ───────────── */
   TANIT_SVG: '<svg viewBox="0 0 24 26" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="4.5" r="3.5"/><line x1="3" y1="11" x2="21" y2="11"/><path d="M7 11 L12 24 L17 11" fill="none"/></svg>',
 
-  /* ── Theme Preview Colors (5 per preset) ─────────── */
-  THEME_PREVIEW: {
-    'mocha':          ['#1e1e2e', '#cdd6f4', '#89b4fa', '#cba6f7', '#f38ba8'],
-    'latte':          ['#eff1f5', '#4c4f69', '#1e66f5', '#8839ef', '#d20f39'],
-    'rose-pine':      ['#191724', '#e0def4', '#31748f', '#c4a7e7', '#eb6f92'],
-    'rose-pine-dawn': ['#faf4ed', '#575279', '#56949f', '#907aa9', '#b4637a'],
-    'tokyo-storm':    ['#24283b', '#c0caf5', '#7aa2f7', '#bb9af7', '#f7768e'],
-    'tokyo-light':    ['#e6e7ed', '#343b58', '#2959aa', '#7847bd', '#8c4351'],
+  /* ── Theme Preview Swatches (5 per preset) ───────── */
+  /* Read from the stylesheet through a probe element carrying the
+     theme's data-theme attribute — the old hand-copied table had no
+     Ink/Vellum rows and stale Latte/Tokyo Light accents */
+  _swatchCache: {},
+  themeSwatches(theme) {
+    if (this._swatchCache[theme]) return this._swatchCache[theme];
+    const probe = document.createElement('div');
+    probe.setAttribute('data-theme', theme);
+    probe.style.display = 'none';
+    document.body.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    const colors = ['--ctp-base', '--ctp-text', '--ctp-blue', '--ctp-mauve', '--ctp-red']
+      .map(v => cs.getPropertyValue(v).trim()).filter(Boolean);
+    probe.remove();
+    if (colors.length === 5) this._swatchCache[theme] = colors;
+    return colors;
   },
 
   /* ── Tag Color Map ──────────────────────────────────── */
+  /* Text goes through the --badge-<hue>-fg role tokens (audited as
+     "tag <hue> .20" over the wash on base) — raw accents failed 4.5:1 on
+     every light theme, and archived/overlay0 failed on all eight */
   TAG_COLORS: {
-    draft:     { bg: 'rgba(var(--ctp-yellow-rgb), 0.20)', fg: 'var(--ctp-yellow)' },
-    reviewed:  { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--ctp-green)' },
-    final:     { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--ctp-blue)' },
-    important: { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--ctp-peach)' },
-    archived:  { bg: 'rgba(var(--ctp-overlay0-rgb), 0.20)', fg: 'var(--ctp-overlay0)' },
-    research:  { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--ctp-mauve)' },
-    personal:  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--ctp-pink)' },
-    'prompt:system':    { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--ctp-blue)' },
-    'prompt:user':      { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--ctp-green)' },
-    'prompt:assistant': { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--ctp-mauve)' },
-    'prompt:chain':     { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--ctp-peach)' },
-    'prompt:cognitive':  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--ctp-pink)' },
-    'prompt:tested':    { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--ctp-teal)' },
-    _default:  { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--ctp-teal)' },
+    draft:     { bg: 'rgba(var(--ctp-yellow-rgb), 0.20)', fg: 'var(--badge-yellow-fg)' },
+    reviewed:  { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--badge-green-fg)' },
+    final:     { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--badge-blue-fg)' },
+    important: { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--badge-peach-fg)' },
+    archived:  { bg: 'rgba(var(--ctp-overlay0-rgb), 0.20)', fg: 'var(--badge-neutral-fg)' },
+    research:  { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--badge-mauve-fg)' },
+    personal:  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--badge-pink-fg)' },
+    'prompt:system':    { bg: 'rgba(var(--ctp-blue-rgb), 0.20)', fg: 'var(--badge-blue-fg)' },
+    'prompt:user':      { bg: 'rgba(var(--ctp-green-rgb), 0.20)', fg: 'var(--badge-green-fg)' },
+    'prompt:assistant': { bg: 'rgba(var(--ctp-mauve-rgb), 0.20)', fg: 'var(--badge-mauve-fg)' },
+    'prompt:chain':     { bg: 'rgba(var(--ctp-peach-rgb), 0.20)', fg: 'var(--badge-peach-fg)' },
+    'prompt:cognitive':  { bg: 'rgba(var(--ctp-pink-rgb), 0.20)', fg: 'var(--badge-pink-fg)' },
+    'prompt:tested':    { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--badge-teal-fg)' },
+    _default:  { bg: 'rgba(var(--ctp-teal-rgb), 0.20)', fg: 'var(--badge-teal-fg)' },
   },
   PREDEFINED_TAGS: ['draft', 'reviewed', 'final', 'important', 'archived', 'research', 'personal',
     'prompt:system', 'prompt:user', 'prompt:assistant', 'prompt:chain', 'prompt:cognitive', 'prompt:tested'],
@@ -172,10 +184,7 @@ const CommandPalette = {
       { id: 'toggle-justify', label: 'Toggle Justified Text', icon: 'ph-text-align-justify', action: () => toggleJustify() },
       { id: 'font-up', label: 'Increase Font', icon: 'ph-text-aa', action: () => adjustFont(1) },
       { id: 'font-down', label: 'Decrease Font', icon: 'ph-text-aa', action: () => adjustFont(-1) },
-      { id: 'toggle-ann', label: 'Toggle Annotations', icon: 'ph-chat-circle-dots', action: () => {
-        const g = document.getElementById('annotations-gutter');
-        g.classList.contains('overlay-open') ? closeGutterOverlay() : openGutterOverlay();
-      }},
+      { id: 'toggle-ann', label: 'Toggle Annotations', icon: 'ph-chat-circle-dots', action: () => toggleGutter() },
       { id: 'version-history', label: 'Version History', icon: 'ph-clock-counter-clockwise', shortcut: '⇧⌘H', action: () => {
         if (typeof openVersionPanel === 'function') openVersionPanel();
       }},
@@ -184,7 +193,7 @@ const CommandPalette = {
       }},
       { id: 'show-variables', label: 'Show Variables', icon: 'ph-brackets-curly', action: () => {
         if (typeof diffState !== 'undefined' && diffState.active) return;
-        if (window.innerWidth <= 1400) openGutterOverlay();
+        revealGutter();
         switchGutterTab('variables');
       }},
       { id: 'toggle-twemoji', label: 'Cycle Emoji Style', icon: 'ph-smiley', action: () => cycleEmojiStyle() },
@@ -245,6 +254,7 @@ const CommandPalette = {
     container.className = 'palette-container';
 
     container.setAttribute('role', 'dialog');
+    container.setAttribute('aria-modal', 'true');
     container.setAttribute('aria-label', 'Command palette');
 
     const input = document.createElement('input');
@@ -796,7 +806,7 @@ const CommandPalette = {
 
       const dots = document.createElement('div');
       dots.className = 'tp-dots';
-      (this.THEME_PREVIEW[theme] || []).forEach(color => {
+      this.themeSwatches(theme).forEach(color => {
         const dot = document.createElement('span');
         dot.style.background = color;
         dots.appendChild(dot);
@@ -962,12 +972,6 @@ const CommandPalette = {
     fileInput.style.display = 'none';
     imgPanel.appendChild(fileInput);
 
-    if (typeof Vibrant === 'undefined') {
-      const notice = document.createElement('div');
-      notice.className = 'tp-error';
-      notice.textContent = 'Image palette extraction unavailable (Vibrant.js not loaded)';
-      imgPanel.insertBefore(notice, dropzone);
-    }
     dropzone.addEventListener('click', () => fileInput.click());
     dropzone.addEventListener('dragover', (e) => { e.preventDefault(); dropzone.classList.add('dragover'); });
     dropzone.addEventListener('dragleave', (e) => { if (!dropzone.contains(e.relatedTarget)) dropzone.classList.remove('dragover'); });
@@ -1054,6 +1058,10 @@ const CommandPalette = {
     this.selectedIndex = 0;
     this._filter('');
     this.els.backdrop.classList.add('visible');
+    /* Focus-modal: Tab cycles inside the container, focus returns to the
+       opener on close (openDialog, utils.js) */
+    if (this._dialog) this._dialog.close({ skipFocusReturn: true });
+    this._dialog = openDialog(this.els.container, { modal: true, initialFocus: this.els.input });
     this.els.input.focus();
 
     /* First-open stagger — never re-stagger on filter keystrokes (Raycast principle) */
@@ -1074,6 +1082,7 @@ const CommandPalette = {
     this._tagMode = false;
     this._settingsMode = false;
     this.els.backdrop.classList.remove('visible');
+    if (this._dialog) { this._dialog.close(); this._dialog = null; }
   },
 
   /* ── Build Full Command List ───────────────────────── */

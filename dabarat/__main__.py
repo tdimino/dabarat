@@ -7,6 +7,7 @@ Usage:
   python3 -m dabarat --add <file.md> [--port PORT]
   python3 -m dabarat --annotate <file.md> --text "..." --comment "..." [--author NAME]
   --max-instances N   Limit concurrent server instances (default 5)
+  --new-window        Always open a fresh instance on a free port (skips the reuse dialog)
 """
 
 import atexit
@@ -211,8 +212,6 @@ def cmd_annotate(argv):
     author_name = _flag_value(argv, "--author", "Claude")
     ann_type = _flag_value(argv, "--type", "comment")
 
-    data, _ = annotations.read(filepath)
-
     ann = {
         "id": uuid.uuid4().hex[:6],
         "anchor": {"text": text, "heading": "", "offset": 0},
@@ -226,8 +225,10 @@ def cmd_annotate(argv):
         "resolved": False,
         "replies": [],
     }
-    data["annotations"].append(ann)
-    annotations.write(filepath, data)
+    with annotations.locked(filepath):
+        data, _ = annotations.read(filepath)
+        data["annotations"].append(ann)
+        annotations.write(filepath, data)
 
     if ann_type == "bookmark":
         bookmarks.save(
@@ -282,21 +283,6 @@ _VALID_THEMES = ["ink", "vellum", "mocha", "latte", "rose-pine", "rose-pine-dawn
 def _find_chrome():
     """Return the first available Chrome-family binary path, or None."""
     return next((p for p in _CHROME_PATHS if os.path.exists(p)), None)
-
-
-def _clear_pyc():
-    """Remove stale .pyc files so template/static changes take effect."""
-    cache_dir = os.path.join(os.path.dirname(__file__), "__pycache__")
-    if os.path.isdir(cache_dir):
-        for f in os.listdir(cache_dir):
-            if f.endswith(".pyc"):
-                try:
-                    os.remove(os.path.join(cache_dir, f))
-                except OSError:
-                    # Concurrent launches race each other clearing the same
-                    # cache (Finder can spawn several instances at once) —
-                    # a file already gone is a success, not a crash
-                    pass
 
 
 def _port_listeners(port):
@@ -601,7 +587,6 @@ def cmd_export_pdf(argv):
         s.bind(("127.0.0.1", 0))
         port = s.getsockname()[1]
 
-    _clear_pyc()
 
     # Start ephemeral server in background thread
     PreviewHandler.add_tab(filepath)
@@ -629,11 +614,12 @@ def cmd_export_pdf(argv):
     # Export via CDP (Chrome DevTools Protocol) for reliable margin control
     from .pdf_export import print_to_pdf
 
-    date = _flag_value(argv, "--date")
-    url = f"http://127.0.0.1:{port}?theme={theme}&export=1"
-    if date:
-        from urllib.parse import quote
-        url += f"&date={quote(date)}"
+    from urllib.parse import quote
+    # One date param: the shell reads the FIRST ?date= value, so the user's
+    # --date must be the only one (a default-then-override pair silently
+    # ignored the flag)
+    date = _flag_value(argv, "--date") or datetime.date.today().isoformat()
+    url = f"http://127.0.0.1:{port}?theme={theme}&export=1&date={quote(date)}"
 
     try:
         print_to_pdf(
@@ -711,7 +697,10 @@ def cmd_serve(argv):
     # Tab reuse: if any instances are running, ask what to do.
     # Every outcome here is non-destructive \u2014 running servers are never killed.
     live = _live_instances()
-    if live and files:
+    if live and files and "--new-window" in argv:
+        port = _find_free_port()
+        print(f"\033[38;2;88;91;112mOpening new window on port {port}\033[0m")
+    elif live and files:
         instances_info = []
         for inst_port, inst_pid in live:
             open_paths = _get_open_filepaths(inst_port)
@@ -759,7 +748,6 @@ def cmd_serve(argv):
         print(f"or --max-instances N to raise the limit.\033[0m")
         sys.exit(1)
 
-    _clear_pyc()
     _kill_zombie_on_port(port)
 
     PreviewHandler.default_author = default_author
@@ -797,7 +785,9 @@ def cmd_serve(argv):
         n_files = len(ws_data.get("files", []))
         print(f"\033[38;2;137;180;250m\U0001f4c1 {ws_name} ({n_folders} folders, {n_files} files)\033[0m")
     print(f"\033[38;2;166;227;161m\U0001f310 http://127.0.0.1:{port}\033[0m")
-    inst_count = len(_live_instances())
+    # `live` (scanned above, before this instance registered) + this one —
+    # a second scan would re-pay every sibling probe just to print a count
+    inst_count = len(live) + 1
     features = "Live reload \u00b7 Catppuccin \u00b7 Tabs \u00b7 Annotations"
     if ws_path:
         features += " \u00b7 Workspace"

@@ -28,8 +28,22 @@ let currentFrontmatter = null;
 /* Emoji style: twitter | openmoji | noto | native */
 let emojiStyle = localStorage.getItem('dabarat-emoji-style') || 'twitter';
 
-/* Reduced-motion preference — checked once at load */
-const _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* Reduced-motion preference — live: the CSS blanket already follows the
+   OS toggle, and the Motion One guards (`window.Motion && !_prefersReducedMotion`)
+   read this variable at call time, so it must follow too */
+let _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* Inactive tabs start with only a changeKey (init.js) — content arrives on
+   first activation. `loaded` is the truth; content truthiness is kept as a
+   fallback for paths that assign content directly (save, restore), and a
+   legitimately empty file is loaded once fetched. Every "render if we have
+   the document" fall-through must use this, never `t.content` alone. */
+function _tabLoaded(t) {
+  return !!(t && (t.loaded || t.content));
+}
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (e) => {
+  _prefersReducedMotion = e.matches;
+});
 
 /* Variable manifest panel state */
 let activeGutterTab = 'notes';

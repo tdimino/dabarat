@@ -20,22 +20,27 @@ async function init() {
 
   renderTabBar();
 
-  /* Fetch all content in parallel */
+  /* Active tab gets its content now; inactive tabs only learn their
+     changeKey (a stat-only probe) so their 2 s poll can answer with
+     {unchanged} instead of shipping every document at startup —
+     switchTab lazy-loads content on first activation */
   await Promise.all(
     Object.keys(tabs).map(id =>
-      fetch('/api/content?tab=' + id)
-        .then(r => r.json())
-        .then(data => {
-          tabs[id].content = data.content;
-          tabs[id].body = data.body;
-          tabs[id].mtime = data.mtime;
-          tabs[id].changeKey = data.changeKey;
-          tabs[id].frontmatter = data.frontmatter || null;
-          if (id === activeTabId) {
+      (id === activeTabId
+        ? fetch('/api/content?tab=' + id).then(r => r.json()).then(data => {
+            if (data.error) return;
+            tabs[id].content = data.content;
+            tabs[id].body = data.body;
+            tabs[id].mtime = data.mtime;
+            tabs[id].changeKey = data.changeKey;
+            tabs[id].frontmatter = data.frontmatter || null;
+            tabs[id].loaded = true;
             currentFrontmatter = tabs[id].frontmatter;
-          }
-        })
-        .catch(() => {})
+          })
+        : fetch('/api/mtime?tab=' + id).then(r => r.json()).then(data => {
+            if (!data.error && data.changeKey) tabs[id].changeKey = data.changeKey;
+          })
+      ).catch(() => {})
     )
   );
 
@@ -74,7 +79,31 @@ async function init() {
         img.addEventListener('error', resolve, { once: true });
       });
     });
-    await Promise.all([...imgPromises, document.fonts.ready]);
+    /* Hebrew fonts are injected on demand by render(); a just-added
+       stylesheet has not started its font fetches when fonts.ready is
+       first consulted, so ask for the faces explicitly. Google splits
+       each family into unicode-range faces — the default sample text
+       (a space) would only fetch the latin subset, so pass a Hebrew
+       letter to force the face the document actually needs */
+    const hebrewLink = document.getElementById('dabarat-hebrew-fonts');
+    const hebrewReady = hebrewLink
+      ? new Promise(resolve => {
+          const go = () => Promise.all([
+            document.fonts.load('400 16px "Noto Serif Hebrew"', '\u05d0'),
+            document.fonts.load('400 16px "Noto Sans Hebrew"', '\u05d0'),
+          ]).then(resolve, resolve);
+          if (hebrewLink.sheet) go();
+          else {
+            hebrewLink.addEventListener('load', go, { once: true });
+            hebrewLink.addEventListener('error', resolve, { once: true });
+          }
+          setTimeout(resolve, 6000);   /* never wedge an export on a CDN */
+        })
+      : Promise.resolve();
+    await Promise.all([...imgPromises, hebrewReady]);
+    /* Re-read fonts.ready AFTER the explicit loads: a promise captured
+       alongside them could already be resolved from before the link */
+    await document.fonts.ready;
     const sentinel = document.createElement('div');
     sentinel.id = 'dabarat-render-complete';
     document.body.appendChild(sentinel);

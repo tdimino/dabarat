@@ -184,7 +184,10 @@ def main() -> int:
             )
             browser = Browser(debug_port)
             browser.wait("document.readyState === 'complete' && !!document.getElementById('content')", timeout=30.0)
-            # Tiptap loads as an async ES module from esm.sh
+            # Tiptap is lazy (template.py loadTiptap): trigger the ESM fetch the
+            # way enterEditMode does, then wait for it
+            browser.wait("typeof window.loadTiptap === 'function'", timeout=30.0)
+            browser.evaluate("(window.loadTiptap(), true)")
             browser.wait("!!window.Tiptap && !!window.Tiptap.Editor", timeout=30.0)
 
             report(

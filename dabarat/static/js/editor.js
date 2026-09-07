@@ -108,7 +108,7 @@ function enterWysiwygMode() {
       textarea.spellcheck = true;
       textarea.placeholder = 'Start writing... (Tiptap failed — raw markdown mode)';
       textarea.value = editState.savedContent;
-      textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:"Victor Mono",monospace;font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
+      textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:var(--font-mono);font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
       mount.appendChild(textarea);
       textarea.focus();
       textarea.addEventListener('input', () => {
@@ -157,7 +157,7 @@ function enterTextareaMode() {
   textarea.spellcheck = true;
   textarea.placeholder = 'Start writing... (Tiptap unavailable — raw markdown mode)';
   textarea.value = editState.savedContent;
-  textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:"Victor Mono",monospace;font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
+  textarea.style.cssText = 'width:100%;height:100%;background:transparent;color:var(--ctp-text);border:none;outline:none;resize:none;padding:2rem 2.5rem;font-family:var(--font-mono);font-size:13px;line-height:1.7;tab-size:2;white-space:pre-wrap;word-wrap:break-word;';
   mount.appendChild(textarea);
   textarea.focus();
 
@@ -177,8 +177,41 @@ function enterTextareaMode() {
 }
 
 /* ── Enter / Exit ───────────────────────────────────── */
-function enterEditMode() {
-  if (editState.active) return;
+let _editModeLoading = false;
+async function enterEditMode() {
+  if (editState.active || _editModeLoading) return;
+  const tabAtStart = activeTabId;
+  const homeAtStart = homeScreenActive;
+  if (!tabAtStart || !tabs[tabAtStart]) return;
+  _editModeLoading = true;
+  updateEditStatus('Loading editor…');
+  try {
+    /* A never-activated tab has no content yet — editing it would open
+       an empty editor whose save passes the conflict check */
+    if (!_tabLoaded(tabs[tabAtStart])) await fetchTabContent(tabAtStart);
+    /* Tiptap is fetched on first use (template.py loadTiptap); the raw
+       textarea remains the fallback when the CDN is unreachable */
+    if (!window.Tiptap && typeof window.loadTiptap === 'function') {
+      try {
+        await window.loadTiptap();
+      } catch (e) {
+        console.warn('Tiptap unavailable, using textarea:', e);
+      }
+    }
+  } finally {
+    _editModeLoading = false;
+  }
+  if (editState.active) return;   /* something else opened it meanwhile */
+  /* The awaits above can take seconds on a slow CDN: bail if the user
+     moved on (switched/closed the tab, went Home) or the fetch failed */
+  if (activeTabId !== tabAtStart || !tabs[tabAtStart]) return;
+  if (homeScreenActive && !homeAtStart) return;
+  if (!_tabLoaded(tabs[tabAtStart])) {
+    _showStatusBanner('edit-load-failed-banner',
+      'Could not load ' + tabs[tabAtStart].filename + ' for editing — is the server reachable?',
+      'error', { timeout: 6000 });
+    return;
+  }
   if (window.Tiptap) {
     enterWysiwygMode();
   } else {
@@ -258,28 +291,16 @@ function exitEditMode(force) {
 /* ── External-change banner (edit mode) ──────────────── */
 function _showExternalChangeBanner() {
   if (document.getElementById('external-change-banner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'external-change-banner';
-  banner.className = 'status-banner';
-  banner.innerHTML = '<i class="ph ph-warning"></i>' +
-    '<span>File changed on disk while editing.</span>' +
-    '<button data-action="reload">Reload</button>' +
-    '<button data-action="dismiss">Dismiss</button>';
-  banner.addEventListener('click', async (e) => {
-    const btn = e.target.closest('[data-action]');
-    if (!btn) return;
-    if (btn.dataset.action === 'reload') {
+  _showStatusBanner('external-change-banner', 'File changed on disk while editing.', 'warn', {
+    actions: [{ label: 'Reload', action: async (banner) => {
       if (editState.dirty && !confirm('Discard your unsaved changes and reload from disk?')) return;
       banner.remove();
       const tabId = editState.tabId;
       await exitEditMode(true);  /* wait out the exit animation's doRestore */
       await fetchTabContent(tabId);
       enterWysiwygMode();
-    } else {
-      banner.remove();
-    }
+    } }],
   });
-  document.body.appendChild(banner);
 }
 
 function _hideExternalChangeBanner() {
@@ -292,15 +313,9 @@ function _hideExternalChangeBanner() {
    message since only live reload is affected there */
 function _showServerUnreachableBanner(msg) {
   if (document.getElementById('server-unreachable-banner')) return;
-  const banner = document.createElement('div');
-  banner.id = 'server-unreachable-banner';
-  banner.className = 'status-banner';
-  const span = document.createElement('span');
-  span.textContent = msg ||
-    'Server unreachable — saving will fail; copy your work before closing.';
-  banner.innerHTML = '<i class="ph ph-plugs"></i>';
-  banner.appendChild(span);
-  document.body.appendChild(banner);
+  _showStatusBanner('server-unreachable-banner',
+    msg || 'Server unreachable — saving will fail; copy your work before closing.',
+    'error', { icon: 'ph-plugs', dismiss: false });
 }
 
 function _hideServerUnreachableBanner() {

@@ -32,9 +32,10 @@ Two conditions:
 1. `window.Motion` — CDN loaded successfully (progressive enhancement)
 2. `!_prefersReducedMotion` — user has not set `prefers-reduced-motion: reduce`
 
-The `_prefersReducedMotion` constant is defined in `state.js`:
+`_prefersReducedMotion` is a live `let` in `state.js`, updated by a `matchMedia` change listener so a mid-session OS toggle takes effect without reload:
 ```js
-const _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let _prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', e => { _prefersReducedMotion = e.matches; });
 ```
 
 CSS also provides a `@media (prefers-reduced-motion: reduce)` block in `responsive.css` that disables CSS animations and transitions.
@@ -112,9 +113,9 @@ Uses `_hasStaggered` flag to prevent re-stagger on filter keystrokes (Raycast pr
 ### `theme.js` — Theme Toggle (View Transitions API, not Motion One)
 | Animation | Method | Options |
 |-----------|--------|---------|
-| Circular reveal | `document.startViewTransition()` + `clip-path: circle()` | `400ms, ease-out` |
+| Crossfade | `document.startViewTransition()` with the browser's default animation | ~250ms |
 
-This uses the native View Transitions API, not Motion One. The `::view-transition-old(root)` and `::view-transition-new(root)` pseudo-elements are styled in `base-layout.css`. Falls back to instant theme swap if the API is unavailable (Safari < 18, Firefox).
+This uses the native View Transitions API, not Motion One. The 400ms `clip-path: circle()` reveal it used to run was removed on 2026-09-06 as ambient flourish — feedback motion stays in the 120–250ms band, nothing animates at rest (the status-bar dot no longer pulses, content images and home cards no longer lift on hover). The `::view-transition-old(root)` and `::view-transition-new(root)` pseudo-elements are styled in `base-layout.css`. Falls back to instant theme swap if the API is unavailable (Safari < 18, Firefox).
 
 ## CSS Fallbacks
 

@@ -9,18 +9,21 @@
   bottom: 0; left: 0; right: 0;
   background: var(--ctp-crust);
   border-top: 1px solid var(--ctp-surface0);
-  color: var(--ctp-overlay0);
-  font-family: 'Victor Mono', monospace;
+  /* "Everything readable" (2026-09-06, extends the 2026-08-19 home decision):
+     informational text sits on --home-meta, controls on --home-control,
+     both solved on --ctp-crust in theme-variables.css */
+  color: var(--home-meta);
+  font-family: var(--font-mono);
   font-size: 11px;
   padding: 4px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  z-index: 30;
+  z-index: var(--z-status);
 }
 #status .filepath {
-  color: var(--ctp-overlay1);
+  color: var(--home-meta);
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -41,10 +44,10 @@
   border-radius: 50%;
   margin-right: 6px;
   flex-shrink: 0;
-  animation: pulse 2s infinite;
+  /* Static at rest — a settled state does not pulse (2026-09-06) */
 }
 #word-count {
-  color: var(--ctp-overlay0);
+  color: var(--home-meta);
   font-size: 10px;
   flex-shrink: 0;
   white-space: nowrap;
@@ -67,21 +70,21 @@
   color: var(--home-control);
   cursor: pointer;
   padding: 0 4px;
-  font-family: 'Victor Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 10px;
   line-height: 1;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
 }
 #instance-indicator:hover { color: var(--ctp-blue); }
 #instance-indicator i { font-size: 12px; }
 #instance-indicator .instance-count {
   background: rgba(var(--ctp-peach-rgb), 0.18);
   color: var(--external-badge-fg);
-  border-radius: 8px;
+  border-radius: var(--radius-lg);
   padding: 1px 5px;
   font-size: 9px;
   display: none;
@@ -90,13 +93,13 @@
 #status-copy-path {
   background: none;
   border: none;
-  color: var(--ctp-overlay0);
+  color: var(--home-control);
   cursor: pointer;
   padding: 0 4px;
   font-size: 12px;
   line-height: 1;
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
 }
 #status-copy-path:hover {
   color: var(--ctp-blue);
@@ -107,28 +110,27 @@
 #status-export-pdf {
   background: none;
   border: none;
-  color: var(--ctp-overlay0);
+  color: var(--home-control);
   cursor: pointer;
   padding: 0 4px;
   font-size: 13px;
   line-height: 1;
   flex-shrink: 0;
-  transition: color 0.15s;
+  transition: color var(--dur-base);
 }
 #status-export-pdf:hover {
   color: var(--ctp-blue);
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
 }
 
 /* ══════════════════════════════════════════════════════════
    Print — WYSIWYG theme-preserving
    ══════════════════════════════════════════════════════════ */
 
-/* ── Page layout (top-level for reliable parsing) ── */
+/* ── Page layout (top-level for reliable parsing) ──
+   Browser print keeps a 0.5in vertical page margin so page 2+ don't run
+   text to the sheet edge. The CDP export path (pdf_export.py) overrides
+   this with @page { margin: 0 } and spaces via #content padding — the two
+   contracts differ on purpose. */
 @page {
   size: letter;
   margin: 0.5in 0;
@@ -144,7 +146,7 @@
   /* ── Hide chrome ── */
   #toc, #status, #status-export-pdf, #status-copy-path, #toc-restore, #toc-resize-handle,
   #tab-bar-wrapper, #annotations-gutter, #annotate-carousel,
-  #annotations-toggle, #edit-toggle, #history-toggle, #justify-toggle, .palette-backdrop, .palette-hint,
+  #float-column, #annotations-toggle, #edit-toggle, #history-toggle, #justify-toggle, .palette-backdrop, .palette-hint,
   #edit-view, #diff-view, #version-panel,
   .ann-gutter-close, .gutter-tabs,
   .fm-indicator, .fm-popup-backdrop { display: none !important; }
@@ -175,7 +177,9 @@
   pre, table, blockquote, figure, img { break-inside: avoid; }
   li { break-inside: avoid; }
   tr { break-inside: avoid; }
-  thead { display: table-header-group; }
+  /* sticky would pin the header to the first page's top edge instead of
+     letting table-header-group repeat it per page */
+  thead { display: table-header-group; position: static; }
   p, li { orphans: 3; widows: 3; }
 
   /* ── Links: clickable in PDF, no URL display ── */
@@ -197,16 +201,23 @@
     width: 100%;
   }
 
-  /* ── Light themes: white background for print ── */
-  [data-theme="latte"] html,
-  [data-theme="latte"] body,
-  [data-theme="vellum"] html,
-  [data-theme="vellum"] body,
-  [data-theme="rose-pine-dawn"] html,
-  [data-theme="rose-pine-dawn"] body,
-  [data-theme="tokyo-light"] html,
-  [data-theme="tokyo-light"] body {
+  /* ── Light themes: white background for print ──
+     data-theme lives on <html> itself, so the selector must be
+     html[data-theme] — a descendant form never matched (dead until
+     2026-09-06). Vellum prints on its own parchment base: its card note
+     says "NOT pure white" and the print contract agrees (pair-scoped). */
+  html[data-theme="latte"],
+  html[data-theme="latte"] body,
+  html[data-theme="rose-pine-dawn"],
+  html[data-theme="rose-pine-dawn"] body,
+  html[data-theme="tokyo-light"],
+  html[data-theme="tokyo-light"] body {
     background: #fff !important;
+  }
+  /* pair-scoped: Vellum parchment */
+  html[data-theme="vellum"],
+  html[data-theme="vellum"] body {
+    background: var(--ctp-base) !important;
   }
 
   /* ── No animations, no hover effects ── */

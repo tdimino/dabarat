@@ -14,15 +14,64 @@ function updateAnnotationsBadge(count) {
   }
 
   if (gutterCount) gutterCount.textContent = count > 0 ? count : '';
+  syncGutterLayout();
+}
 
-  /* On wide screens where gutter is natively visible, hide toggle */
+/* Over 1400px the gutter is a native column beside the document; under
+   that it is an overlay opened from the Notes float. Either way it can be
+   dismissed: the header × (always painted) hides the native column and
+   remembers the choice, and the Notes float returns to reopen it. Before
+   this the wide layout had no close at all — the × only rendered in
+   overlay mode and the float column sat on top of the gutter header. */
+const GUTTER_HIDDEN_KEY = 'dabarat-gutter-hidden';
+const _gutterNativeMq = window.matchMedia('(min-width: 1401px)');
+
+function _gutterIsNativeWidth() { return _gutterNativeMq.matches; }
+
+function _gutterHiddenPref() {
+  try { return localStorage.getItem(GUTTER_HIDDEN_KEY) === '1'; } catch (e) { return false; }
+}
+
+/* body.gutter-visible mirrors whether the gutter is actually painted —
+   native column, overlay, or neither (home/edit/diff hide it inline). The
+   float column reads it to step left of the gutter; the Notes float hides
+   itself (.gutter-native) while the native column is showing. */
+function syncGutterLayout() {
   const gutter = document.getElementById('annotations-gutter');
-  const isNativelyVisible = gutter && window.innerWidth > 1400;
-  if (isNativelyVisible) {
-    toggle.classList.add('gutter-native');
-  } else {
-    toggle.classList.remove('gutter-native');
+  const shown = !!gutter && getComputedStyle(gutter).display !== 'none';
+  document.body.classList.toggle('gutter-visible', shown);
+  const toggle = document.getElementById('annotations-toggle');
+  if (toggle) toggle.classList.toggle('gutter-native', shown && _gutterIsNativeWidth());
+}
+
+function setGutterHidden(hidden) {
+  document.documentElement.classList.toggle('gutter-hidden', hidden);
+  try { localStorage.setItem(GUTTER_HIDDEN_KEY, hidden ? '1' : '0'); } catch (e) { /* private mode */ }
+  syncGutterLayout();
+}
+
+/* Notes float and the palette's "Toggle Annotations" */
+function toggleGutter() {
+  if (_gutterIsNativeWidth()) {
+    setGutterHidden(!document.documentElement.classList.contains('gutter-hidden'));
+    return;
   }
+  const gutter = document.getElementById('annotations-gutter');
+  if (gutter.classList.contains('overlay-open')) closeGutterOverlay();
+  else openGutterOverlay();
+}
+
+/* Make sure the gutter is on screen in whichever form this width uses —
+   the annotate carousel and "Show Variables" need its panels visible */
+function revealGutter() {
+  if (_gutterIsNativeWidth()) setGutterHidden(false);
+  else openGutterOverlay();
+}
+
+/* Header ×: hides the native column (remembered) or closes the overlay */
+function dismissGutter() {
+  if (_gutterIsNativeWidth()) setGutterHidden(true);
+  else closeGutterOverlay();
 }
 
 let _gutterDismissCtrl = null;
@@ -83,141 +132,169 @@ function closeGutterOverlay() {
   }
 }
 
-document.getElementById('annotations-toggle').onclick = () => {
-  const gutter = document.getElementById('annotations-gutter');
-  if (gutter.classList.contains('overlay-open')) {
-    closeGutterOverlay();
-  } else {
-    openGutterOverlay();
-  }
-};
+document.getElementById('annotations-toggle').onclick = toggleGutter;
+document.getElementById('ann-gutter-close').onclick = dismissGutter;
 
-document.getElementById('ann-gutter-close').onclick = () => {
-  closeGutterOverlay();
-};
+/* Keep body.gutter-visible honest without touching every mode switch:
+   home/edit/diff hide the gutter inline and the overlay is a class, so one
+   attribute observer plus the width breakpoint covers every path */
+(function () {
+  const gutter = document.getElementById('annotations-gutter');
+  if (!gutter) return;
+  if (_gutterHiddenPref()) document.documentElement.classList.add('gutter-hidden');
+  new MutationObserver(syncGutterLayout)
+    .observe(gutter, { attributes: true, attributeFilter: ['style', 'class'] });
+  /* Widening past the breakpoint with the overlay open would leave
+     .overlay-open and its document dismiss listeners alive under the
+     native column — close the overlay form first, then re-derive */
+  _gutterNativeMq.addEventListener('change', () => {
+    if (_gutterNativeMq.matches) closeGutterOverlay();
+    syncGutterLayout();
+  });
+  syncGutterLayout();
+})();
 
 /* ── Annotations ──────────────────────────────────────── */
 
 /* Separate highlight application from bubble rendering */
 
 /**
- * Find anchor text in the content element, even when it spans
- * multiple DOM nodes (e.g. across <strong>, <em>, line breaks).
- * Returns a Range or null.
+ * Text-node index over a container: every text node with its offset into
+ * the concatenated string. Built once per applyAnnotationHighlights and
+ * shared by every annotation (the walk used to run once per annotation —
+ * O(annotations × nodes) on every content change). The normalized form
+ * is derived lazily and memoized on the index for the fuzzy fallback.
  */
-function findTextRange(container, searchText) {
-  if (!searchText) return null;
-
-  /* First pass: try single-node match (fast path) */
-  const walker1 = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
-  let node1;
-  while (node1 = walker1.nextNode()) {
-    const idx = node1.textContent.indexOf(searchText);
-    if (idx >= 0) {
-      const range = document.createRange();
-      range.setStart(node1, idx);
-      range.setEnd(node1, idx + searchText.length);
-      return range;
-    }
-  }
-
-  /* Second pass: concatenate text nodes and find across boundaries */
-  const walker2 = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+function buildTextIndex(container) {
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
   const nodes = [];
   let fullText = '';
   let n;
-  while (n = walker2.nextNode()) {
-    nodes.push({ node: n, start: fullText.length });
+  while (n = walker.nextNode()) {
+    nodes.push({ node: n, start: fullText.length, end: fullText.length + n.textContent.length });
     fullText += n.textContent;
   }
+  return { nodes, fullText, norm: null, indexMap: null };
+}
 
-  const matchIdx = fullText.indexOf(searchText);
-  if (matchIdx < 0) {
-    /*
-     * Normalized fallback: expand §↔Section, collapse whitespace,
-     * lowercase — then map the match position back to the original
-     * string using an index map built during normalization.
-     *
-     * indexMap[i] = the position in the original string that produced
-     * normalized character i. This lets us map any normalized offset
-     * back to its exact original position.
-     */
-    function buildNormalized(s) {
-      let norm = '';
-      const indexMap = []; /* indexMap[normIdx] → origIdx */
-      const expansions = { '\u00a7': 'section' };
+/* Binary search: the entry whose [start, end) covers pos. With
+   inclusiveEnd a pos on a node boundary is ambiguous (it is one node's
+   end and the next node's start), so callers decide single-node matches
+   from the START entry's extent and only bisect the end for spans. */
+function _indexEntryAt(index, pos, inclusiveEnd) {
+  const nodes = index.nodes;
+  let lo = 0, hi = nodes.length - 1;
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const e = nodes[mid];
+    if (pos < e.start) hi = mid - 1;
+    else if (inclusiveEnd ? pos > e.end : pos >= e.end) lo = mid + 1;
+    else return e;
+  }
+  return null;
+}
 
-      for (let i = 0; i < s.length; i++) {
-        const ch = s[i];
-        if (expansions[ch]) {
-          const exp = expansions[ch];
-          for (let j = 0; j < exp.length; j++) {
-            indexMap.push(i);
-            norm += exp[j];
-          }
-        } else if (/\s/.test(ch)) {
-          /* Collapse runs of whitespace to single space */
-          if (norm.length === 0 || norm[norm.length - 1] !== ' ') {
-            indexMap.push(i);
-            norm += ' ';
-          }
-        } else {
-          indexMap.push(i);
-          norm += ch.toLowerCase();
+/*
+ * Normalized fallback: expand §↔Section, collapse whitespace,
+ * lowercase — then map the match position back to the original
+ * string using an index map built during normalization.
+ *
+ * indexMap[i] = the position in the original string that produced
+ * normalized character i. This lets us map any normalized offset
+ * back to its exact original position.
+ */
+function _buildNormalized(s) {
+  let norm = '';
+  const indexMap = []; /* indexMap[normIdx] → origIdx */
+  const expansions = { '\u00a7': 'section' };
+
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (expansions[ch]) {
+      const exp = expansions[ch];
+      for (let j = 0; j < exp.length; j++) {
+        indexMap.push(i);
+        norm += exp[j];
+      }
+    } else if (/\s/.test(ch)) {
+      /* Collapse runs of whitespace to single space */
+      if (norm.length === 0 || norm[norm.length - 1] !== ' ') {
+        indexMap.push(i);
+        norm += ' ';
+      }
+    } else {
+      indexMap.push(i);
+      norm += ch.toLowerCase();
+    }
+  }
+  return { norm, indexMap };
+}
+
+/**
+ * Find anchor text in the content element, even when it spans
+ * multiple DOM nodes (e.g. across <strong>, <em>, line breaks).
+ * Returns a Range or null. `index` is an optional prebuilt
+ * buildTextIndex() result; callers resolving many anchors pass one.
+ */
+function findTextRange(container, searchText, index) {
+  if (!searchText) return null;
+  index = index || buildTextIndex(container);
+  const { nodes, fullText } = index;
+  if (!nodes.length) return null;
+
+  const makeRange = (startEntry, startOff, endEntry, endOff) => {
+    const range = document.createRange();
+    range.setStart(startEntry.node, startOff);
+    range.setEnd(endEntry.node, endOff);
+    return range;
+  };
+
+  /* Exact match. A match wholly inside one text node is preferred over
+     an earlier one that straddles nodes (the old single-node fast path);
+     the scan is capped so a pathological anchor can't spin. */
+  let spanning = null;
+  let from = 0;
+  for (let tries = 0; tries < 64; tries++) {
+    const matchIdx = fullText.indexOf(searchText, from);
+    if (matchIdx < 0) break;
+    const matchEnd = matchIdx + searchText.length;
+    const startEntry = _indexEntryAt(index, matchIdx, false);
+    if (startEntry) {
+      if (matchEnd <= startEntry.end) {
+        /* Wholly inside one text node (incl. a match that fills the
+           node exactly — the boundary must not be read as spanning) */
+        return makeRange(startEntry, matchIdx - startEntry.start,
+                         startEntry, matchEnd - startEntry.start);
+      }
+      if (!spanning) {
+        const endEntry = _indexEntryAt(index, matchEnd, true);
+        if (endEntry) {
+          spanning = makeRange(startEntry, matchIdx - startEntry.start,
+                               endEntry, matchEnd - endEntry.start);
         }
       }
-      return { norm, indexMap };
     }
-
-    const { norm: normSearch } = buildNormalized(searchText);
-    const { norm: normFull, indexMap } = buildNormalized(fullText);
-    const normIdx = normFull.indexOf(normSearch);
-    if (normIdx < 0) return null;
-
-    /* Map back to original fullText position */
-    const origIdx = indexMap[normIdx] || 0;
-
-    /* Find the text node at origIdx */
-    for (let i = 0; i < nodes.length; i++) {
-      const entry = nodes[i];
-      const nodeEnd = entry.start + entry.node.textContent.length;
-      if (nodeEnd > origIdx) {
-        const localIdx = Math.max(0, origIdx - entry.start);
-        const range = document.createRange();
-        range.setStart(entry.node, Math.min(localIdx, entry.node.textContent.length));
-        range.setEnd(entry.node, entry.node.textContent.length);
-        return range;
-      }
-    }
-    return null;
+    from = matchIdx + 1;
   }
+  if (spanning) return spanning;
 
-  /* Find start node/offset */
-  let startNode = null, startOffset = 0;
-  let endNode = null, endOffset = 0;
-  const matchEnd = matchIdx + searchText.length;
-
-  for (let i = 0; i < nodes.length; i++) {
-    const entry = nodes[i];
-    const nodeEnd = entry.start + entry.node.textContent.length;
-
-    if (!startNode && nodeEnd > matchIdx) {
-      startNode = entry.node;
-      startOffset = matchIdx - entry.start;
-    }
-    if (nodeEnd >= matchEnd) {
-      endNode = entry.node;
-      endOffset = matchEnd - entry.start;
-      break;
-    }
+  /* Normalized fallback (memoized on the index) */
+  if (index.norm === null) {
+    const built = _buildNormalized(fullText);
+    index.norm = built.norm;
+    index.indexMap = built.indexMap;
   }
+  const { norm: normSearch } = _buildNormalized(searchText);
+  const normIdx = index.norm.indexOf(normSearch);
+  if (normIdx < 0) return null;
 
-  if (!startNode || !endNode) return null;
-
-  const range = document.createRange();
-  range.setStart(startNode, startOffset);
-  range.setEnd(endNode, endOffset);
-  return range;
+  /* Map back to original fullText position, anchor to the end of that node */
+  const origIdx = index.indexMap[normIdx] || 0;
+  const entry = _indexEntryAt(index, origIdx, false);
+  if (!entry) return null;
+  const localIdx = Math.max(0, origIdx - entry.start);
+  const len = entry.node.textContent.length;
+  return makeRange(entry, Math.min(localIdx, len), entry, len);
 }
 
 function applyAnnotationHighlights() {
@@ -228,20 +305,48 @@ function applyAnnotationHighlights() {
     parent.normalize();
   });
 
-  const anns = annotationsCache[activeTabId] || [];
-  anns.forEach(ann => {
-    if (!ann.anchor || !ann.anchor.text || ann.resolved) return;
-    const content = document.getElementById('content');
-    const range = findTextRange(content, ann.anchor.text);
-    if (!range) return;
+  const content = document.getElementById('content');
+  const anns = (annotationsCache[activeTabId] || [])
+    .filter(ann => ann.anchor && ann.anchor.text && !ann.resolved);
+  if (!content || !anns.length) return;
 
+  /* Resolve every anchor against one index BEFORE wrapping anything:
+     surroundContents splits text nodes, which would invalidate the
+     index — but Ranges are live and track those splits, so ranges
+     computed up front stay correct through the wrapping pass */
+  const index = buildTextIndex(content);
+  const resolved = [];
+  anns.forEach(ann => {
+    const range = findTextRange(content, ann.anchor.text, index);
+    if (range) resolved.push({ ann, range });
+  });
+
+  /* Wrap from the END of the document backwards. surroundContents
+     deletes the wrapped text from its node (replaceData), and the live-
+     range rule collapses any other boundary inside (start, end] to
+     start — a nested or exactly-adjacent LATER range would lose its
+     highlight. Going last-to-first, each wrap only touches text after
+     every range still waiting. */
+  resolved.sort((a, b) => b.range.compareBoundaryPoints(Range.START_TO_START, a.range));
+  let freshIndex = null;   /* rebuilt lazily after a wrap, only if needed */
+  resolved.forEach(({ ann, range }) => {
+    /* Two annotations on the SAME text (duplicate anchors, or a nested
+       one sharing the start) can't be ordered apart: the first wrap
+       collapses the other. Re-resolve it against the mutated DOM — it
+       lands inside the new mark as a nested highlight, as before. */
+    if (range.collapsed) {
+      freshIndex = freshIndex || buildTextIndex(content);
+      range = findTextRange(content, ann.anchor.text, freshIndex);
+      if (!range || range.collapsed) return;
+    }
+    freshIndex = null;
     try {
+      const mark = document.createElement('mark');
+      mark.className = 'annotation-highlight';
+      mark.dataset.annotationId = ann.id;
+      mark.dataset.type = ann.type || 'comment';
       /* If range spans one node, surroundContents works */
       if (range.startContainer === range.endContainer) {
-        const mark = document.createElement('mark');
-        mark.className = 'annotation-highlight';
-        mark.dataset.annotationId = ann.id;
-        mark.dataset.type = ann.type || 'comment';
         range.surroundContents(mark);
       } else {
         /* Multi-node: wrap just the start node's portion so we have
@@ -250,10 +355,6 @@ function applyAnnotationHighlights() {
         const partialRange = document.createRange();
         partialRange.setStart(range.startContainer, range.startOffset);
         partialRange.setEnd(range.startContainer, startLen);
-        const mark = document.createElement('mark');
-        mark.className = 'annotation-highlight';
-        mark.dataset.annotationId = ann.id;
-        mark.dataset.type = ann.type || 'comment';
         partialRange.surroundContents(mark);
       }
     } catch(e) { /* skip if DOM structure prevents wrapping */ }
@@ -444,48 +545,57 @@ function renderAnnotations() {
   applyAnnotationHighlights();
 }
 
-async function resolveAnnotation(annId) {
+/* Every annotation write goes through here: a non-OK answer (the server
+   500s on an unreadable sidecar, 404s on a closed tab) or a network error
+   is reported, not swallowed — the old code hid the form and let the next
+   poll repaint the pre-write state as if the write had landed. */
+async function _annotationPost(url, payload, what) {
+  let res = null;
   try {
-    await fetch('/api/resolve', {
+    res = await fetch(url, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({tab: activeTabId, id: annId})
+      body: JSON.stringify(payload)
     });
-    lastAnnotationMtimes[activeTabId] = -1;
-    lastRenderedAnnotationsKey = '';
-  } catch(e) {}
+  } catch (e) { /* network */ }
+  if (res && res.ok) return true;
+  let detail = res ? 'HTTP ' + res.status : 'server unreachable';
+  if (res) {
+    try { detail = (await res.json()).error || detail; } catch (e) { /* not JSON */ }
+  }
+  _showStatusBanner('annotations-error-banner',
+    'Could not ' + what + ': ' + detail, 'error', { timeout: 8000 });
+  return false;
+}
+
+function _annotationsChanged() {
+  lastAnnotationMtimes[activeTabId] = -1;
+  lastRenderedAnnotationsKey = '';
+}
+
+async function resolveAnnotation(annId) {
+  if (await _annotationPost('/api/resolve', {tab: activeTabId, id: annId}, 'resolve the note')) {
+    _annotationsChanged();
+  }
 }
 
 async function deleteAnnotation(annId) {
-  try {
-    await fetch('/api/delete-annotation', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({tab: activeTabId, id: annId})
-    });
-    lastAnnotationMtimes[activeTabId] = -1;
-    lastRenderedAnnotationsKey = '';
-  } catch(e) {}
+  if (await _annotationPost('/api/delete-annotation', {tab: activeTabId, id: annId}, 'delete the note')) {
+    _annotationsChanged();
+  }
 }
 
 async function submitReply(annId, body) {
   if (!body) return;
   const author = document.getElementById('ann-author-input').value.trim() || defaultAuthor;
   const authorType = ['claude', 'ai', 'assistant'].includes(author.toLowerCase()) ? 'ai' : 'human';
-  try {
-    await fetch('/api/reply', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        tab: activeTabId,
-        id: annId,
-        author: { name: author, type: authorType },
-        body: body
-      })
-    });
-    lastAnnotationMtimes[activeTabId] = -1;
-    lastRenderedAnnotationsKey = '';
-  } catch(e) {}
+  const ok = await _annotationPost('/api/reply', {
+    tab: activeTabId,
+    id: annId,
+    author: { name: author, type: authorType },
+    body: body
+  }, 'post the reply');
+  if (ok) _annotationsChanged();
 }
 
 /* ── Text Selection → Annotate Carousel ──────────────── */
@@ -557,10 +667,9 @@ document.querySelectorAll('.carousel-btn').forEach(btn => {
     if (!annotateSelection) return;
     selectedAnnotationType = btn.dataset.type;
 
-    /* On narrow screens, force-open gutter so the form is visible */
-    if (window.innerWidth <= 1400) {
-      openGutterOverlay();
-    }
+    /* Overlay on narrow screens, un-hide the native column on wide ones —
+       the form lives in the gutter either way */
+    revealGutter();
 
     showAnnotationForm();
     document.getElementById('annotate-carousel').classList.remove('visible');
@@ -598,27 +707,20 @@ document.getElementById('ann-submit-btn').onclick = async () => {
 
   const authorType = ['claude', 'ai', 'assistant'].includes(author.toLowerCase()) ? 'ai' : 'human';
 
-  try {
-    await fetch('/api/annotate', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        tab: activeTabId,
-        anchor: { text: annotateSelection.text, heading: annotateSelection.heading, offset: 0 },
-        author: { name: author, type: authorType },
-        body: body,
-        type: selectedAnnotationType
-      })
-    });
-  } catch(e) {
-    console.error('Failed to annotate:', e);
-  }
+  const ok = await _annotationPost('/api/annotate', {
+    tab: activeTabId,
+    anchor: { text: annotateSelection.text, heading: annotateSelection.heading, offset: 0 },
+    author: { name: author, type: authorType },
+    body: body,
+    type: selectedAnnotationType
+  }, 'save the note');
+  /* Keep the form (and the typed note) open on failure — the banner says why */
+  if (!ok) return;
 
   document.getElementById('annotation-form').style.display = 'none';
   annotateSelection = null;
   window.getSelection().removeAllRanges();
-  lastAnnotationMtimes[activeTabId] = -1;
-  lastRenderedAnnotationsKey = '';
+  _annotationsChanged();
 };
 
 document.getElementById('ann-cancel-btn').onclick = () => {

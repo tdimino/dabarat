@@ -1,6 +1,7 @@
 /* ── Image Lightbox ──────────────────────────────────── */
 let _lightboxImages = [];
 let _lightboxIndex = 0;
+let _lightboxDialog = null;   /* openDialog handle — focus return on close */
 
 function openLightbox(src, alt, index) {
   const overlay = document.getElementById('lightbox-overlay');
@@ -24,7 +25,13 @@ function openLightbox(src, alt, index) {
 
   overlay.classList.add('active');
   overlay.setAttribute('aria-hidden', 'false');
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-label', alt ? 'Image: ' + alt : 'Image');
   document.body.style.overflow = 'hidden';
+  /* Visually modal → focus-modal: Tab stays inside, focus returns to the
+     image that opened it */
+  if (_lightboxDialog) _lightboxDialog.close({ skipFocusReturn: true });
+  _lightboxDialog = openDialog(overlay, { modal: true, initialFocus: '.lightbox-close' });
 
   /* Animate in with Motion One if available */
   if (window.Motion && !_prefersReducedMotion) {
@@ -41,6 +48,7 @@ function closeLightbox() {
     overlay.classList.remove('active');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    if (_lightboxDialog) { _lightboxDialog.close(); _lightboxDialog = null; }
   };
 
   if (window.Motion && !_prefersReducedMotion) {
@@ -79,15 +87,23 @@ function attachLightboxToContent() {
     overlay.classList.remove('active');
     overlay.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
+    if (_lightboxDialog) { _lightboxDialog.close({ skipFocusReturn: true }); _lightboxDialog = null; }
   }
   _lightboxImages = [];
   content.querySelectorAll('img:not(.emoji):not(.tpl-var-img)').forEach((img, i) => {
     img.style.cursor = 'zoom-in';
     img.dataset.lightboxIndex = i;
+    /* Keyboard-openable: the image is a button that zooms */
+    img.tabIndex = 0;
+    img.setAttribute('role', 'button');
+    img.setAttribute('aria-label', (img.alt ? img.alt + ' — ' : '') + 'open image');
     _lightboxImages.push({ src: img.src, alt: img.alt });
     img.addEventListener('click', (e) => {
       e.preventDefault();
       openLightbox(img.src, img.alt, i);
+    });
+    img.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(img.src, img.alt, i); }
     });
   });
 }

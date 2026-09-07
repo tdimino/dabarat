@@ -80,8 +80,9 @@ CLI (__main__.py)
 - Tab management via module-level dicts: `_tabs`, `_tab_files`, `_tab_order` (protected by `_tabs_lock`)
 - Tab IDs are SHA-256 hashes of absolute file paths
 - Change detection: `changeKey = f"{st.st_mtime_ns}:{st.st_size}"` (ns-precision mtime + size)
-- Content polling: client fetches `/api/content` every 500ms, server returns changeKey for reload signals
+- Content polling: client fetches `/api/content?since=` every 500ms (5 s hidden) over a keep-alive HTTP/1.1 connection; the server answers `{unchanged:true}` or the full body with `changeKey`. Bodies gzip above 1400 B, the shell carries an ETag, `Server-Timing` on the hot endpoints
 - Edit-mode probes: `/api/mtime` stat-only endpoint with sleep/wake resilience
+- Instance discovery (`instances.py`): PID-file scan plus parallel 1 s probes of sibling ports in a thread pool; `<port>.tabs.json` orphans with no `.pid` older than 7 days are swept on every scan
 - Inline editing: `/api/save` snapshots pre-existing disk state, writes atomically (tempfile + `os.replace`), versions to SQLite
 - Conflict detection: saves carry `baseChangeKey`, server 409s if disk changed, client confirms overwrite
 - Version history: `/api/versions`, `/api/version`, `/api/diff-version`, `/api/version/pin`, `/api/version/label`, `/api/restore` backed by `history.py`
@@ -165,14 +166,14 @@ CLI (__main__.py)
 ## Key Design Decisions
 
 - **Sidecar JSON, never modify source markdown** — annotations live in separate files
-- **Polling over WebSocket** — 500ms interval, simpler than WebSocket for stdlib-only constraint
+- **Polling over WebSocket** — 500ms interval with `since=` short-circuit and keep-alive, simpler than WebSocket for stdlib-only constraint; idle cost is one tiny JSON per tick, no new TCP connection
 - **Tab IDs = SHA-256 of absolute path** — deterministic, collision-resistant
-- **Orphan cleanup on read** — runs every time annotations are fetched, no separate GC process
+- **Orphan cleanup on read** — runs in `GET /api/annotations` only while the tab's `annotations_dirty` flag is set (external change, save, or a fresh tab); no separate GC process and no sidecar rewrite on an idle poll
 - **Single HTML document** — template.py inlines everything, no separate asset requests
 - **Event delegation over inline handlers** — `data-*` attributes + `addEventListener` for XSS prevention
 - **Progressive enhancement** — Motion One loaded as optional ES module; all call sites guarded with `if (window.Motion)`
 - **Thread-safe shared state** — `_tabs_lock`, `_browse_cache_lock`, `recent._lock` protect module-level dicts under `ThreadingHTTPServer`
-- **Size-gated metadata extraction** — all file-reading helpers gated behind 1MB size check in browse-dir handler
+- **Size-gated metadata extraction** — files under 1MB are read once in the browse-dir handler and the text is handed to the `_extract_*_text` helpers; version counts are one batched `history.version_summaries` query per directory
 - **SQLite over git for version history** — content-addressed zlib blobs, WAL mode, rename-surviving identity via aliases, atomic transactions, ~10x faster than subprocess git for large histories
 - **Append-only versioning** — no coalescing, no pruning; a save is a checkpoint. Identical content dedups by hash
 - **changeKey = mtime_ns + size** — nanosecond-precision mtime catches sub-second rewrites that float mtime equality misses

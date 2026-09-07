@@ -11,17 +11,21 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 ## Features
 
 - **Live-reload preview**—500ms polling detects file changes automatically
+- **Light on the wire**—HTTP/1.1 keep-alive, gzip, and an ETag on the shell; polls send `since=<changeKey>` and get a one-line reply when nothing moved; hidden windows back off to 5s; inactive tabs load on first activation, not at startup
+- **Keyboard and screen-reader access**—the tab strip is a real `tablist` (arrow keys, Home/End, Delete to close), dialogs and the palette trap and return focus, landmarks (`main`/`article`/`aside`) throughout, status banners announce via `aria-live`
 - **Multi-tab support**—open multiple `.md` files; cross-file linking via `--add`
 - **Tab management at scale**—Close Others / Close All (confirmed), `Ctrl+Tab` cycling (`Cmd+Opt+←/→` fallback), middle-click close, and a searchable overflow menu with per-row close for 90-tab sessions. Tabs pushed by automation (`/api/add` with `auto: true`, as the Claude Code plan hook does) are capped at `DABARAT_MAX_AUTO_TABS` (30) so a long-lived window never silts up
 - **Tab reuse with window picker**—launching a new file while the server is running shows a dialog with currently open files; when multiple windows are running, pick which window to add to
 - **Instance monitoring**—status-bar port indicator with a sibling-count badge; its dropdown lists every running window's open files with Focus and Shut Down actions
 - **5 annotation types**—Comment, Question, Suggestion, Important, Bookmark
 - **Selection-based carousel**—select any text, pick an annotation type from the floating UI
+- **Dismissible notes panel**—the × in the panel header hides it at any window width (remembered across reloads) and the floating Notes button brings it back; the Edit/History/Justify floats sit beside the panel, never on top of it
 - **Threaded replies**—reply to any annotation inline
 - **Resolve/archive workflow**—resolved annotations move to a separate archive file
 - **Global bookmark index**—bookmarks persist to `~/.claude/bookmarks/` with an `INDEX.md` and per-snippet files
 - **Auto-cleanup of orphaned annotations**—when anchor text is deleted, its annotations are removed on next load
-- **8 themes with cross-window persistence**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Theme choice persists to `~/.dabarat/config.json` so new windows on different ports inherit the same theme. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents. Every theme is contrast-audited (WCAG AA) by `scripts/color-audit/`—zero failures across all 8, enforced by a color-role token layer.
+- **Sidecar integrity**—annotation writes are locked and atomic (tempfile + rename); a sidecar that fails to parse is quarantined as `.corrupt-<ts>` and reported, never silently overwritten
+- **8 themes with cross-window persistence**—4 dark (Ink, Mocha, Rosé Pine, Tokyo Storm) + 4 light (Vellum, Latte, Rosé Pine Dawn, Tokyo Light), toggled in the status bar or settings panel. Theme choice persists to `~/.dabarat/config.json` so new windows on different ports inherit the same theme. Ink and Vellum are *The Scholar's Codex* pair: parchment-and-iron-gall register with tungsten gold and rubricated red-ochre signature accents. Every theme is contrast-audited (WCAG AA) by `scripts/color-audit/`—zero failures across all 8, enforced by a color-role token layer. Light themes carry accent washes instead of grey slabs: a blue-tinted home ground and tab bar, and a rose inline-code pill.
 - **Resizable TOC sidebar**—drag the right edge to adjust width (persisted across sessions)
 - **Deterministic TOC navigation**—clicks always jump (even re-clicks on the same heading), with scroll-spy highlighting, deep-link `#hash` support, and stale-hash cleanup across tabs and re-renders
 - **Justified text mode**—floating mauve button toggles `text-align: justify` with auto-hyphenation on paragraphs and list items (headings, code, and tables untouched). Also via command palette. Preference persists across reloads and windows via localStorage and `~/.dabarat/config.json`
@@ -36,7 +40,7 @@ AI-native markdown previewer with annotations, bookmarks, and live reload. Zero 
 - **PDF figures**—`![fig](tree.pdf){width=100%}` (the Pandoc/LaTeX idiom) previews via the same-stem `.svg`/`.png` sibling, in the document and on home cards; plain `[links](doc.pdf)` still open the PDF
 - **WYSIWYG editing**—`Cmd+Shift+E` or click the floating pencil button to edit in a rich-text Tiptap/ProseMirror surface with full visual parity to read mode (matched typography, font sizing, and line height). Bold, italic, headings, lists, task lists, tables, code blocks, blockquotes, links, and images—all rendered inline. Links and images survive edit-save round-trips (Link extension with autolink + linkOnPaste, Image extension). Saves to clean markdown via tiptap-markdown. Falls back to raw textarea if CDN is unavailable
 - **Footnotes**—`[^ref]` syntax renders as superscript numbered links with a compact footnote section at the bottom (via `marked-footnote`). Auto-numbered, with backref arrows. Preserved through WYSIWYG editing round-trips
-- **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll
+- **Side-by-side diff**—compare any two markdown files with word-level granularity, synchronized scroll; leave with the header's **Exit compare** button or `Esc`
 - **Version history**—SQLite-backed timeline (`~/.dabarat/versions.db`) where every save and external edit is versioned automatically. Content-addressed zlib blobs with rename-surviving file identity. Pin, label, compare any version against current via `Cmd+Shift+H` or command palette, one-click restore. The panel names its file (or "Activity" for the all-files timeline), and each row expands to an excerpt of the first changed lines. Day separators, source badges, delegated event handling. Legacy git history imported once on first run
 - **Workspace system**—VS Code-style `.dabarat-workspace` files with multi-root folders and pinned files
 - **Image lightbox**—click any content image for overlay with blur backdrop, keyboard nav, zoom
@@ -113,11 +117,11 @@ python3 -m dabarat --annotate document.md \
 Most markdown annotation tools either require a heavy framework (Svelte, React, Electron) or operate only in the terminal. This tool is:
 
 - **Zero-dependency**—pure Python stdlib server. No npm, no pip install, no build step.
-- **Modular**—12 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document.
+- **Modular**—12 Python modules + 16 JS modules + 14 CSS modules, concatenated at serve time into a single HTML document. Radius, z-index, elevation, duration, easing, and font stacks are tokens in `theme-variables.css`; regression scripts in `scripts/verify/` guard navigation, transport, tokens, and sidecar integrity.
 - **AI-native**—built for Claude Code workflows. Annotate from CLI, bookmark to `~/.claude/`.
 - **Beautiful**—Catppuccin theming with Cormorant Garamond, DM Sans, and Victor Mono typography. Motion One animations for staggered card entrance, sidebar cascade, and view transitions.
 
-CDN scripts (marked.js, highlight.js, Phosphor Icons, Twemoji, Vibrant.js, Motion One, Tiptap) load on first page view and are cached by the browser. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable. After first load, the tool works fully offline.
+CDN scripts load in two tiers. marked.js, marked-footnote, highlight.js, Phosphor Icons, Twemoji, and Motion One load on first page view (pinned versions with subresource-integrity hashes) and are cached by the browser. Tiptap (first edit-mode entry), Vibrant.js (the image-theme command), and the Noto Hebrew fonts (first document containing Hebrew) load on demand. Motion One and Tiptap are optional—animations fall back to CSS `@keyframes` and the WYSIWYG editor falls back to a raw textarea if their CDNs are unavailable. Once each tier has loaded once, the tool works offline; a feature you never triggered while online fetches its script the first time you use it.
 
 ## CLI Reference
 

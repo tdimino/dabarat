@@ -854,6 +854,9 @@ body.home-active #content {
   display: flex;
   gap: 4px;
   flex-shrink: 0;
+  /* anchors .ws-add-menu — without a positioned ancestor its top:100%
+     resolved against the fixed #toc, i.e. below the viewport */
+  position: relative;
 }
 .ws-action-btn {
   background: transparent;

@@ -688,6 +688,7 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
   /* Cards are keyboard-reachable: one tab stop, arrows walk the grid,
      Enter/Space open. Native <article> semantics kept (role: null). */
   rovingList(content.querySelector('.home-screen'), '.home-card', { role: null, containerRole: null, grid: true });
+  _markPreviewOverflow(content);
   content.querySelectorAll('.home-card-remove').forEach(btn => {
     const card = btn.closest('.home-card');
     btn.addEventListener('click', (e) => {
@@ -749,6 +750,14 @@ function _renderHomeContent(content, entries, title, browseData, recentWorkspace
       { delay: Motion.stagger(0.06), duration: 0.4, easing: 'ease-out' }
     );
   }
+}
+
+/* Show a preview's bottom fade only where the excerpt really overflows —
+   the fade is a "more below" signal, not a decoration over short text */
+function _markPreviewOverflow(root) {
+  root.querySelectorAll('.home-card-preview-md').forEach(el => {
+    el.classList.toggle('overflowing', el.scrollHeight > el.clientHeight + 1);
+  });
 }
 
 /* Day-group label for a card — mirrors the version timeline's separators.
@@ -1323,6 +1332,8 @@ async function _loadWorkspaceMultiRoot() {
       openRecentFile(card.dataset.filepath);
     });
   });
+  rovingList(content.querySelector('.home-screen'), '.home-card', { role: null, containerRole: null, grid: true });
+  _markPreviewOverflow(content);
   content.querySelectorAll('.home-card-versions').forEach(btn => {
     const card = btn.closest('.home-card');
     btn.addEventListener('click', (e) => {

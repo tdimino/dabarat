@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Phase 15 verification — transport layer (V1-V9).
+"""Phase 15 verification — transport layer (V1-V12).
 
 Guards the HTTP/1.1 keep-alive contract introduced with the 2026-09-06
 optimization pass: every body path carries Content-Length, the origin
@@ -9,6 +9,11 @@ reused connection), JSON and the shell gzip above 1400 B,
 /api/content?since= short-circuits to {unchanged:true}, the shell
 carries a weak ETag and answers 304, a hidden window slows its poll,
 and /api/shutdown exits promptly with idle keep-alive sockets open.
+V10–V12 (2026-09-07 review follow-ups): GET refuses a foreign Host and
+cross-site Sec-Fetch-Site on /api/* and non-navigations; the static
+fallback and /api/preview-image send nosniff and sandbox scriptable
+types (html, svg, any +xml); every marked.parse sink is sanitized and
+DOMPurify is pinned with SRI.
 
 Private INSTANCE_DIR + history/recent stores (phase12 launch_code); the
 user's real ~/.dabarat state is never touched. Requires Chrome for V6.
@@ -25,6 +30,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -58,7 +64,7 @@ def main() -> int:
         print(f"PASS={p12.PASS} FAIL={p12.FAIL}")
         return 1
 
-    print("Phase 15 — transport V1-V9")
+    print("Phase 15 — transport V1-V12")
 
     try:
         with tempfile.TemporaryDirectory(
@@ -280,6 +286,75 @@ def main() -> int:
             writes = len(re.findall(r"self\.wfile\.write\(", src))
             report(writes == 3, "V9 source guard: three wfile.write sites (helper + 2 static)",
                    f"found {writes}")
+
+            # V10: GET site guard — a foreign Host (DNS rebinding) is refused
+            # with the socket closed; a cross-site non-navigation to /api/*
+            # or a static file is 403; a cross-site *navigation* into the
+            # shell and any same-origin/no-Sec-Fetch request still pass
+            g = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            rh, _ = raw_get(g, "/api/tabs", {"Host": f"evil.example:{port}"})
+            g = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            rx, _ = raw_get(g, "/api/tabs", {"Sec-Fetch-Site": "cross-site",
+                                              "Sec-Fetch-Mode": "cors"})
+            rs, _ = raw_get(g, "/alpha.md", {"Sec-Fetch-Site": "cross-site",
+                                              "Sec-Fetch-Mode": "no-cors",
+                                              "Sec-Fetch-Dest": "image"})
+            rn, _ = raw_get(g, "/", {"Sec-Fetch-Site": "cross-site",
+                                     "Sec-Fetch-Mode": "navigate",
+                                     "Accept-Encoding": "identity"})
+            ro, _ = raw_get(g, "/api/tabs", {"Sec-Fetch-Site": "same-origin",
+                                              "Sec-Fetch-Mode": "cors"})
+            rp, _ = raw_get(g, "/api/tabs")
+            report(rh.status == 400 and (rh.getheader("Connection") or "").lower() == "close"
+                   and rx.status == 403 and rs.status == 403
+                   and rn.status == 200 and ro.status == 200 and rp.status == 200,
+                   "V10 GET guard: foreign Host 400+close, cross-site /api and static 403, "
+                   "cross-site navigation + same-origin + plain pass",
+                   f"host={rh.status} api={rx.status} static={rs.status} "
+                   f"nav={rn.status} same={ro.status} plain={rp.status}")
+
+            # V11: static fallback headers — nosniff on everything from a
+            # document folder, CSP sandbox only on the scriptable types
+            (work / "notes.html").write_text("<script>1</script>", encoding="utf-8")
+            (work / "fig.svg").write_text("<svg xmlns='http://www.w3.org/2000/svg'/>", encoding="utf-8")
+            (work / "pic.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"\x00" * 16)
+            (work / "feed.atom").write_text("<feed xmlns='http://www.w3.org/2005/Atom'/>", encoding="utf-8")
+            hdrs = {}
+            for name in ("notes.html", "fig.svg", "pic.png", "feed.atom"):
+                r, _ = raw_get(g, "/" + name)
+                hdrs[name] = (r.status, r.getheader("X-Content-Type-Options"),
+                              r.getheader("Content-Security-Policy"))
+            # the same svg through /api/preview-image (image/* allowlist)
+            r, _ = raw_get(g, "/api/preview-image?path=" + urllib.parse.quote(str(work / "fig.svg")))
+            hdrs["preview:fig.svg"] = (r.status, r.getheader("X-Content-Type-Options"),
+                                       r.getheader("Content-Security-Policy"))
+            r, _ = raw_get(g, "/pic.png")
+            xfo = r.getheader("X-Frame-Options")
+            report(all(s == 200 and ns == "nosniff" for s, ns, _ in hdrs.values()) and xfo == "DENY"
+                   and all(hdrs[k][2] == "sandbox" for k in ("notes.html", "fig.svg", "feed.atom", "preview:fig.svg"))
+                   and hdrs["pic.png"][2] is None,
+                   "V11 static: nosniff on all, CSP sandbox on html/svg/+xml and preview-image svg, none on png",
+                   "; ".join(f"{k}:{v}" for k, v in hdrs.items()))
+
+            # V12: source guard — every marked.parse result is sanitized
+            # before it reaches innerHTML, and DOMPurify is pinned with SRI
+            js_dir = ROOT / "dabarat" / "static" / "js"
+            expect = {
+                "render.js": ("content.innerHTML = sanitizeHtml(html)",),
+                "diff.js": ("tmp.innerHTML = sanitizeHtml(html)",),
+                "home.js": ("sanitizeHtml(marked.parse(",),
+                "variables.js": ("sanitizeHtml(marked.parse(",),
+            }
+            srcs = {f.name: f.read_text(encoding="utf-8") for f in js_dir.glob("*.js")}
+            n_parse = sum(len(re.findall(r"marked\.parse\(", t)) for t in srcs.values())
+            sinks_ok = all(all(needle in srcs[f] for needle in needles)
+                           for f, needles in expect.items())
+            tpl = (ROOT / "dabarat" / "template.py").read_text(encoding="utf-8")
+            report(n_parse == 4 and sinks_ok
+                   and 'dompurify/3.4.15/purify.min.js" integrity="sha384-' in tpl
+                   and "function sanitizeHtml(" in srcs["utils.js"],
+                   "V12 source guard: 4 marked.parse sites sanitized, DOMPurify pinned with SRI",
+                   f"parse_sites={n_parse} sinks={sinks_ok}")
 
             # V8: shutdown with two idle keep-alive connections parked
             idle_a = http.client.HTTPConnection("127.0.0.1", port, timeout=5)

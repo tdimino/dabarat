@@ -1035,6 +1035,16 @@ body.home-active #content {
   font-size: 10.5px;
   color: var(--home-meta);
 }
+/* Provenance/awareness hue (peach) — the badge role token passes on
+   base, card, and surface0, so it reads wherever the stats line sits */
+.home-partial-note {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--badge-peach-fg);
+  margin-left: 8px;
+  white-space: nowrap;
+}
+.home-partial-note i { font-size: 11px; vertical-align: -1px; margin-right: 2px; }
 .home-section-remove {
   background: transparent;
   border: none;

@@ -304,7 +304,7 @@ function render(md) {
     md.replace(/(!\[[^\]]*\]\([^)\n]*\))\{[^}\n]*\}/g, '$1'),
     { gfm: true, breaks: false });
   const content = document.getElementById('content');
-  content.innerHTML = html;
+  content.innerHTML = sanitizeHtml(html);
 
   /* Assign IDs and construct the TOC from the same pre-emoji live headings. */
   const headings = Array.from(content.querySelectorAll('h1, h2, h3, h4'));

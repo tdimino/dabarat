@@ -15,6 +15,79 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+/* ── Rendered-markdown sanitizer ──
+   marked runs with raw HTML enabled (authored <details>, <p align>, inline
+   SVG badges are all wanted), so every parse result goes through here
+   before it touches the DOM: a hostile .md must not run script on the
+   origin that owns /api/save and /api/shutdown. DOMPurify (pinned + SRI
+   in template.py) does the work; if its CDN is unreachable the DOM-based
+   fallback below strips the scriptable parts rather than failing open.
+   Kept: id/class (TOC + footnotes), data- and aria- attributes (marked-footnote),
+   <input type=checkbox> (task lists), style attributes, target=_blank,
+   data: URLs on images, file:/obsidian:/vscode: links. Dropped:
+   <script>/<iframe>/<object>/<embed>/<style>/<form>, on* handlers,
+   javascript: URLs. */
+const _PURIFY_OPTS = {
+  USE_PROFILES: { html: true, svg: true, svgFilters: true },
+  FORBID_TAGS: ['style', 'form'],
+  ADD_ATTR: ['target'],
+  ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|file|obsidian|vscode|vscode-insiders|cursor):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i,
+};
+let _sanitizerWarned = false;
+
+function sanitizeHtml(html) {
+  if (window.DOMPurify && typeof DOMPurify.sanitize === 'function') {
+    return DOMPurify.sanitize(html, _PURIFY_OPTS);
+  }
+  if (!_sanitizerWarned) {
+    _sanitizerWarned = true;
+    console.warn('DOMPurify did not load — rendering through the built-in fallback sanitizer');
+  }
+  return _fallbackSanitize(html);
+}
+
+/* Parses into an inert <template> (no script execution, no fetches),
+   removes the scriptable elements and attributes, and serialises back.
+   Deliberately conservative: it exists for the offline case only.
+   Dropped wholesale: the script carriers, the SVG SMIL animators (an
+   <animate attributeName="href" values="javascript:…"> smuggles a URL
+   past the attribute pass), and the mXSS carriers whose contents parse
+   differently on the way back (<template> content is never walked by
+   querySelectorAll; noscript/xmp/plaintext/math switch parser modes). */
+const _FALLBACK_DROP = 'script, iframe, object, embed, style, form, link, meta, base, frame, frameset, applet, '
+  + 'animate, set, animateMotion, animateTransform, animateColor, '
+  + 'math, noscript, noembed, noframes, xmp, plaintext, template';
+const _FALLBACK_URL_ATTRS = ['href', 'src', 'xlink:href', 'action', 'formaction', 'srcdoc', 'poster', 'data'];
+function _fallbackStrip(html) {
+  const tpl = document.createElement('template');
+  tpl.innerHTML = html;
+  tpl.content.querySelectorAll(_FALLBACK_DROP).forEach(n => n.remove());
+  tpl.content.querySelectorAll('*').forEach(el => {
+    Array.from(el.attributes).forEach(a => {
+      const name = a.name.toLowerCase();
+      if (name.startsWith('on') || name === 'srcdoc') { el.removeAttribute(a.name); return; }
+      if (_FALLBACK_URL_ATTRS.includes(name)) {
+        const v = a.value.replace(/[\s\u0000-\u001f]/g, '').toLowerCase();
+        const dataImage = name === 'src' && el.tagName === 'IMG' && v.startsWith('data:image/');
+        if (/^(javascript|vbscript|data):/.test(v) && !dataImage) el.removeAttribute(a.name);
+      }
+    });
+  });
+  return tpl.innerHTML;
+}
+/* Serialise-then-reparse is the mXSS shape: the live DOM re-parses a
+   string the sanitizer only saw as a tree. The output is trusted once a
+   second pass changes nothing; markup that never settles is shown as text. */
+function _fallbackSanitize(html) {
+  let out = _fallbackStrip(html);
+  for (let i = 0; i < 2; i++) {
+    const again = _fallbackStrip(out);
+    if (again === out) return out;
+    out = again;
+  }
+  return '<pre>' + escapeHtml(html) + '</pre>';
+}
+
 /* Shared relative time formatter */
 const _sharedRtf = new Intl.RelativeTimeFormat('en-US', { numeric: 'auto', style: 'short' });
 

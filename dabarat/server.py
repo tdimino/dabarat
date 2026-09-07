@@ -29,6 +29,23 @@ MAX_AUTO_TABS = int(
     or 30)
 
 
+# Content types a browser will render as a document with script enabled.
+# Anything served from a document's folder on the app origin with one of
+# these types gets `Content-Security-Policy: sandbox` (see _scriptable_type).
+_SANDBOXED_STATIC_TYPES = frozenset((
+    "text/html", "application/xhtml+xml", "image/svg+xml",
+    "text/xml", "application/xml", "text/javascript", "application/javascript",
+))
+
+
+def _scriptable_type(ctype):
+    """True for the exact set above plus the open-ended `*/*+xml` family
+    (rss, atom, xslt, kml, gpx, mathml…): browsers render every +xml type
+    as an XML document, and an XHTML-namespaced <script> island inside
+    one runs on the origin just like notes.html would."""
+    return ctype in _SANDBOXED_STATIC_TYPES or ctype.endswith("+xml")
+
+
 _browse_cache = {}  # keyed by (dirpath, ((name, mtime_ns, size), ...)) → response dict
 _browse_cache_lock = threading.Lock()
 _partial_noted = set()       # browse-dir paths already warned about (once each)
@@ -398,6 +415,35 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 return False
         return True
 
+    def _check_get_site(self):
+        """GET counterpart of _check_origin. The server binds 127.0.0.1, so
+        a Host that is not ours means DNS rebinding (evil.example resolving
+        to 127.0.0.1 — the browser still sends Host: evil.example:port) and
+        every GET body would be readable cross-origin. A request a foreign
+        page makes with fetch()/<img> carries Sec-Fetch-Site: cross-site;
+        for /api/* that is refused outright (an opaque no-cors fetch of
+        /api/browse-dir used to widen the preview-image allowlist), for
+        the shell and static files only non-navigations are refused so a
+        link from elsewhere into a document still opens. Clients that
+        send no Host (HTTP/1.0 tools) or no Sec-Fetch-* (non-browsers)
+        pass — neither can be forged from a browser."""
+        port = self._server_port
+        host = self.headers.get("Host", "")
+        ours = [f"127.0.0.1:{port}", f"localhost:{port}", f"[::1]:{port}"]
+        if port == 80:
+            ours += ["127.0.0.1", "localhost", "[::1]"]  # browsers omit :80
+        if host and host not in ours:
+            self._json_response({"error": "bad host"}, 400,
+                                extra_headers={"Connection": "close"})
+            return False
+        site = self.headers.get("Sec-Fetch-Site", "")
+        if site and site not in ("same-origin", "none"):
+            is_api = urlparse(self.path).path.startswith("/api/")
+            if is_api or self.headers.get("Sec-Fetch-Mode") != "navigate":
+                self._json_response({"error": "forbidden"}, 403)
+                return False
+        return True
+
     # Routes whose handlers read or write a sidecar and answer only at their
     # end. annotations._read_json lets EACCES/EIO propagate by design (a
     # read-modify-write that treated them as "empty" would wipe the file),
@@ -431,6 +477,8 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
             self._json_response({"error": detail, "sidecar": True}, 500)
 
     def _do_GET(self):
+        if not self._check_get_site():
+            return
         parsed = urlparse(self.path)
         params = parse_qs(parsed.query)
 
@@ -1003,6 +1051,13 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                 self.send_header("Content-Type", ctype)
                 self.send_header("Content-Length", str(len(data)))
                 self.send_header("Cache-Control", "max-age=3600")
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("X-Frame-Options", "DENY")
+                # image/* includes image/svg+xml; a same-origin navigation
+                # to this URL would otherwise render the SVG as a scripted
+                # document. CSP on an image response leaves <img> intact.
+                if _scriptable_type(ctype):
+                    self.send_header("Content-Security-Policy", "sandbox")
                 self.end_headers()
                 self.wfile.write(data)
             except Exception:
@@ -1034,6 +1089,16 @@ class PreviewHandler(http.server.BaseHTTPRequestHandler):
                         self.send_header("Content-Type", ctype)
                         self.send_header("Content-Length", str(len(data)))
                         self.send_header("Cache-Control", "public, max-age=60")
+                        # Files from a document's folder are served on the
+                        # app's origin: never let the browser sniff them
+                        # into something scriptable, and render the types
+                        # that can carry script in an opaque sandbox so a
+                        # hostile notes.html / diagram.svg cannot reach the
+                        # file API. Images, fonts, and PDFs are unaffected.
+                        self.send_header("X-Content-Type-Options", "nosniff")
+                        self.send_header("X-Frame-Options", "DENY")
+                        if _scriptable_type(ctype):
+                            self.send_header("Content-Security-Policy", "sandbox")
                         self.end_headers()
                         self.wfile.write(data)
                         served = True

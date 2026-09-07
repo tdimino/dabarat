@@ -1042,7 +1042,7 @@ const CommandPalette = {
       actions.appendChild(saveBtn);
       preview.appendChild(actions);
     } catch (err) {
-      preview.innerHTML = '<div class="tp-error">' + (err.message || 'Failed to extract palette') + '</div>';
+      preview.innerHTML = '<div class="tp-error">' + escapeHtml(err.message || 'Failed to extract palette') + '</div>';
     }
   },
 

@@ -587,13 +587,23 @@ async function _loadRecentView() {
 }
 
 /* ── Render Home Content ─────────────────────────────── */
+/* /api/browse-dir counts rows it could not fully read into `partial`
+   (the server log names each path once) — say so next to the stats
+   instead of quietly showing fewer cards and a smaller word total */
+function _partialNoteHtml(data) {
+  const n = data && data.partial;
+  if (!n) return '';
+  return ` <span class="home-partial-note" title="The server log names each file it could not read">` +
+    `<i class="ph ph-warning" aria-hidden="true"></i> ${n} ${n === 1 ? 'entry' : 'entries'} not fully read</span>`;
+}
+
 function _renderHomeContent(content, entries, title, browseData, recentWorkspaces) {
   if (!content) return;
 
   const home = os_home || '/Users';
   const pathDisplay = browseData ? browseData.path.replace(home, '~') : '';
   const statsHtml = browseData && browseData.stats
-    ? `<span class="home-workspace-stats">${browseData.stats.fileCount} files &middot; ${browseData.stats.totalWords.toLocaleString()} words</span>`
+    ? `<span class="home-workspace-stats">${browseData.stats.fileCount} files &middot; ${browseData.stats.totalWords.toLocaleString()} words</span>${_partialNoteHtml(browseData)}`
     : '';
 
   let emptyState = '';
@@ -816,7 +826,7 @@ function _buildCard(e, i, opts) {
         _previewRenderer = new marked.Renderer();
         _previewRenderer.html = () => '';
       }
-      let rendered = marked.parse(e.preview, { breaks: false, gfm: true, renderer: _previewRenderer });
+      let rendered = sanitizeHtml(marked.parse(e.preview, { breaks: false, gfm: true, renderer: _previewRenderer }));
       /* Strip leading H1 — it duplicates the filename already in the card header */
       rendered = rendered.replace(/^\s*<h1[^>]*>[\s\S]*?<\/h1>\s*/, '');
       previewHtml = `<div class="home-card-preview home-card-preview-md"><div class="home-card-preview-content">${rendered}</div><div class="home-card-preview-fade"></div></div>`;
@@ -1249,7 +1259,7 @@ async function _loadWorkspaceMultiRoot() {
 
   folderResults.forEach(({ folder, data, error }) => {
     const files = data && !error ? data.entries.filter(e => e.type === 'file') : [];
-    const stats = data && data.stats ? `${data.stats.fileCount} files &middot; ${data.stats.totalWords.toLocaleString()} words` : '';
+    const stats = data && data.stats ? `${data.stats.fileCount} files &middot; ${data.stats.totalWords.toLocaleString()} words${_partialNoteHtml(data)}` : '';
     const cards = files.map((e, i) => _buildCard(e, i)).join('');
 
     sectionsHtml += `<div class="home-section">

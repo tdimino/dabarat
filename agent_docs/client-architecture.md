@@ -166,13 +166,14 @@ Self-contained module with state, DOM construction, keyboard handling, command r
 - `_loadWorkspaceSidebarEntries(dirPath)` — fetches `GET /api/browse-dir`, renders entries with Motion One cascade
 - Folder entries navigate into subdirectories; file entries show size badges
 - Uses `data-path` attributes + event delegation (no inline `onclick`) for XSS safety
-- **Button layout**: "Open" action button (`.ws-btn-action`) + segmented toggle (`.ws-toggle`) containing "Files" and "Recent" view mode buttons—all with visible text labels, 28px min-height, 11px font
+- **Button layout**: a path button (`.ws-path`, "Choose a folder…" when unset) + segmented toggle (`.ws-toggle`) containing "Files" and "Recent" (`aria-pressed`, derived from `_effectiveHomeView()` — with no folder the rail shows Recent and says so)
+- **Recent rows** (`_loadRecentSidebarEntries`): 6px hue dot (`_fileBadges[].hue`) + two-line-clamped name + time column; rows are `role="option"` inside a `listbox` with roving tabindex (`rovingList` in `utils.js`)
 
 ### File Cards
 - `_renderHomeContent(data, mode)` — builds card grid from browse-dir or recent API response
 - **Smart badges**: 10 pattern matchers in `_fileBadges` array detect prompt, agent config, plan, spec, readme, architecture, changelog, todo, license, research files (client-side, heuristic)
 - **Card layout**: no separate description line; markdown preview (80px height) serves as the card body, with leading H1 stripped to avoid filename duplication; grid gap 20px
-- **Accent colors**: per-extension color strip (`_accentColors` map) using Catppuccin palette
+- **Accent strip**: the file kind's `hue` from `_fileBadgeFor()`, else `--home-title` (the per-extension `_accentColors` map is gone — every `.md` was blue)
 - **Motion One**: staggered card entrance (`delay: Motion.stagger(0.06)`), guarded with `if (window.Motion)`
 - **Equal-height**: flexbox column layout with `flex: 1` on card body
 - **Responsive**: single-column default, 2-column at 900px+, 3-column at 1600px+

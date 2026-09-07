@@ -8,13 +8,11 @@ function _showDiffView() {
   if (fmIndicator) fmIndicator.style.display = 'none';
   document.getElementById('diff-view').style.display = 'flex';
 
-  /* Hide annotations gutter in diff mode */
+  /* Hide the annotations gutter in diff mode; body.diff-mode drops the
+     float column so the diff header's exit button owns the right edge */
+  document.body.classList.add('diff-mode');
   const gutter = document.getElementById('annotations-gutter');
-  const toggle = document.getElementById('annotations-toggle');
-  const histToggle = document.getElementById('history-toggle');
   if (gutter) gutter.style.display = 'none';
-  if (toggle) toggle.style.display = 'none';
-  if (histToggle) histToggle.style.display = 'none';
   document.getElementById('main-area').style.marginRight = '0';
 }
 
@@ -80,12 +78,9 @@ function exitDiffMode() {
   /* Restore normal view */
   document.getElementById('content').style.display = '';
   document.getElementById('diff-view').style.display = 'none';
+  document.body.classList.remove('diff-mode');
   const gutter = document.getElementById('annotations-gutter');
-  const toggle = document.getElementById('annotations-toggle');
-  const histToggle = document.getElementById('history-toggle');
   if (gutter) gutter.style.display = '';
-  if (toggle) toggle.style.display = '';
-  if (histToggle) histToggle.style.display = '';
   document.getElementById('main-area').style.marginRight = '';
 
   /* Force re-render, then refresh from disk (polling was paused in diff mode) */

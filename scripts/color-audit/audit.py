@@ -413,6 +413,7 @@ USED_PAIRS = [
      [MANTLE, "rgba(var(--ctp-surface0-rgb), 0.6)"], 4.5, "P1"),
     ("excerpt -line",        "var(--stat-del)",
      [MANTLE, "rgba(var(--ctp-surface0-rgb), 0.6)"], 4.5, "P1"),
+    ("diff exit button",     "var(--home-control)",   [MANTLE], 4.5, "P1"),
     ("diff stat +",          "var(--stat-add)",       [CRUST], 4.5, "P1"),
     ("diff stat -",          "var(--stat-del)",       [CRUST], 4.5, "P1"),
     ("diff stat ~",          "var(--stat-chg)",       [CRUST], 4.5, "P1"),

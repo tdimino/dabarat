@@ -56,21 +56,24 @@
   background: rgba(var(--ctp-green-rgb), 0.15);
   color: var(--ctp-green);
 }
+/* The exit is a labelled .btn (base-layout.css), not a ghost × — the ×
+   alone at the far right of the header read as decoration, and the float
+   column used to sit on top of it. body.diff-mode drops the floats. */
 .diff-close-btn {
-  background: none;
-  border: none;
-  color: var(--ctp-overlay1);
-  cursor: pointer;
-  font-size: 16px;
-  padding: 4px 6px;
-  border-radius: var(--radius-sm);
-  transition: color var(--dur-base), background-color var(--dur-base), border-color var(--dur-base), box-shadow var(--dur-base), transform var(--dur-base), opacity var(--dur-base);
   flex-shrink: 0;
   margin-left: 12px;
+  white-space: nowrap;
 }
-.diff-close-btn:hover {
-  color: var(--ctp-text);
-  background: var(--ctp-surface0);
+.diff-close-btn i { font-size: 13px; }
+.diff-close-btn kbd {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  line-height: 1;
+  padding: 2px 4px;
+  margin-left: 2px;
+  border: 1px solid var(--ctp-surface1);
+  border-radius: var(--radius-xs);
+  color: var(--home-control); /* audited on mantle by the tab rows */
 }
 
 /* ── Frontmatter Diff Bar ────────────────────────────── */

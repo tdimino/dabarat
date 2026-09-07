@@ -190,8 +190,8 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
           <span class="diff-filename" id="diff-right-name"></span>
           <span class="diff-badge diff-badge-compare">Compare</span>
         </div>
-        <button class="diff-close-btn" id="diff-close-btn" title="Exit diff (Esc)">
-          <i class="ph ph-x"></i>
+        <button class="btn diff-close-btn" id="diff-close-btn" title="Back to the document (Esc)">
+          <i class="ph ph-x" aria-hidden="true"></i>Exit compare<kbd>Esc</kbd>
         </button>
       </div>
       <div class="diff-fm-bar" id="diff-fm-bar" style="display:none"></div>

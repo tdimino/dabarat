@@ -178,10 +178,11 @@ body.home-active #justify-toggle { display: none; }
   }
   #main-area { margin-left: 0; }
   #tab-bar-wrapper { margin-right: 0; }
-  /* Home-active: hide TOC on narrow screens */
-  body.home-active #toc {
-    transform: translateX(calc(-1 * var(--toc-width, 260px)));
-  }
+  /* Home-active: the content reclaims the width, but the rail is NOT forced
+     off-canvas here — theme.js adds .toc-collapsed on entering the
+     breakpoint, and the rules above let Cmd+\ / #toc-restore slide it back
+     in as an overlay. An unconditional transform made the Files/Recent rail
+     unreachable on any half-width home window (critique, 2026-09-06). */
   body.home-active #main-area {
     margin-left: 0;
   }

@@ -149,7 +149,8 @@ body.home-active #content {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
 }
-.home-card:hover .home-card-remove { opacity: 1; }
+.home-card:hover .home-card-remove,
+.home-card:focus-within .home-card-remove { opacity: 1; }
 .home-card-remove:hover {
   background: var(--ctp-red);
   color: var(--ctp-base);
@@ -496,29 +497,47 @@ body.home-active #content {
   font-family: var(--font-mono);
   font-size: 10px;
   color: var(--home-meta);
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 4px;
+  max-width: 100%;
   border-radius: var(--radius-sm);
   padding: 2px 4px;
   margin: -2px -4px;
   transition: background var(--dur-base), color var(--dur-base);
 }
 .ws-path:hover {
-  background: var(--ctp-surface0);
+  background: var(--interactive-muted-bg);
   color: var(--ctp-text);
+}
+.ws-path:focus-visible {
+  outline: 2px solid var(--ctp-blue);
+  outline-offset: -1px;
 }
 .ws-path-edit {
   font-size: 9px;
   opacity: 0;
   transition: opacity var(--dur-base);
 }
-.ws-path:hover .ws-path-edit {
+.ws-path:hover .ws-path-edit,
+.ws-path:focus-visible .ws-path-edit {
   opacity: 0.6;
 }
+/* No folder chosen: the line is an invitation, not a path — sans, control
+   tier, pencil always visible */
+.ws-path-unset {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--home-control);
+}
+.ws-path-unset .ws-path-edit { opacity: 0.6; }
 .ws-actions {
   display: flex;
   align-items: center;
@@ -892,7 +911,8 @@ body.home-active #content {
   transition: opacity var(--dur-fast), background var(--dur-fast), color var(--dur-fast);
   flex-shrink: 0;
 }
-.ws-entry:hover .ws-entry-remove { opacity: 1; }
+.ws-entry:hover .ws-entry-remove,
+.ws-entry:focus-within .ws-entry-remove { opacity: 1; }
 .ws-entry-remove:hover {
   background: rgba(var(--ctp-red-rgb), 0.15);
   color: var(--ctp-red);

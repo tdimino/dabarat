@@ -78,3 +78,50 @@ function openDialog(el, opts) {
     },
   };
 }
+
+/* Roving tabindex over a flat list: one item sits in the tab order,
+   ArrowUp/Down (plus Left/Right with opts.grid) move focus with wrap,
+   Home/End jump, Enter/Space activate via click(). Items get opts.role
+   (default 'option', pass null to leave their native role) and the
+   container opts.containerRole (default 'listbox', null to skip).
+   Safe to call again after a re-render: the listeners are bound once per
+   container, a later call only re-seeds the tab stop. Keys are ignored
+   while focus sits on a control inside an item (its own Enter wins). */
+function rovingList(container, itemSelector, opts) {
+  if (!container) return;
+  opts = opts || {};
+  const items = () => Array.from(container.querySelectorAll(itemSelector));
+  const seed = () => {
+    const list = items();
+    const current = list.find(el => el.getAttribute('tabindex') === '0') || list[0];
+    list.forEach(el => {
+      if (opts.role !== null) el.setAttribute('role', opts.role || 'option');
+      el.setAttribute('tabindex', el === current ? '0' : '-1');
+    });
+  };
+  if (opts.containerRole !== null) container.setAttribute('role', opts.containerRole || 'listbox');
+  seed();
+  if (container._rovingBound) return;
+  container._rovingBound = true;
+  container.addEventListener('focusin', (e) => {
+    const el = e.target.closest(itemSelector);
+    if (!el || !container.contains(el) || e.target !== el) return;
+    items().forEach(x => x.setAttribute('tabindex', x === el ? '0' : '-1'));
+  });
+  container.addEventListener('keydown', (e) => {
+    const cur = document.activeElement;
+    if (!cur || !cur.matches(itemSelector)) return;
+    const list = items();
+    const idx = list.indexOf(cur);
+    if (idx < 0) return;
+    const fwd = e.key === 'ArrowDown' || (opts.grid && e.key === 'ArrowRight');
+    const back = e.key === 'ArrowUp' || (opts.grid && e.key === 'ArrowLeft');
+    let next = null;
+    if (fwd) next = list[(idx + 1) % list.length];
+    else if (back) next = list[(idx - 1 + list.length) % list.length];
+    else if (e.key === 'Home') next = list[0];
+    else if (e.key === 'End') next = list[list.length - 1];
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); cur.click(); return; }
+    if (next) { e.preventDefault(); next.focus(); }
+  });
+}

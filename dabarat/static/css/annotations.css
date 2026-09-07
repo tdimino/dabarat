@@ -55,9 +55,17 @@
   padding: 2px;
   border-radius: var(--radius-sm);
   transition: color var(--dur-base);
-  display: none;
 }
 .ann-gutter-close:hover { color: var(--ctp-text); }
+
+/* Dismissed native column (wide widths only — under 1400px the gutter is
+   already an overlay and this class must not beat .overlay-open). The
+   Notes float loses .gutter-native via syncGutterLayout and reopens it. */
+@media (min-width: 1401px) {
+  html.gutter-hidden #annotations-gutter { display: none; }
+  html.gutter-hidden #main-area { margin-right: 0; }
+  html.gutter-hidden #tab-bar-wrapper { margin-right: 0; }
+}
 
 /* Annotation bubble cards */
 .ann-bubble {

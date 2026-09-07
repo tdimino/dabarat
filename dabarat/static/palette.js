@@ -184,10 +184,7 @@ const CommandPalette = {
       { id: 'toggle-justify', label: 'Toggle Justified Text', icon: 'ph-text-align-justify', action: () => toggleJustify() },
       { id: 'font-up', label: 'Increase Font', icon: 'ph-text-aa', action: () => adjustFont(1) },
       { id: 'font-down', label: 'Decrease Font', icon: 'ph-text-aa', action: () => adjustFont(-1) },
-      { id: 'toggle-ann', label: 'Toggle Annotations', icon: 'ph-chat-circle-dots', action: () => {
-        const g = document.getElementById('annotations-gutter');
-        g.classList.contains('overlay-open') ? closeGutterOverlay() : openGutterOverlay();
-      }},
+      { id: 'toggle-ann', label: 'Toggle Annotations', icon: 'ph-chat-circle-dots', action: () => toggleGutter() },
       { id: 'version-history', label: 'Version History', icon: 'ph-clock-counter-clockwise', shortcut: '⇧⌘H', action: () => {
         if (typeof openVersionPanel === 'function') openVersionPanel();
       }},
@@ -196,7 +193,7 @@ const CommandPalette = {
       }},
       { id: 'show-variables', label: 'Show Variables', icon: 'ph-brackets-curly', action: () => {
         if (typeof diffState !== 'undefined' && diffState.active) return;
-        if (window.innerWidth <= 1400) openGutterOverlay();
+        revealGutter();
         switchGutterTab('variables');
       }},
       { id: 'toggle-twemoji', label: 'Cycle Emoji Style', icon: 'ph-smiley', action: () => cycleEmojiStyle() },

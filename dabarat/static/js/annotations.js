@@ -14,15 +14,64 @@ function updateAnnotationsBadge(count) {
   }
 
   if (gutterCount) gutterCount.textContent = count > 0 ? count : '';
+  syncGutterLayout();
+}
 
-  /* On wide screens where gutter is natively visible, hide toggle */
+/* Over 1400px the gutter is a native column beside the document; under
+   that it is an overlay opened from the Notes float. Either way it can be
+   dismissed: the header × (always painted) hides the native column and
+   remembers the choice, and the Notes float returns to reopen it. Before
+   this the wide layout had no close at all — the × only rendered in
+   overlay mode and the float column sat on top of the gutter header. */
+const GUTTER_HIDDEN_KEY = 'dabarat-gutter-hidden';
+const _gutterNativeMq = window.matchMedia('(min-width: 1401px)');
+
+function _gutterIsNativeWidth() { return _gutterNativeMq.matches; }
+
+function _gutterHiddenPref() {
+  try { return localStorage.getItem(GUTTER_HIDDEN_KEY) === '1'; } catch (e) { return false; }
+}
+
+/* body.gutter-visible mirrors whether the gutter is actually painted —
+   native column, overlay, or neither (home/edit/diff hide it inline). The
+   float column reads it to step left of the gutter; the Notes float hides
+   itself (.gutter-native) while the native column is showing. */
+function syncGutterLayout() {
   const gutter = document.getElementById('annotations-gutter');
-  const isNativelyVisible = gutter && window.innerWidth > 1400;
-  if (isNativelyVisible) {
-    toggle.classList.add('gutter-native');
-  } else {
-    toggle.classList.remove('gutter-native');
+  const shown = !!gutter && getComputedStyle(gutter).display !== 'none';
+  document.body.classList.toggle('gutter-visible', shown);
+  const toggle = document.getElementById('annotations-toggle');
+  if (toggle) toggle.classList.toggle('gutter-native', shown && _gutterIsNativeWidth());
+}
+
+function setGutterHidden(hidden) {
+  document.documentElement.classList.toggle('gutter-hidden', hidden);
+  try { localStorage.setItem(GUTTER_HIDDEN_KEY, hidden ? '1' : '0'); } catch (e) { /* private mode */ }
+  syncGutterLayout();
+}
+
+/* Notes float and the palette's "Toggle Annotations" */
+function toggleGutter() {
+  if (_gutterIsNativeWidth()) {
+    setGutterHidden(!document.documentElement.classList.contains('gutter-hidden'));
+    return;
   }
+  const gutter = document.getElementById('annotations-gutter');
+  if (gutter.classList.contains('overlay-open')) closeGutterOverlay();
+  else openGutterOverlay();
+}
+
+/* Make sure the gutter is on screen in whichever form this width uses —
+   the annotate carousel and "Show Variables" need its panels visible */
+function revealGutter() {
+  if (_gutterIsNativeWidth()) setGutterHidden(false);
+  else openGutterOverlay();
+}
+
+/* Header ×: hides the native column (remembered) or closes the overlay */
+function dismissGutter() {
+  if (_gutterIsNativeWidth()) setGutterHidden(true);
+  else closeGutterOverlay();
 }
 
 let _gutterDismissCtrl = null;
@@ -83,18 +132,27 @@ function closeGutterOverlay() {
   }
 }
 
-document.getElementById('annotations-toggle').onclick = () => {
-  const gutter = document.getElementById('annotations-gutter');
-  if (gutter.classList.contains('overlay-open')) {
-    closeGutterOverlay();
-  } else {
-    openGutterOverlay();
-  }
-};
+document.getElementById('annotations-toggle').onclick = toggleGutter;
+document.getElementById('ann-gutter-close').onclick = dismissGutter;
 
-document.getElementById('ann-gutter-close').onclick = () => {
-  closeGutterOverlay();
-};
+/* Keep body.gutter-visible honest without touching every mode switch:
+   home/edit/diff hide the gutter inline and the overlay is a class, so one
+   attribute observer plus the width breakpoint covers every path */
+(function () {
+  const gutter = document.getElementById('annotations-gutter');
+  if (!gutter) return;
+  if (_gutterHiddenPref()) document.documentElement.classList.add('gutter-hidden');
+  new MutationObserver(syncGutterLayout)
+    .observe(gutter, { attributes: true, attributeFilter: ['style', 'class'] });
+  /* Widening past the breakpoint with the overlay open would leave
+     .overlay-open and its document dismiss listeners alive under the
+     native column — close the overlay form first, then re-derive */
+  _gutterNativeMq.addEventListener('change', () => {
+    if (_gutterNativeMq.matches) closeGutterOverlay();
+    syncGutterLayout();
+  });
+  syncGutterLayout();
+})();
 
 /* ── Annotations ──────────────────────────────────────── */
 
@@ -600,10 +658,9 @@ document.querySelectorAll('.carousel-btn').forEach(btn => {
     if (!annotateSelection) return;
     selectedAnnotationType = btn.dataset.type;
 
-    /* On narrow screens, force-open gutter so the form is visible */
-    if (window.innerWidth <= 1400) {
-      openGutterOverlay();
-    }
+    /* Overlay on narrow screens, un-hide the native column on wide ones —
+       the form lives in the gutter either way */
+    revealGutter();
 
     showAnnotationForm();
     document.getElementById('annotate-carousel').classList.remove('visible');

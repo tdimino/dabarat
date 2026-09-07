@@ -140,7 +140,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
     return window._tiptapLoading;
   }};
 </script>
-<script>(function(){{var v=['ink','vellum','mocha','latte','rose-pine','rose-pine-dawn','tokyo-storm','tokyo-light','_custom'];var p=new URLSearchParams(window.location.search);var qt=p.get('theme');var st={json.dumps(server_theme)};var t=(qt&&v.indexOf(qt)!==-1)?qt:localStorage.getItem('dabarat-theme')||localStorage.getItem('mdpreview-theme')||(st&&v.indexOf(st)!==-1?st:'')||'mocha';if(v.indexOf(t)===-1)t='mocha';document.documentElement.setAttribute('data-theme',t);if(p.get('export')==='1')document.documentElement.dataset.export='1';var dd=p.get('date');if(dd)document.documentElement.dataset.date=dd;if(t==='_custom'){{try{{var a=localStorage.getItem('dabarat-custom-active')||localStorage.getItem('mdpreview-custom-active');if(a){{var th=JSON.parse(localStorage.getItem('dabarat-custom-themes')||localStorage.getItem('mdpreview-custom-themes')||'[]');for(var i=0;i<th.length;i++){{if(th[i].id===a&&th[i].variables){{var s=document.createElement('style');s.id='custom-theme-style';var r='';var vr=th[i].variables;for(var k in vr){{if(vr.hasOwnProperty(k))r+=k+':'+vr[k]+';'}}s.textContent='[data-theme="_custom"]{{'+r+'}}';document.head.appendChild(s);break}}}}}}}}catch(e){{document.documentElement.setAttribute('data-theme','mocha')}}}}}})()</script>
+<script>(function(){{var v=['ink','vellum','mocha','latte','rose-pine','rose-pine-dawn','tokyo-storm','tokyo-light','_custom'];var p=new URLSearchParams(window.location.search);var qt=p.get('theme');var st={json.dumps(server_theme)};var t=(qt&&v.indexOf(qt)!==-1)?qt:localStorage.getItem('dabarat-theme')||localStorage.getItem('mdpreview-theme')||(st&&v.indexOf(st)!==-1?st:'')||'mocha';if(v.indexOf(t)===-1)t='mocha';document.documentElement.setAttribute('data-theme',t);try{{if(localStorage.getItem('dabarat-gutter-hidden')==='1')document.documentElement.classList.add('gutter-hidden')}}catch(e){{}}if(p.get('export')==='1')document.documentElement.dataset.export='1';var dd=p.get('date');if(dd)document.documentElement.dataset.date=dd;if(t==='_custom'){{try{{var a=localStorage.getItem('dabarat-custom-active')||localStorage.getItem('mdpreview-custom-active');if(a){{var th=JSON.parse(localStorage.getItem('dabarat-custom-themes')||localStorage.getItem('mdpreview-custom-themes')||'[]');for(var i=0;i<th.length;i++){{if(th[i].id===a&&th[i].variables){{var s=document.createElement('style');s.id='custom-theme-style';var r='';var vr=th[i].variables;for(var k in vr){{if(vr.hasOwnProperty(k))r+=k+':'+vr[k]+';'}}s.textContent='[data-theme="_custom"]{{'+r+'}}';document.head.appendChild(s);break}}}}}}}}catch(e){{document.documentElement.setAttribute('data-theme','mocha')}}}}}})()</script>
 <style>
 {css}
 </style>
@@ -242,7 +242,7 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
           <span class="gutter-tab-count" id="var-gutter-count"></span>
         </button>
       </div>
-      <button class="ann-gutter-close" id="ann-gutter-close" title="Close"><i class="ph ph-x"></i></button>
+      <button class="ann-gutter-close" id="ann-gutter-close" title="Hide notes" aria-label="Hide notes"><i class="ph ph-x"></i></button>
     </div>
     <div id="gutter-panel-notes">
       <div id="annotation-form" style="display:none;">
@@ -278,10 +278,12 @@ def get_html(title="dabarat", default_author="Tom", server_theme="", server_just
     <button class="carousel-btn" data-type="important"><i class="ph ph-flag"></i><span>Flag</span></button>
     <button class="carousel-btn" data-type="bookmark"><i class="ph ph-bookmark-simple"></i><span>Bookmark</span></button>
   </div>
-  <button id="edit-toggle" title="Edit (⇧⌘E)" onclick="enterEditMode()"><span class="float-btn-label">Edit</span><i class="ph ph-pencil-simple"></i></button>
-  <button id="history-toggle" title="Version History (⇧⌘H)" onclick="openVersionPanel()"><span class="float-btn-label">History</span><i class="ph ph-clock-counter-clockwise"></i></button>
-  <button id="annotations-toggle" title="Annotations"><span class="float-btn-label">Notes</span><i class="ph ph-chat-circle-dots"></i><span class="ann-count" id="ann-count-badge">0</span></button>
-  <button id="justify-toggle" title="Justify text" onclick="toggleJustify()"><span class="float-btn-label">Justify</span><i class="ph ph-text-align-justify"></i></button>
+  <div id="float-column">
+    <button id="annotations-toggle" title="Notes"><span class="float-btn-label">Notes</span><i class="ph ph-chat-circle-dots"></i><span class="ann-count" id="ann-count-badge">0</span></button>
+    <button id="edit-toggle" title="Edit (⇧⌘E)" onclick="enterEditMode()"><span class="float-btn-label">Edit</span><i class="ph ph-pencil-simple"></i></button>
+    <button id="history-toggle" title="Version History (⇧⌘H)" onclick="openVersionPanel()"><span class="float-btn-label">History</span><i class="ph ph-clock-counter-clockwise"></i></button>
+    <button id="justify-toggle" title="Justify text" onclick="toggleJustify()"><span class="float-btn-label">Justify</span><i class="ph ph-text-align-justify"></i></button>
+  </div>
 
   <div id="version-panel">
     <div class="version-panel-header">

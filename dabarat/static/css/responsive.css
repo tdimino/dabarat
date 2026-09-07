@@ -1,11 +1,9 @@
 /* ══════════════════════════════════════════════════════════
    Responsive — hide annotation gutter below 1400px
    ══════════════════════════════════════════════════════════ */
-/* Annotations toggle — floating pill on right edge */
+/* Annotations toggle — first button of #float-column (history-ui.css) */
 #annotations-toggle {
-  position: fixed;
-  right: 14px;
-  top: 46px;
+  position: relative;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-blue);
@@ -14,10 +12,9 @@
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-float);
   box-shadow: var(--elevation-1);
   transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
@@ -72,14 +69,14 @@
 }
 #annotations-toggle.has-annotations .ann-count { display: flex; }
 
-/* When gutter is natively visible (wide screen), hide toggle */
+/* While the native column is showing the toggle has nothing to do —
+   syncGutterLayout (annotations.js) sets this; the header × hides the
+   column and the toggle comes back */
 #annotations-toggle.gutter-native { display: none !important; }
 
-/* ── Justify Toggle Button (floating, mirrors annotations-toggle) ── */
+/* ── Justify Toggle Button (last button of #float-column) ── */
 #justify-toggle {
-  position: fixed;
-  right: 14px;
-  top: 126px;
+  position: relative;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-mauve);
@@ -91,7 +88,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-float);
   box-shadow: var(--elevation-1);
   transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
@@ -137,17 +133,9 @@
 body.edit-mode #justify-toggle { display: none; }
 body.home-active #justify-toggle { display: none; }
 
-/* Wide screens: annotations gutter is native (toggle hidden) and
-   #edit-toggle moves to top: 14px, so justify slots in below it */
-@media (min-width: 1401px) {
-  #justify-toggle { top: 54px; }
-}
-
 @media (max-width: 1400px) {
   #annotations-gutter { display: none; }
   #main-area { margin-right: 0; }
-  /* Always show the toggle on narrow screens */
-  #annotations-toggle { display: flex; }
   /* Gutter overlay when opened via toggle */
   #annotations-gutter.overlay-open {
     display: block;
@@ -155,7 +143,6 @@ body.home-active #justify-toggle { display: none; }
     border-left: 1px solid var(--ctp-surface0);
     box-shadow: var(--elevation-2);
   }
-  #annotations-gutter.overlay-open .ann-gutter-close { display: block; }
 }
 
 /* ══════════════════════════════════════════════════════════

@@ -273,9 +273,7 @@ body.edit-mode .edit-body {
 
 /* ── Edit Toggle Button (floating, mirrors annotations-toggle) ── */
 #edit-toggle {
-  position: fixed;
-  right: 14px;
-  top: 86px;
+  position: relative;
   background: rgba(var(--ctp-base-rgb), 0.7);
   border: 1px solid var(--ctp-surface1);
   color: var(--ctp-yellow);
@@ -287,7 +285,6 @@ body.edit-mode .edit-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: var(--z-float);
   box-shadow: var(--elevation-1);
   transition: transform var(--dur-mid) ease, box-shadow var(--dur-slow) ease, border-color var(--dur-mid) ease, color var(--dur-mid) ease, background var(--dur-mid) ease;
 }
@@ -327,10 +324,6 @@ body.edit-mode .edit-body {
 body.edit-mode #edit-toggle { display: none; }
 body.edit-mode #history-toggle { display: none; }
 body.home-active #edit-toggle { display: none; }
-
-@media (min-width: 1401px) {
-  #edit-toggle { top: 14px; }
-}
 
 /* ── Transition ──────────────────────────────────────────── */
 /* The yellow rule under the tab bar marks pending work, not edit mode */

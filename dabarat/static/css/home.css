@@ -111,10 +111,12 @@ body.home-active #content {
   animation: homeCardSlide 0.3s ease both;
 }
 
-/* Accent strip — colored top border based on file type */
+/* Accent strip — the file kind's accent (home.js _fileBadges `hue`, the
+   same colour as the rail dot and badge wash), else --home-title so the
+   strip agrees with the page's own pigment (2026-09-06) */
 .home-card-accent {
   height: 2px;
-  background: var(--accent, var(--ctp-blue));
+  background: var(--accent, var(--home-title));
 }
 
 /* Hover answers with border + shadow only — no lift (2026-09-06) */

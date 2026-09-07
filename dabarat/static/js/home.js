@@ -18,15 +18,6 @@ function _effectiveHomeView() {
   return (_homeViewMode === 'recent' || !_fileBrowserPath) ? 'recent' : 'workspace';
 }
 
-/* Accent color map for file extensions */
-const _accentColors = {
-  md: 'var(--ctp-blue)',
-  markdown: 'var(--ctp-blue)',
-  txt: 'var(--ctp-green)',
-  mdown: 'var(--ctp-teal)',
-  mkd: 'var(--ctp-teal)',
-};
-
 /* Smart badge detection based on filename/path patterns. `hue` is the raw
    accent the badge's wash is mixed from — the rail's hue dot and the card's
    top strip take it, so one file kind is one colour on every surface. */
@@ -791,8 +782,12 @@ async function _fillLastSaveStat() {
 /* ── Card Builder ────────────────────────────────────── */
 function _buildCard(e, i, opts) {
   const hero = !!(opts && opts.hero);
-  const ext = (e.filename || e.name || '').split('.').pop().toLowerCase();
-  const accentColor = _accentColors[ext] || 'var(--ctp-blue)';
+  /* Top strip: the file kind's own accent (same map as the rail dot and
+     the badge wash), else the theme's title pigment. It used to be keyed
+     by extension, which made every .md strip blue — decoration claiming
+     to be information, and on Ink twelve blue rails under a gold title. */
+  const kindBadge = _fileBadgeFor(e.filename || e.name || '', e.path || '');
+  const accentColor = kindBadge ? kindBadge.hue : 'var(--home-title)';
 
   const tagPills = (e.tags || []).slice(0, 4).map(t =>
     `<span class="home-tag">${escapeHtml(t)}</span>`

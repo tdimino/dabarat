@@ -1143,6 +1143,17 @@ async function showInstanceMenu(anchor) {
         (names.length > 2 ? ' +' + (names.length - 2) + ' more' : '') + ')';
       if (!confirm('Shut down the instance on :' + port + holding +
                    '? Unsaved edits in its window will be lost.')) return;
+      /* Visible progress: the row dims and the button names what it is
+         doing. The sibling answers {ok} and only exits ~200 ms later, so an
+         immediate re-scan still listed it and the menu repainted unchanged
+         — "nothing happened" (2026-09-07). Poll until the port stops
+         answering, then collapse the row; failures land in a banner, not
+         a native alert. */
+      const btn = e.target.closest('[data-action="shutdown"]');
+      row.classList.add('shutting-down');
+      row.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      btn.innerHTML = '<i class="ph ph-spinner" aria-hidden="true"></i> Shutting down…';
+      let error = '';
       try {
         const res = await fetch('/api/instances/shutdown', {
           method: 'POST',
@@ -1150,13 +1161,42 @@ async function showInstanceMenu(anchor) {
           body: JSON.stringify({port: port})
         });
         const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.ok) {
-          alert('Shutdown of :' + port + ' failed' + (data.error ? ': ' + data.error : ''));
-        }
+        if (!res.ok || !data.ok) error = data.error || ('HTTP ' + res.status);
       } catch (err) {
-        alert('Shutdown of :' + port + ' failed: ' + err.message);
+        error = err.message;
       }
-      await fetchInstances();
+      let gone = false;
+      if (!error) {
+        const deadline = Date.now() + 4000;
+        while (Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, 300));
+          const list = await fetchInstances();
+          if (!menu.isConnected) return;
+          if (!list.some(i => i.port === port)) { gone = true; break; }
+        }
+      } else {
+        await fetchInstances();
+      }
+      if (!menu.isConnected) return;
+      if (error) {
+        row.classList.remove('shutting-down');
+        row.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        btn.textContent = 'Shut Down';
+        _showStatusBanner('instance-shutdown-banner',
+          'Shutdown of :' + port + ' failed: ' + error, 'error', { timeout: 8000 });
+        btn.focus();
+        return;
+      }
+      if (gone) {
+        row.classList.add('gone');
+        await new Promise(r => setTimeout(r, _prefersReducedMotion ? 0 : 220));
+        _showStatusBanner('instance-shutdown-banner', 'Shut down :' + port + '.',
+          'info', { timeout: 4000 });
+      } else {
+        _showStatusBanner('instance-shutdown-banner',
+          ':' + port + ' acknowledged the shutdown but is still answering — it may be mid-request; the list refreshes on its own.',
+          'warn', { timeout: 8000 });
+      }
       if (!menu.isConnected) return;
       renderRows();
       /* Re-render dropped the focused button — land on the next one */

@@ -999,6 +999,32 @@ body.home-active.toc-collapsed #main-area {
   border-color: rgba(var(--ctp-red-rgb), 0.5);
   background: rgba(var(--ctp-red-rgb), 0.10);
 }
+/* Shutdown in flight: the row dims, the button keeps its red and spins;
+   once the port stops answering the row slides out before the re-render */
+.instance-row.shutting-down {
+  opacity: 0.6;
+  pointer-events: none;
+}
+.instance-row.shutting-down .instance-row-actions button[data-action="shutdown"] {
+  color: var(--ctp-red);
+  border-color: rgba(var(--ctp-red-rgb), 0.5);
+  background: rgba(var(--ctp-red-rgb), 0.10);
+  opacity: 1;
+}
+.instance-row.shutting-down .ph-spinner {
+  display: inline-block;
+  animation: instanceSpin 0.9s linear infinite;
+}
+@keyframes instanceSpin { to { transform: rotate(360deg); } }
+.instance-row.gone {
+  opacity: 0;
+  transform: translateX(-8px);
+  transition: opacity var(--dur-base), transform var(--dur-base);
+}
+@media (prefers-reduced-motion: reduce) {
+  .instance-row.shutting-down .ph-spinner { animation: none; }
+  .instance-row.gone { transition: none; }
+}
 .instance-empty {
   padding: 12px 14px;
   font-family: var(--font-sans);

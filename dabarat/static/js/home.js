@@ -27,27 +27,32 @@ const _accentColors = {
   mkd: 'var(--ctp-teal)',
 };
 
-/* Smart badge detection based on filename/path patterns */
+/* Smart badge detection based on filename/path patterns. `hue` is the raw
+   accent the badge's wash is mixed from — the rail's hue dot and the card's
+   top strip take it, so one file kind is one colour on every surface. */
 const _fileBadges = [
-  { test: (n, p) => /\.prompt\.md$/i.test(n), icon: 'ph-lightning', label: 'prompt', css: 'home-badge-prompt' },
-  { test: (n, p) => n.toLowerCase() === 'claude.md' || n.toLowerCase() === 'agents.md', icon: 'ph-robot', label: 'agent config', css: 'home-badge-agent' },
-  { test: (n, p) => /^plan[-_]|plans?\//i.test(p) || /^plan/i.test(n), icon: 'ph-map-trifold', label: 'plan', css: 'home-badge-plan' },
-  { test: (n, p) => n.toLowerCase() === 'spec.md', icon: 'ph-blueprint', label: 'spec', css: 'home-badge-spec' },
-  { test: (n, p) => n.toLowerCase() === 'readme.md', icon: 'ph-book-open', label: 'readme', css: 'home-badge-readme' },
-  { test: (n, p) => n.toLowerCase() === 'architecture.md', icon: 'ph-tree-structure', label: 'architecture', css: 'home-badge-arch' },
-  { test: (n, p) => n.toLowerCase() === 'changelog.md' || n.toLowerCase() === 'changes.md', icon: 'ph-list-bullets', label: 'changelog', css: 'home-badge-changelog' },
-  { test: (n, p) => n.toLowerCase() === 'todo.md' || n.toLowerCase() === 'todos.md', icon: 'ph-check-square', label: 'todo', css: 'home-badge-todo' },
-  { test: (n, p) => n.toLowerCase() === 'license.md' || n.toLowerCase() === 'license.txt', icon: 'ph-scales', label: 'license', css: 'home-badge-license' },
-  { test: (n, p) => /research|dossier/i.test(n), icon: 'ph-magnifying-glass', label: 'research', css: 'home-badge-research' },
+  { test: (n, p) => /\.prompt\.md$/i.test(n), icon: 'ph-lightning', label: 'prompt', css: 'home-badge-prompt', hue: 'var(--ctp-yellow)' },
+  { test: (n, p) => n.toLowerCase() === 'claude.md' || n.toLowerCase() === 'agents.md', icon: 'ph-robot', label: 'agent config', css: 'home-badge-agent', hue: 'var(--ctp-mauve)' },
+  { test: (n, p) => /^plan[-_]|plans?\//i.test(p) || /^plan/i.test(n), icon: 'ph-map-trifold', label: 'plan', css: 'home-badge-plan', hue: 'var(--ctp-sky)' },
+  { test: (n, p) => n.toLowerCase() === 'spec.md', icon: 'ph-blueprint', label: 'spec', css: 'home-badge-spec', hue: 'var(--ctp-teal)' },
+  { test: (n, p) => n.toLowerCase() === 'readme.md', icon: 'ph-book-open', label: 'readme', css: 'home-badge-readme', hue: 'var(--ctp-blue)' },
+  { test: (n, p) => n.toLowerCase() === 'architecture.md', icon: 'ph-tree-structure', label: 'architecture', css: 'home-badge-arch', hue: 'var(--ctp-flamingo)' },
+  { test: (n, p) => n.toLowerCase() === 'changelog.md' || n.toLowerCase() === 'changes.md', icon: 'ph-list-bullets', label: 'changelog', css: 'home-badge-changelog', hue: 'var(--ctp-green)' },
+  { test: (n, p) => n.toLowerCase() === 'todo.md' || n.toLowerCase() === 'todos.md', icon: 'ph-check-square', label: 'todo', css: 'home-badge-todo', hue: 'var(--ctp-peach)' },
+  { test: (n, p) => n.toLowerCase() === 'license.md' || n.toLowerCase() === 'license.txt', icon: 'ph-scales', label: 'license', css: 'home-badge-license', hue: 'var(--ctp-overlay1)' },
+  { test: (n, p) => /research|dossier/i.test(n), icon: 'ph-magnifying-glass', label: 'research', css: 'home-badge-research', hue: 'var(--ctp-lavender)' },
 ];
 
-function _detectFileBadge(filename, filepath) {
+function _fileBadgeFor(filename, filepath) {
   for (const badge of _fileBadges) {
-    if (badge.test(filename, filepath)) {
-      return `<span class="home-badge ${badge.css}"><i class="ph ${badge.icon}"></i> ${badge.label}</span>`;
-    }
+    if (badge.test(filename, filepath)) return badge;
   }
-  return '';
+  return null;
+}
+
+function _detectFileBadge(filename, filepath) {
+  const badge = _fileBadgeFor(filename, filepath);
+  return badge ? `<span class="home-badge ${badge.css}"><i class="ph ${badge.icon}"></i> ${badge.label}</span>` : '';
 }
 
 /* ── Show / Hide ─────────────────────────────────────── */
@@ -454,15 +459,23 @@ async function _loadRecentSidebarEntries() {
       return;
     }
 
+    /* Row anatomy (critique, 2026-09-06): every recent entry is markdown,
+       so the file glyph said nothing; the badge chip repeated the same word
+       down the rail and, with the time-ago, left the name ~95px to
+       truncate in. Now: a 6px hue dot for the file kind (label in the
+       tooltip / accessible name), the name free to wrap to two lines, the
+       time in its own right column. */
     let html = '';
     entries.forEach(entry => {
       const filename = entry.filename || entry.name || '';
-      const badge = _detectFileBadge(filename, entry.path || '');
+      const badge = _fileBadgeFor(filename, entry.path || '');
       const timeAgo = entry.lastOpened ? _homeTimeAgo(entry.lastOpened) : '';
+      const dot = badge
+        ? `<span class="ws-entry-dot" style="--dot: ${badge.hue}" role="img" aria-label="${escapeHtml(badge.label)}" title="${escapeHtml(badge.label)}"></span>`
+        : '<span class="ws-entry-dot ws-entry-dot-plain" aria-hidden="true"></span>';
       html += `<div class="ws-entry ws-file ws-recent-entry" data-path="${escapeHtml(entry.path)}">
-        <i class="ph ph-file-md"></i>
+        ${dot}
         <span class="ws-entry-name">${escapeHtml(filename)}</span>
-        ${badge ? `<span class="ws-entry-badge">${badge}</span>` : ''}
         ${timeAgo ? `<span class="ws-entry-size">${timeAgo}</span>` : ''}
       </div>`;
     });

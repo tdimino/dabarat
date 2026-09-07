@@ -186,9 +186,14 @@ function renderDiffPanel(panel, diffLines) {
   const html = marked.parse(fullMd, { gfm: true, breaks: false });
 
   const tmp = document.createElement('div');
-  tmp.innerHTML = html;
+  tmp.innerHTML = sanitizeHtml(html);
 
-  /* Map rendered blocks to source line ranges and apply diff types */
+  /* Map rendered blocks to source line ranges and apply diff types.
+     The walk assumes one rendered child per markdown block; a document
+     that authors a raw top-level <script>/<style>/<form>/<iframe> loses
+     that child to sanitizeHtml, and every block after it maps one line
+     range early. Accepted: such a document is hostile by definition and
+     only its compare highlighting drifts. */
   const children = Array.from(tmp.children);
   let lineIdx = 0;
 

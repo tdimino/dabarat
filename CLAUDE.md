@@ -34,7 +34,7 @@ Zero-dependency Python markdown previewer with annotations, bookmarks, and live 
 - Whisper-tier contrast waivers (document `--ctp-overlay1` text, the TOC kicker, home ghost controls) are decisions — leave them; everything else passes its tier.
 - Design tokens only: no px radius, no z-index ≥ 10, no literal transition duration or `all`, no neutral rgba shadow in a module — use `--radius-*`, `--z-*`, `--dur-*`, `--elevation-*`; new pills are deltas on `.btn`.
 - Hover states on `--card-bg` surfaces use `--interactive-hover-bg` / `--interactive-muted-bg`, not raw `--ctp-surface1` (invisible on white).
-- Never inline `onclick` in dynamically-built HTML — `data-*` attributes + delegated listeners (XSS via entity-decoded paths). Dropdowns reuse `_menuKeyNav`; anything hover-revealed also reveals on `:focus-within`/`:focus-visible`.
+- Never inline `onclick` in dynamically-built HTML — `data-*` attributes + delegated listeners (XSS via entity-decoded paths). Every `marked.parse` result goes through `sanitizeHtml()` before `innerHTML` (phase15 V12 greps for it). Dropdowns reuse `_menuKeyNav`; anything hover-revealed also reveals on `:focus-within`/`:focus-visible`.
 - Motion One call sites guard with `if (window.Motion && !_prefersReducedMotion)` and fall back to CSS keyframes.
 - Render `tabBody(tab)`, never raw `content` (frontmatter would leak); save `content`, never `body` (frontmatter would be lost). `_tabLoaded(t)` is the only "do we have the document" test.
 - Server handlers never index `self._tabs` directly — use the locked helpers (`_tab_filepath`, `_tab_dirs`, `_refresh_tab`, `_update_tab_content`); every shared module-level dict sits under a lock.

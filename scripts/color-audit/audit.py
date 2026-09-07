@@ -347,6 +347,8 @@ USED_PAIRS = [
     # waiver on home survives ONLY for hover-revealed ghost controls.
     ("home meta (base)",     "var(--home-meta)",      [BASE], 4.5, "P1"),
     ("home meta (card)",     "var(--home-meta)",      [CARD], 4.5, "P1"),
+    # .home-partial-note — "N entries not fully read" beside the stats
+    ("home partial note",    "var(--badge-peach-fg)", [CARD] + HOME_WASH, 4.5, "P1"),
     ("home control (base)",  "var(--home-control)",   [BASE], 4.5, "P1"),
     ("home control (card)",  "var(--home-control)",   [CARD], 4.5, "P1"),
     # The home ground carries a 0.07 blue radial wash at its brightest

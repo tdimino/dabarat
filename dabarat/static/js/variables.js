@@ -297,7 +297,7 @@ function showVariablesPreview() {
   if (typeof marked === 'undefined') {
     html = '<pre>' + escapeHtml(md) + '</pre>';
   } else {
-    html = marked.parse(md, { gfm: true, breaks: false });
+    html = sanitizeHtml(marked.parse(md, { gfm: true, breaks: false }));
   }
 
   const existing = document.getElementById('var-preview-overlay');

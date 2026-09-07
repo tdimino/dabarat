@@ -396,7 +396,7 @@ function renderAnnotations() {
   }
 
   anns.forEach(ann => {
-    const found = !!document.querySelector('mark[data-annotation-id="' + ann.id + '"]');
+    const found = !!document.querySelector('mark[data-annotation-id="' + CSS.escape(String(ann.id)) + '"]');
 
     /* Create bubble card */
     const bubble = document.createElement('div');
@@ -415,7 +415,7 @@ function renderAnnotations() {
       suggestion: 'ph-lightbulb', important: 'ph-flag',
       bookmark: 'ph-bookmark-simple'
     };
-    const typeIcon = '<i class="ph ' + (typeIcons[annType] || 'ph-chat-dots') + ' ann-type-icon ' + annType + '"></i>';
+    const typeIcon = '<i class="ph ' + (typeIcons[annType] || 'ph-chat-dots') + ' ann-type-icon ' + escapeHtml(annType) + '"></i>';
     const timeStr = ann.created
       ? new Date(ann.created).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
@@ -456,24 +456,24 @@ function renderAnnotations() {
         + typeIcon + authorIcon + escapeHtml(ann.author ? ann.author.name : 'Unknown')
         + '<span class="ann-time">' + timeStr + '</span>'
         + '<span class="ann-actions">'
-          + '<button class="ann-resolve-btn" data-ann-id="' + ann.id + '" title="'
+          + '<button class="ann-resolve-btn" data-ann-id="' + escapeHtml(ann.id) + '" title="'
           + (ann.resolved ? 'Unresolve' : 'Resolve') + '">'
           + '<i class="ph ' + (ann.resolved ? 'ph-arrow-counter-clockwise' : 'ph-check') + '"></i>'
           + '</button>'
-          + '<button class="ann-delete-btn" data-ann-id="' + ann.id + '" title="Delete">'
+          + '<button class="ann-delete-btn" data-ann-id="' + escapeHtml(ann.id) + '" title="Delete">'
           + '<i class="ph ph-trash"></i>'
           + '</button>'
         + '</span>'
       + '</div>'
       + '<div class="ann-body">' + bodyText + '</div>'
       + repliesHtml
-      + '<button class="ann-reply-toggle" data-ann-id="' + ann.id + '"><i class="ph ph-arrow-bend-up-left"></i> Reply</button>'
+      + '<button class="ann-reply-toggle" data-ann-id="' + escapeHtml(ann.id) + '"><i class="ph ph-arrow-bend-up-left"></i> Reply</button>'
       + anchorSnippet;
 
     /* Click bubble → scroll to highlight */
     bubble.onclick = (e) => {
       if (e.target.closest('.ann-resolve-btn, .ann-delete-btn, .ann-reply-toggle, .ann-reply-form, .ann-replies')) return;
-      const mark = document.querySelector('mark[data-annotation-id="' + ann.id + '"]');
+      const mark = document.querySelector('mark[data-annotation-id="' + CSS.escape(String(ann.id)) + '"]');
       if (mark) {
         mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
         mark.classList.add('pulse');

@@ -84,10 +84,13 @@ function _computeVisibleWindow() {
 
 function renderTabBar() {
   const bar = document.getElementById('tab-bar');
-  /* Re-render drops the DOM — remember whether keyboard focus lived in a
-     tab so it can land on the active one afterwards */
+  /* Re-render drops the DOM — remember which tab held keyboard focus so
+     an in-progress arrow-key traversal (manual activation: arrows move
+     focus, Enter activates) is not snapped back to the active tab when a
+     sibling window adds or closes a tab mid-navigation */
   const hadFocus = bar.contains(document.activeElement) &&
     document.activeElement.getAttribute('role') === 'tab';
+  const focusedTabId = hadFocus ? document.activeElement.dataset.tab : null;
   bar.innerHTML = '';
   bar.setAttribute('role', 'tablist');
   bar.setAttribute('aria-label', 'Open documents');
@@ -170,8 +173,16 @@ function renderTabBar() {
   });
 
   if (hadFocus) {
-    const active = bar.querySelector('.tab[aria-selected="true"]') || bar.querySelector('.tab');
-    if (active) active.focus();
+    const previous = focusedTabId ? bar.querySelector('.tab[data-tab="' + CSS.escape(focusedTabId) + '"]') : null;
+    const target = previous || bar.querySelector('.tab[aria-selected="true"]') || bar.querySelector('.tab');
+    if (target) {
+      if (previous && !previous.classList.contains('active')) {
+        /* Keep the roving stop on the traversed tab, not the active one */
+        bar.querySelectorAll('.tab').forEach(t => { t.tabIndex = -1; });
+        previous.tabIndex = 0;
+      }
+      target.focus();
+    }
   }
 
   /* Update overflow button */
